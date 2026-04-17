@@ -13,6 +13,28 @@ export const reactorStatusOptions = [
   { value: 'maintenance', label: 'Wartung' },
 ] as const;
 
+export const assetTypeOptions = [
+  { value: 'printer_3d', label: '3D-Drucker' },
+  { value: 'microscope', label: 'Mikroskop' },
+  { value: 'soldering_station', label: 'Loetstation' },
+  { value: 'power_supply', label: 'Netzteil' },
+  { value: 'pump', label: 'Pumpe' },
+  { value: 'server', label: 'Server' },
+  { value: 'gpu_node', label: 'GPU-Node' },
+  { value: 'sbc', label: 'SBC' },
+  { value: 'network_device', label: 'Netzwerkgeraet' },
+  { value: 'lab_device', label: 'Laborgeraet' },
+  { value: 'tool', label: 'Tool' },
+] as const;
+
+export const assetStatusOptions = [
+  { value: 'active', label: 'Aktiv' },
+  { value: 'maintenance', label: 'Wartung' },
+  { value: 'error', label: 'Fehler' },
+  { value: 'inactive', label: 'Inaktiv' },
+  { value: 'retired', label: 'Ausgemustert' },
+] as const;
+
 export const sensorTypeOptions = [
   { value: 'temperature', label: 'Temperatur' },
   { value: 'humidity', label: 'Luftfeuchte' },
@@ -112,6 +134,8 @@ export const ruleExecutionStatusOptions = [
 
 export type ChargeStatus = (typeof chargeStatusOptions)[number]['value'];
 export type ReactorStatus = (typeof reactorStatusOptions)[number]['value'];
+export type AssetType = (typeof assetTypeOptions)[number]['value'];
+export type AssetStatus = (typeof assetStatusOptions)[number]['value'];
 export type SensorType = (typeof sensorTypeOptions)[number]['value'];
 export type SensorStatus = (typeof sensorStatusOptions)[number]['value'];
 export type TaskStatus = (typeof taskStatusOptions)[number]['value'];
@@ -148,6 +172,28 @@ export type Reactor = {
   notes: string | null;
 };
 
+export type Asset = {
+  id: number;
+  name: string;
+  asset_type: AssetType;
+  category: string;
+  status: AssetStatus;
+  location: string;
+  zone: string | null;
+  serial_number: string | null;
+  manufacturer: string | null;
+  model: string | null;
+  notes: string | null;
+  maintenance_notes: string | null;
+  last_maintenance_at: string | null;
+  next_maintenance_at: string | null;
+  wiki_ref: string | null;
+  created_at: string;
+  updated_at: string;
+  open_task_count: number;
+  photo_count: number;
+};
+
 export type Sensor = {
   id: number;
   name: string;
@@ -182,11 +228,13 @@ export type Task = {
   due_at: string | null;
   charge_id: number | null;
   reactor_id: number | null;
+  asset_id: number | null;
   created_at: string;
   updated_at: string;
   completed_at: string | null;
   charge_name: string | null;
   reactor_name: string | null;
+  asset_name: string | null;
 };
 
 export type Alert = {
@@ -213,12 +261,26 @@ export type Photo = {
   notes: string | null;
   charge_id: number | null;
   reactor_id: number | null;
+  asset_id: number | null;
   created_at: string;
   uploaded_by: string | null;
   captured_at: string | null;
   charge_name: string | null;
   reactor_name: string | null;
+  asset_name: string | null;
   file_url: string;
+};
+
+export type AssetDetail = Asset & {
+  open_tasks: Task[];
+  recent_photos: Photo[];
+};
+
+export type AssetOverview = {
+  active_assets: number;
+  assets_in_maintenance: number;
+  assets_in_error: number;
+  upcoming_maintenance_assets: Asset[];
 };
 
 export type PhotoAnalysisStatus = {
@@ -375,6 +437,9 @@ export type DashboardSummary = {
   reactors_online: number;
   active_sensors: number;
   error_sensors: number;
+  active_assets: number;
+  assets_in_maintenance: number;
+  assets_in_error: number;
   open_tasks: number;
   due_today_tasks: number;
   critical_alerts: number;
@@ -386,5 +451,6 @@ export type DashboardSummary = {
   recent_alerts: Alert[];
   recent_photos: Photo[];
   recent_rule_executions: RuleExecution[];
+  upcoming_maintenance_assets: Asset[];
   message: string;
 };

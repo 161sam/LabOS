@@ -3,16 +3,18 @@ from datetime import timedelta
 from sqlmodel import Session, select
 
 from .db import engine
-from .models import Alert, Charge, Reactor, Rule, Sensor, SensorValue, Task, WikiPage, _utcnow
+from .models import Asset, Alert, Charge, Reactor, Rule, Sensor, SensorValue, Task, WikiPage, _utcnow
 
 
 def seed_data() -> bool:
     with Session(engine) as session:
         has_charge = session.exec(select(Charge)).first()
         has_sensor = session.exec(select(Sensor)).first()
+        has_asset = session.exec(select(Asset)).first()
         reactor = session.exec(select(Reactor)).first()
         charge = session.exec(select(Charge)).first()
         seeded_any = False
+        now = _utcnow()
 
         if reactor is None:
             reactor = Reactor(
@@ -37,7 +39,6 @@ def seed_data() -> bool:
             charge = session.exec(select(Charge)).first()
 
         if has_sensor is None:
-            now = _utcnow()
             temp_sensor = Sensor(
                 name='Mediumtemperatur A1',
                 sensor_type='water_temperature',
@@ -114,7 +115,113 @@ def seed_data() -> bool:
             session.commit()
             seeded_any = True
 
-        now = _utcnow()
+        if has_asset is None:
+            assets = [
+                Asset(
+                    name='Prusa MK4',
+                    asset_type='printer_3d',
+                    category='MakerOps',
+                    status='active',
+                    location='Werkbank 1',
+                    zone='Maker Corner',
+                    manufacturer='Prusa',
+                    model='MK4',
+                    serial_number='MK4-ESL-001',
+                    notes='Primärer 3D-Drucker für Gehäuse, Halterungen und Prototypen.',
+                    maintenance_notes='Düse monatlich prüfen und Filamentpfad reinigen.',
+                    last_maintenance_at=now - timedelta(days=12),
+                    next_maintenance_at=now + timedelta(days=18),
+                    wiki_ref='Lab-Projekte/Labor-Geraete/3D-Druck/Prusa-MK4',
+                ),
+                Asset(
+                    name='Mikroskop Nordbank',
+                    asset_type='microscope',
+                    category='BioOps',
+                    status='maintenance',
+                    location='Laborbank Nord',
+                    zone='Wet Lab',
+                    manufacturer='Motic',
+                    model='BA310',
+                    maintenance_notes='Kalibrierung der Optik und Reinigung der Objektive offen.',
+                    last_maintenance_at=now - timedelta(days=90),
+                    next_maintenance_at=now + timedelta(days=4),
+                    wiki_ref='Lab-Projekte/Labor-Geraete/Mikroskopie/Mikroskop-Nordbank',
+                ),
+                Asset(
+                    name='Lötstation TS100 Bench',
+                    asset_type='soldering_station',
+                    category='MakerOps',
+                    status='active',
+                    location='Elektronikplatz',
+                    zone='Maker Corner',
+                    manufacturer='Miniware',
+                    model='TS100',
+                    next_maintenance_at=now + timedelta(days=45),
+                ),
+                Asset(
+                    name='Server1',
+                    asset_type='server',
+                    category='ITOps',
+                    status='active',
+                    location='Rack A',
+                    zone='Infra',
+                    manufacturer='Supermicro',
+                    model='Storage Node',
+                    notes='Lokaler LabOS und Storage Host fuer Entwicklungs-Workloads.',
+                    next_maintenance_at=now + timedelta(days=30),
+                    wiki_ref='Lab-Projekte/Infra/Server1',
+                ),
+                Asset(
+                    name='RTX3060 Node',
+                    asset_type='gpu_node',
+                    category='AI Assistenz',
+                    status='error',
+                    location='Rack A',
+                    zone='Infra',
+                    manufacturer='Custom',
+                    model='RTX3060 Edge',
+                    notes='Zeigt aktuell einen instabilen Lüfter an.',
+                    maintenance_notes='Lüfter und Staubfilter prüfen.',
+                    next_maintenance_at=now + timedelta(days=2),
+                ),
+                Asset(
+                    name='Odroid N2+',
+                    asset_type='sbc',
+                    category='Automation',
+                    status='active',
+                    location='Regal Süd',
+                    zone='Infra',
+                    manufacturer='Hardkernel',
+                    model='N2+',
+                    wiki_ref='Lab-Projekte/Automation/Odroid-N2-Edge',
+                ),
+                Asset(
+                    name='Pumpe A',
+                    asset_type='pump',
+                    category='BioOps',
+                    status='active',
+                    location='Fluidik Rack',
+                    zone='Wet Lab',
+                    maintenance_notes='Schlauchwechsel alle 60 Tage dokumentieren.',
+                    next_maintenance_at=now + timedelta(days=9),
+                ),
+                Asset(
+                    name='Netzteil Labor',
+                    asset_type='power_supply',
+                    category='MakerOps',
+                    status='inactive',
+                    location='Elektronikplatz',
+                    zone='Maker Corner',
+                    manufacturer='Rigol',
+                    model='DP832',
+                ),
+            ]
+            session.add_all(assets)
+            session.commit()
+            seeded_any = True
+
+        printer_asset = session.exec(select(Asset).where(Asset.name == 'Prusa MK4')).first()
+        microscope_asset = session.exec(select(Asset).where(Asset.name == 'Mikroskop Nordbank')).first()
 
         if charge is None:
             charge = session.exec(select(Charge)).first()
@@ -142,6 +249,32 @@ def seed_data() -> bool:
                     due_at=now + timedelta(hours=2),
                     charge_id=charge.id if charge else None,
                     reactor_id=reactor.id if reactor else None,
+                )
+            )
+            seeded_any = True
+
+        if session.exec(select(Task).where(Task.title == '3D Drucker Duesencheck')).first() is None:
+            session.add(
+                Task(
+                    title='3D Drucker Duesencheck',
+                    description='Prusa MK4 reinigen, Duesenbild pruefen und Wartung dokumentieren.',
+                    status='open',
+                    priority='normal',
+                    due_at=now + timedelta(days=2),
+                    asset_id=printer_asset.id if printer_asset else None,
+                )
+            )
+            seeded_any = True
+
+        if session.exec(select(Task).where(Task.title == 'Mikroskop Kalibrierung abschliessen')).first() is None:
+            session.add(
+                Task(
+                    title='Mikroskop Kalibrierung abschliessen',
+                    description='Optik pruefen und Maintenance-Notizen fuer das Mikroskop Nordbank aktualisieren.',
+                    status='doing',
+                    priority='high',
+                    due_at=now + timedelta(days=1),
+                    asset_id=microscope_asset.id if microscope_asset else None,
                 )
             )
             seeded_any = True

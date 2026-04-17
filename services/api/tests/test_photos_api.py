@@ -21,9 +21,16 @@ def _seed_reactor_id(client) -> int:
     return response.json()[0]['id']
 
 
+def _seed_asset_id(client) -> int:
+    response = client.get('/api/v1/assets')
+    assert response.status_code == 200
+    return response.json()[0]['id']
+
+
 def test_upload_photo_and_get_detail(client):
     charge_id = _seed_charge_id(client)
     reactor_id = _seed_reactor_id(client)
+    asset_id = _seed_asset_id(client)
 
     response = client.post(
         '/api/v1/photos/upload',
@@ -32,6 +39,7 @@ def test_upload_photo_and_get_detail(client):
             'notes': '  Farbe und Schaumbild pruefen  ',
             'charge_id': str(charge_id),
             'reactor_id': str(reactor_id),
+            'asset_id': str(asset_id),
             'uploaded_by': '  lab-tech  ',
             'captured_at': '2026-04-17T10:30:00',
         },
@@ -47,6 +55,7 @@ def test_upload_photo_and_get_detail(client):
     assert created['size_bytes'] == len(PNG_BYTES)
     assert created['charge_id'] == charge_id
     assert created['reactor_id'] == reactor_id
+    assert created['asset_id'] == asset_id
     assert created['storage_path'].startswith('photos/')
     assert created['file_url'] == f"/api/v1/photos/{created['id']}/file"
 
@@ -68,6 +77,7 @@ def test_upload_photo_rejects_invalid_type(client):
 def test_list_photos_can_filter_by_charge_and_reactor(client):
     charge_id = _seed_charge_id(client)
     reactor_id = _seed_reactor_id(client)
+    asset_id = _seed_asset_id(client)
 
     first = client.post(
         '/api/v1/photos/upload',
@@ -83,6 +93,13 @@ def test_list_photos_can_filter_by_charge_and_reactor(client):
     )
     assert second.status_code == 201
 
+    third = client.post(
+        '/api/v1/photos/upload',
+        data={'title': 'Asset Foto', 'asset_id': str(asset_id)},
+        files={'file': ('asset.png', PNG_BYTES, 'image/png')},
+    )
+    assert third.status_code == 201
+
     by_charge = client.get('/api/v1/photos', params={'charge_id': charge_id})
     assert by_charge.status_code == 200
     assert all(photo['charge_id'] == charge_id for photo in by_charge.json())
@@ -90,6 +107,10 @@ def test_list_photos_can_filter_by_charge_and_reactor(client):
     by_reactor = client.get('/api/v1/photos', params={'reactor_id': reactor_id})
     assert by_reactor.status_code == 200
     assert all(photo['reactor_id'] == reactor_id for photo in by_reactor.json())
+
+    by_asset = client.get('/api/v1/photos', params={'asset_id': asset_id})
+    assert by_asset.status_code == 200
+    assert all(photo['asset_id'] == asset_id for photo in by_asset.json())
 
 
 def test_photo_file_serving_returns_binary_content(client):
@@ -109,6 +130,7 @@ def test_photo_file_serving_returns_binary_content(client):
 def test_update_photo_metadata(client):
     charge_id = _seed_charge_id(client)
     reactor_id = _seed_reactor_id(client)
+    asset_id = _seed_asset_id(client)
 
     upload = client.post(
         '/api/v1/photos/upload',
@@ -123,6 +145,7 @@ def test_update_photo_metadata(client):
             'notes': '  Dokumentation aktualisiert  ',
             'charge_id': charge_id,
             'reactor_id': reactor_id,
+            'asset_id': asset_id,
             'uploaded_by': '  operator-1  ',
             'captured_at': '2026-04-17T12:45:00',
         },
@@ -135,6 +158,7 @@ def test_update_photo_metadata(client):
     assert updated['uploaded_by'] == 'operator-1'
     assert updated['charge_id'] == charge_id
     assert updated['reactor_id'] == reactor_id
+    assert updated['asset_id'] == asset_id
 
 
 def test_photo_analysis_status_stub(client):

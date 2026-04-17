@@ -1,263 +1,78 @@
-Du arbeitest im Repository **LabOS**.
+# ROADMAP
 
-Kontext:
-LabOS entwickelt sich von einer einzelnen Labor-App zu einem modularen Operating System für EcoSphereLab.
+LabOS entwickelt sich zu einem modularen Operating System fuer EcoSphereLab. Der Fokus bleibt auf lokalem Betrieb, Pi-Tauglichkeit, klaren operativen Datenmodellen und kleinen nachvollziehbaren Erweiterungen.
 
-LabOS ist nicht nur für Bio-Prozesse gedacht, sondern für ein reales Multi-Domain-Lab mit:
-- BioOps
-- MakerOps
-- ITOps
-- R&D Ops
-- KnowledgeOps
-- Automation
-- AI Assistenz
+## Produktbild
 
-Bereits umgesetzt:
+- BioOps: Charges, Reaktoren, Sensorik, Foto- und Prozessdokumentation
+- MakerOps: Werkbankgeraete, Fertigungs- und Elektronik-Assets, Aufgaben und Wissensverknuepfung
+- ITOps: Server, SBCs, Netzwerktechnik und spaetere Infra-Objekte
+- KnowledgeOps: Wiki, SOPs, How-tos und verlinkbares Betriebswissen
+- Automation: Regeln, Alerts, Tasks und nachvollziehbare Ausfuehrungen
+- AI Assistenz: ABrain auf echter LabOS-Datengrundlage statt losgeloester Demo-Logik
+
+## Bereits umgesetzt
+
 - Charges CRUD
 - Reactors CRUD
 - Alembic Migrationen
 - Sensorik V1
 - Tasks + Alerts V1
 - Photo Upload + Vision Basis V1
-- ABrain Integration V1 mit echtem lab_context
+- ABrain Integration V1 mit echtem LabOS-Kontext
+- Regelengine / Automation V1
+- AssetOps / DeviceOps V1
 - Dashboard-Basis
 - Wiki-Basis
 
-Stack:
-- Frontend: Next.js
-- Backend: FastAPI
-- PostgreSQL
-- Docker Compose
+## AssetOps / DeviceOps V1
 
-Wichtige Dateien:
-- README.md
-- ROADMAP.md
-- AGENTS.md
+Der aktuelle Schritt erweitert LabOS vom Prozessfokus auf reale Geraete und Assets des gesamten Labs.
 
----
+Enthalten:
 
-# Deine Aufgabe
+- Asset-Modell fuer Geraete und langlebige Assets
+- CRUD fuer Assets / Devices
+- Status-, Standort- und Wartungsfelder
+- optionale Wiki-Referenz
+- Verknuepfungen mit Tasks und Photos ueber `asset_id`
+- AssetOps-Seite in der Weboberflaeche
+- Dashboard-KPIs fuer aktive Assets, Wartung, Fehler und naechste Wartungen
 
-Baue als nächsten sauberen Entwicklungsschritt:
+Bewusst noch nicht enthalten:
 
-# Regelengine / Automation V1
+- Inventory / MaterialOps
+- Bestands- und Beschaffungslogik
+- QR- / Label-System
+- ITOps-Healthchecks und Monitoring-Collector
+- CMDB- oder ERP-Komplexitaet
+- automatische Hardwaresteuerung
 
-Ziel:
-LabOS soll kontrollierte, nachvollziehbare Regeln ausführen können, die auf bestehenden LabOS-Daten basieren.
+## Naechste priorisierte Schritte
 
-Nach diesem Schritt soll LabOS können:
+1. Inventory / MaterialOps V1
+2. QR / Label / Traceability V1
+3. ITOps / InfraOps V1 fuer Hosts, Nodes und Netzwerkobjekte
+4. Asset-nahe Wartungslogik mit Alerts und Regeln
+5. Sensorik V2 mit Asset- und Device-Bezug
+6. Wiki-UI V2 mit tieferen Referenzen zwischen Objekten und Dokumenten
+7. Vision V2 fuer strukturierte Foto-Auswertung
+8. Rollen / Auth
 
-- Regeln definieren
-- Regeln aktiv/inaktiv schalten
-- Regeln manuell testen
-- Regeln gegen aktuelle Daten evaluieren
-- aus Regeln Tasks und/oder Alerts erzeugen
-- Regelereignisse protokollieren
+## Architekturleitlinien fuer die naechsten Schritte
 
-Wichtig:
-Dieser Schritt soll keine vollautonome Hardwaresteuerung einführen.
-Es geht um eine sichere, nachvollziehbare V1-Regelschicht für operative Reaktionen im Laborbetrieb.
+- modularer Monolith vor Service-Aufspaltung
+- lokale Datenhaltung vor Cloud-Annahmen
+- wenige klare Modelle statt generischer Meta-Systeme
+- Erweiterungen entlang realer Betriebsobjekte
+- Cross-Domain-Verknuepfungen explizit und nachvollziehbar halten
 
----
+## Wichtige Abgrenzungen
 
-# Warum dieser Schritt jetzt sinnvoll ist
-
-LabOS hat genug operative Kernobjekte und Datenquellen:
-
-## Datenquellen
-- Sensorwerte
-- Sensorstatus
-- Tasks
-- Alerts
-- Charges
-- Reactors
-- später anschlussfähig für Assets, ITOps und weitere Bereiche
-
-## Zielobjekte
-- neue Alerts erzeugen
-- neue Tasks erzeugen
-
-Die Regelengine ist der nächste logische Schritt, bevor LabOS auf weitere Domänen wie Geräte, Inventory oder ITOps ausgeweitet wird.
-
----
-
-# Wichtige Anforderungen
-
-1. Bestehende Architektur respektieren.
-2. Raspberry-Pi-tauglich bleiben.
-3. Keine überkomplexe Workflow-Engine bauen.
-4. Regeln müssen nachvollziehbar und protokolliert sein.
-5. Kein Cloud-Zwang.
-6. Keine versteckte Magie.
-7. Keine Hardware-/GPIO-Aktionen in diesem Schritt.
-8. Dokumentation aktualisieren.
-9. Scope strikt halten.
-10. Die Umsetzung soll später sauber auf weitere Domänen erweiterbar sein.
-
----
-
-# Zielbild nach diesem Schritt
-
-Nach diesem Schritt soll LabOS bieten:
-
-- Rule-Modell in der DB
-- einfache regelbasierte Evaluation
-- UI für Regeln
-- Dry-Run/Test-Funktion
-- Event-/Execution-Log
-- echte V1-Aktionen:
-  - Task erzeugen
-  - Alert erzeugen
-
----
-
-# Scope
-
-## 1. Datenmodell
-
-Ergänze mindestens:
-
-### Rule
-Mindestens Felder wie:
-- id
-- name
-- description
-- is_enabled
-- trigger_type
-- condition_type
-- condition_config
-- action_type
-- action_config
-- created_at
-- updated_at
-- last_evaluated_at optional
-
-Beispiele:
-- trigger_type: sensor_threshold, stale_sensor, overdue_tasks
-- condition_type: threshold_gt, threshold_lt, age_gt_hours, count_gt
-- action_type: create_alert, create_task
-
-### RuleExecution / RuleEvent
-Mindestens:
-- id
-- rule_id
-- status
-- dry_run
-- evaluation_summary
-- action_result
-- created_at
-
-Status z. B.:
-- matched
-- not_matched
-- executed
-- failed
-
-Wichtig:
-- Protokollierung muss nachvollziehbar sein
-- JSON/Text-basierte Zusammenfassungen sind okay
-- nicht übermodellieren
-
----
-
-## 2. Alembic Migration
-
-Neue saubere Migration erstellen.
-
----
-
-## 3. Backend Regel-Engine V1
-
-Baue eine kleine, saubere Service-Schicht für:
-- Regeln laden
-- Regel validieren
-- Regel evaluieren
-- Action auslösen
-- Execution loggen
-
-Wichtig:
-- keine große generische Engine
-- lieber wenige klar unterstützte Regeltypen
-- Code gut erweiterbar halten
-
----
-
-## 4. Unterstützte V1-Regeln
-
-Bitte bewusst klein halten.
-
-Mindestens diese V1-Regeltypen:
-
-### A. Sensor Threshold
-Beispiel:
-- Wenn Sensor X > Schwellwert -> Alert erzeugen
-- Wenn Sensor X < Schwellwert -> Task erzeugen
-
-### B. Stale Sensor
-Beispiel:
-- Wenn Sensor seit N Stunden keine Werte hat -> Alert erzeugen
-
-### C. Overdue Tasks
-Beispiel:
-- Wenn offene Tasks überfällig sind -> Alert erzeugen
-
-Optional klein, wenn sauber:
-### D. Reactor Status
-- Wenn Reactor im Fehlerstatus -> Task erzeugen
-
-Bitte keine wilde DSL bauen.
-Eine einfache, kontrollierte JSON-/Schema-basierte Konfiguration reicht.
-
----
-
-## 5. Backend API
-
-Implementiere mindestens:
-
-### Rules
-- GET /api/v1/rules
-- GET /api/v1/rules/{id}
-- POST /api/v1/rules
-- PUT /api/v1/rules/{id}
-- PATCH /api/v1/rules/{id}/enabled
-
-### Rule execution
-- POST /api/v1/rules/{id}/evaluate
-  - optional dry_run=true/false
-
-### Rule logs
-- GET /api/v1/rules/{id}/executions
-- optional GET /api/v1/rule-executions
-
-Optional sinnvoll:
-- POST /api/v1/rules/evaluate-all?dry_run=true
-
-Wichtig:
-- saubere Request-/Response-Schemas
-- klare Fehlerantworten
-- Rule-Konfiguration validieren
-- Router schlank halten
-
----
-
-## 6. Actions V1
-
-Unterstützte Aktionen:
-
-### create_alert
-Mit konfigurierbaren Feldern wie:
-- title template
-- message template
-- severity
-- source_type
-- source_id optional
-
-### create_task
-Mit konfigurierbaren Feldern wie:
-- title template
-- description template
-- priority
-- due_at offset optional
+- Assets / Devices sind nicht dasselbe wie Inventory
+- ABrain bleibt eine angebundene Assistenzschicht, nicht das Primaersystem
+- Automatisierung muss sichtbar, protokolliert und deaktivierbar bleiben
+- jede Erweiterung muss fuer Raspberry Pi 4/5 praktikabel bleiben
 - charge_id/reactor_id optional wenn sauber ableitbar
 
 Wichtig:

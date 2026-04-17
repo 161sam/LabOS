@@ -4,13 +4,14 @@ import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'LabOS',
-  description: 'Labor-Betriebssystem für Chargen, Reaktoren, Sensoren und Wiki'
+  description: 'Labor-Betriebssystem fuer Charges, Assets, Sensoren, Aufgaben und Wiki'
 };
 
 const navItems = [
   ['Dashboard', '/'],
   ['Chargen', '/charges'],
   ['Reaktoren', '/reactors'],
+  ['Assets', '/assets'],
   ['Sensoren', '/sensors'],
   ['Fotos', '/photos'],
   ['Aufgaben', '/tasks'],

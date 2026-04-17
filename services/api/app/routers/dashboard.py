@@ -4,8 +4,9 @@ from fastapi import APIRouter, Depends
 from sqlmodel import Session, select
 
 from ..db import get_session
-from ..models import Alert, Charge, Photo, Reactor, Sensor, Task
+from ..models import Alert, Asset, Charge, Photo, Reactor, Sensor, Task
 from ..schemas import DashboardSummaryRead
+from ..services import assets as asset_service
 from ..services import alerts as alert_service
 from ..services import photos as photo_service
 from ..services import rules as rule_service
@@ -22,6 +23,9 @@ def dashboard_summary(session: Session = Depends(get_session)):
     reactors_online = len(session.exec(select(Reactor).where(Reactor.status == 'online')).all())
     active_sensors = len(session.exec(select(Sensor).where(Sensor.status == 'active')).all())
     error_sensors = len(session.exec(select(Sensor).where(Sensor.status == 'error')).all())
+    active_assets = len(session.exec(select(Asset).where(Asset.status == 'active')).all())
+    assets_in_maintenance = len(session.exec(select(Asset).where(Asset.status == 'maintenance')).all())
+    assets_in_error = len(session.exec(select(Asset).where(Asset.status == 'error')).all())
     open_tasks = len(session.exec(select(Task).where(Task.status != 'done')).all())
     due_today_tasks = len(
         session.exec(
@@ -43,11 +47,15 @@ def dashboard_summary(session: Session = Depends(get_session)):
     )
     open_alerts = len(session.exec(select(Alert).where(Alert.status != 'resolved')).all())
     photo_count = len(session.exec(select(Photo.id)).all())
+    asset_overview = asset_service.get_asset_overview(session)
     return {
         'active_charges': active_charges,
         'reactors_online': reactors_online,
         'active_sensors': active_sensors,
         'error_sensors': error_sensors,
+        'active_assets': active_assets,
+        'assets_in_maintenance': assets_in_maintenance,
+        'assets_in_error': assets_in_error,
         'open_tasks': open_tasks,
         'due_today_tasks': due_today_tasks,
         'critical_alerts': critical_alerts,
@@ -59,5 +67,6 @@ def dashboard_summary(session: Session = Depends(get_session)):
         'recent_alerts': alert_service.list_alerts(session, limit=4),
         'recent_photos': photo_service.list_photos(session, latest=True, limit=4),
         'recent_rule_executions': rule_service.list_recent_executions(session, limit=4),
+        'upcoming_maintenance_assets': asset_overview.upcoming_maintenance_assets,
         'message': 'LabOS API erreichbar'
     }

@@ -22,6 +22,9 @@ async function getSummary(): Promise<DashboardSummary> {
       reactors_online: 0,
       active_sensors: 0,
       error_sensors: 0,
+      active_assets: 0,
+      assets_in_maintenance: 0,
+      assets_in_error: 0,
       open_tasks: 0,
       due_today_tasks: 0,
       critical_alerts: 0,
@@ -33,6 +36,7 @@ async function getSummary(): Promise<DashboardSummary> {
       recent_alerts: [],
       recent_photos: [],
       recent_rule_executions: [],
+      upcoming_maintenance_assets: [],
       message: 'API noch nicht erreichbar – Frontend läuft trotzdem.'
     };
   }
@@ -52,6 +56,12 @@ export default async function DashboardPage() {
         <Card title="Aktive Chargen"><div className="kpi">{data.active_charges}</div></Card>
         <Card title="Reaktoren online"><div className="kpi">{data.reactors_online}</div></Card>
         <Card title="Aktive Sensoren"><div className="kpi">{data.active_sensors}</div></Card>
+      </div>
+
+      <div className="grid cols-3">
+        <Card title="Aktive Assets"><div className="kpi">{data.active_assets}</div></Card>
+        <Card title="Assets in Wartung"><div className="kpi">{data.assets_in_maintenance}</div></Card>
+        <Card title="Assets im Fehler"><div className="kpi">{data.assets_in_error}</div></Card>
       </div>
 
       <div className="grid cols-3">
@@ -94,10 +104,13 @@ export default async function DashboardPage() {
 
         <Card title="Hinweis">
           <p>{data.message}</p>
-          <p className="muted">Dashboard zeigt jetzt neben Sensorik und Aufgaben auch die letzten visuellen Uploads fuer die Labor-Dokumentation.</p>
+          <p className="muted">Dashboard zeigt jetzt neben Sensorik, Aufgaben und Uploads auch den operativen Asset-Bestand des Labs.</p>
           <div className="buttonRow">
             <a className="button buttonSecondary" href="/abrain">
               Heutige ABrain-Analyse
+            </a>
+            <a className="button buttonSecondary" href="/assets">
+              Zu AssetOps
             </a>
           </div>
         </Card>
@@ -120,6 +133,35 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid cols-2">
+        <Card title="Naechste Wartungen">
+          {data.upcoming_maintenance_assets.length === 0 ? (
+            <p className="muted">Keine Wartungstermine hinterlegt.</p>
+          ) : (
+            <div className="tableWrap">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Asset</th>
+                    <th>Status</th>
+                    <th>Standort</th>
+                    <th>Termin</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.upcoming_maintenance_assets.map((asset) => (
+                    <tr key={asset.id}>
+                      <td>{asset.name}</td>
+                      <td><span className={`badge badge-${asset.status}`}>{asset.status}</span></td>
+                      <td>{asset.location}</td>
+                      <td>{asset.next_maintenance_at ? new Date(asset.next_maintenance_at).toLocaleString('de-DE') : 'Nicht gesetzt'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+
         <Card title="Letzte Regelereignisse">
           {data.recent_rule_executions.length === 0 ? (
             <p className="muted">Noch keine Regelevaluierungen vorhanden.</p>
@@ -199,7 +241,7 @@ export default async function DashboardPage() {
                   <div className="photoMeta">
                     <strong>{photo.title || photo.original_filename}</strong>
                     <span className="muted">
-                      {photo.charge_name || photo.reactor_name || 'Nicht zugeordnet'}
+                      {photo.asset_name || photo.charge_name || photo.reactor_name || 'Nicht zugeordnet'}
                     </span>
                   </div>
                 </a>

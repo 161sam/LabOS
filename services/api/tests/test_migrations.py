@@ -15,7 +15,7 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
     inspector = inspect(engine)
 
     table_names = set(inspector.get_table_names())
-    assert {'charge', 'reactor', 'sensor', 'sensorvalue', 'task', 'alert', 'photo', 'rule', 'ruleexecution', 'wikipage'} <= table_names
+    assert {'charge', 'reactor', 'sensor', 'sensorvalue', 'task', 'alert', 'photo', 'asset', 'rule', 'ruleexecution', 'wikipage'} <= table_names
 
     charge_columns = {column['name'] for column in inspector.get_columns('charge')}
     assert {'id', 'name', 'species', 'status', 'volume_l', 'reactor_id', 'start_date', 'notes'} <= charge_columns
@@ -50,6 +50,7 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
         'due_at',
         'charge_id',
         'reactor_id',
+        'asset_id',
         'created_at',
         'updated_at',
         'completed_at',
@@ -81,10 +82,32 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
         'notes',
         'charge_id',
         'reactor_id',
+        'asset_id',
         'created_at',
         'uploaded_by',
         'captured_at',
     } <= photo_columns
+
+    asset_columns = {column['name'] for column in inspector.get_columns('asset')}
+    assert {
+        'id',
+        'name',
+        'asset_type',
+        'category',
+        'status',
+        'location',
+        'zone',
+        'serial_number',
+        'manufacturer',
+        'model',
+        'notes',
+        'maintenance_notes',
+        'last_maintenance_at',
+        'next_maintenance_at',
+        'wiki_ref',
+        'created_at',
+        'updated_at',
+    } <= asset_columns
 
     rule_columns = {column['name'] for column in inspector.get_columns('rule')}
     assert {
@@ -136,6 +159,7 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
         'ix_task_due_at',
         'ix_task_charge_id',
         'ix_task_reactor_id',
+        'ix_task_asset_id',
     } <= task_indexes
 
     alert_indexes = {index['name'] for index in inspector.get_indexes('alert')}
@@ -151,8 +175,20 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
         'ix_photo_created_at',
         'ix_photo_charge_id',
         'ix_photo_reactor_id',
+        'ix_photo_asset_id',
         'ix_photo_captured_at',
     } <= photo_indexes
+
+    asset_indexes = {index['name'] for index in inspector.get_indexes('asset')}
+    assert {
+        'ix_asset_name',
+        'ix_asset_status',
+        'ix_asset_asset_type',
+        'ix_asset_category',
+        'ix_asset_location',
+        'ix_asset_zone',
+        'ix_asset_next_maintenance_at',
+    } <= asset_indexes
 
     rule_indexes = {index['name'] for index in inspector.get_indexes('rule')}
     assert {
@@ -171,6 +207,6 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
 
     with engine.connect() as connection:
         version = connection.execute(text('SELECT version_num FROM alembic_version')).scalar_one()
-        assert version == '20260417_0005'
+        assert version == '20260417_0006'
 
     engine.dispose()

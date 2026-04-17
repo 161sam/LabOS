@@ -73,6 +73,7 @@ class Task(SQLModel, table=True):
         Index('ix_task_due_at', 'due_at'),
         Index('ix_task_charge_id', 'charge_id'),
         Index('ix_task_reactor_id', 'reactor_id'),
+        Index('ix_task_asset_id', 'asset_id'),
     )
 
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -83,6 +84,7 @@ class Task(SQLModel, table=True):
     due_at: Optional[datetime] = None
     charge_id: Optional[int] = None
     reactor_id: Optional[int] = None
+    asset_id: Optional[int] = None
     created_at: datetime = Field(default_factory=_utcnow)
     updated_at: datetime = Field(default_factory=_utcnow)
     completed_at: Optional[datetime] = None
@@ -113,6 +115,7 @@ class Photo(SQLModel, table=True):
         Index('ix_photo_created_at', 'created_at'),
         Index('ix_photo_charge_id', 'charge_id'),
         Index('ix_photo_reactor_id', 'reactor_id'),
+        Index('ix_photo_asset_id', 'asset_id'),
         Index('ix_photo_captured_at', 'captured_at'),
     )
 
@@ -126,9 +129,40 @@ class Photo(SQLModel, table=True):
     notes: Optional[str] = None
     charge_id: Optional[int] = None
     reactor_id: Optional[int] = None
+    asset_id: Optional[int] = None
     created_at: datetime = Field(default_factory=_utcnow)
     uploaded_by: Optional[str] = None
     captured_at: Optional[datetime] = None
+
+
+class Asset(SQLModel, table=True):
+    __table_args__ = (
+        Index('ix_asset_name', 'name'),
+        Index('ix_asset_status', 'status'),
+        Index('ix_asset_asset_type', 'asset_type'),
+        Index('ix_asset_category', 'category'),
+        Index('ix_asset_location', 'location'),
+        Index('ix_asset_zone', 'zone'),
+        Index('ix_asset_next_maintenance_at', 'next_maintenance_at'),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str
+    asset_type: str
+    category: str
+    status: str = 'active'
+    location: str
+    zone: Optional[str] = None
+    serial_number: Optional[str] = None
+    manufacturer: Optional[str] = None
+    model: Optional[str] = None
+    notes: Optional[str] = None
+    maintenance_notes: Optional[str] = None
+    last_maintenance_at: Optional[datetime] = None
+    next_maintenance_at: Optional[datetime] = None
+    wiki_ref: Optional[str] = None
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
 
 
 class Rule(SQLModel, table=True):

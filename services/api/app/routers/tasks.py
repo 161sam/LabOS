@@ -12,9 +12,15 @@ router = APIRouter(prefix='/tasks', tags=['tasks'])
 def list_tasks(
     status_filter: TaskStatus | None = Query(default=None, alias='status'),
     priority_filter: TaskPriority | None = Query(default=None, alias='priority'),
+    asset_id: int | None = Query(default=None, ge=1),
     session: Session = Depends(get_session),
 ):
-    return task_service.list_tasks(session, status_filter=status_filter, priority_filter=priority_filter)
+    return task_service.list_tasks(
+        session,
+        status_filter=status_filter,
+        priority_filter=priority_filter,
+        asset_id=asset_id,
+    )
 
 
 @router.get('/{task_id}', response_model=TaskRead)
