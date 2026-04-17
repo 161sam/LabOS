@@ -11,12 +11,12 @@ Aktueller Stand:
 - Docker Compose vorhanden
 - Erste Bereiche umgesetzt:
   - Dashboard
-  - Chargen
-  - Reaktoren
+  - Chargen mit CRUD-Basis
+  - Reaktoren mit CRUD-Basis
   - Wiki
   - ABrain-Status
 - Seed-Daten vorhanden
-- Basis-Test für Healthcheck vorhanden
+- API-Tests fuer Healthcheck, Charge-CRUD und Reactor-CRUD vorhanden
 
 Ziel ist eine lokal betreibbare, modulare, skalierbare Labor-App für Raspberry Pi 4/5 und spätere Erweiterung auf Multi-Node-Setups.
 
@@ -80,11 +80,11 @@ Ergebnis:
 ---
 
 ## v0.1.1 – Solide CRUD-Basis
-Status: als Nächstes
+Status: umgesetzt als aktueller Entwicklungsschritt
 
 Ziele:
-- echte Create/Edit/Delete-Flows für Chargen
-- echte Create/Edit/Delete-Flows für Reaktoren
+- echte Create/Edit/Status-Flows fuer Chargen
+- echte Create/Edit/Status-Flows fuer Reaktoren
 - Formulare im Frontend
 - Validierung im Backend
 - Fehlerzustände sauber behandeln
@@ -98,12 +98,18 @@ Umfang:
 - Reaktor bearbeiten
 - Reaktor stilllegen / Status ändern
 - UI-Feedback (loading, success, error)
+- Detailendpunkte fuer Charge und Reaktor
+- Backend-Tests fuer Create, Update, Detail und Statuswechsel
 
 Akzeptanzkriterien:
 - Chargen und Reaktoren vollständig im UI pflegbar
 - Keine Seed-Abhängigkeit für sinnvolle Nutzung
 - Alle Kernfelder validiert
 - Fehler im UI verständlich sichtbar
+
+Offen nach diesem Schritt:
+- Delete-/Archivierungsstrategie bewusst separat halten
+- Alembic als naechsten Schritt nachziehen
 
 ---
 

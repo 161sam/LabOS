@@ -24,6 +24,8 @@ class Reactor(SQLModel, table=True):
     status: str = 'online'
     volume_l: float = 1.0
     location: Optional[str] = None
+    last_cleaned_at: Optional[datetime] = None
+    notes: Optional[str] = None
 
 
 class Sensor(SQLModel, table=True):

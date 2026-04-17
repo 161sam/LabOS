@@ -10,7 +10,14 @@ def seed_data() -> None:
         if has_charge:
             return
 
-        reactor = Reactor(name='Reaktor-A1', reactor_type='mobil', status='online', volume_l=1.6, location='Regal A')
+        reactor = Reactor(
+            name='Reaktor-A1',
+            reactor_type='mobil',
+            status='online',
+            volume_l=1.6,
+            location='Regal A',
+            notes='Seed-Reaktor fuer lokale Entwicklung',
+        )
         session.add(reactor)
         session.commit()
         session.refresh(reactor)
