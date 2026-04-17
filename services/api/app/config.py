@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     redis_url: str = 'redis://localhost:6379/0'
     abrain_base_url: str = 'http://abrain:8080'
     storage_path: str = 'storage'
+    photo_max_upload_bytes: int = 8 * 1024 * 1024
 
 
 settings = Settings()

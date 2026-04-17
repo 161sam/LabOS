@@ -26,8 +26,11 @@ async function getSummary(): Promise<DashboardSummary> {
       due_today_tasks: 0,
       critical_alerts: 0,
       open_alerts: 0,
+      photo_count: 0,
+      uploads_last_7_days: 0,
       sensor_overview: [],
       recent_alerts: [],
+      recent_photos: [],
       message: 'API noch nicht erreichbar – Frontend läuft trotzdem.'
     };
   }
@@ -52,7 +55,7 @@ export default async function DashboardPage() {
       <div className="grid cols-3">
         <Card title="Offene Tasks"><div className="kpi">{data.open_tasks}</div></Card>
         <Card title="Heute faellig"><div className="kpi">{data.due_today_tasks}</div></Card>
-        <Card title="Sensorfehler"><div className="kpi">{data.error_sensors}</div></Card>
+        <Card title="Fotos gesamt"><div className="kpi">{data.photo_count}</div></Card>
       </div>
 
       <div className="grid cols-2">
@@ -89,16 +92,27 @@ export default async function DashboardPage() {
 
         <Card title="Hinweis">
           <p>{data.message}</p>
-          <p className="muted">Dashboard zeigt jetzt neben Sensorik auch offene Aufgaben und kritische Alerts fuer den Laboralltag.</p>
+          <p className="muted">Dashboard zeigt jetzt neben Sensorik und Aufgaben auch die letzten visuellen Uploads fuer die Labor-Dokumentation.</p>
         </Card>
       </div>
 
-      <div className="grid cols-2">
+      <div className="grid cols-3">
+        <Card title="Sensorfehler">
+          <div className="kpi">{data.error_sensors}</div>
+        </Card>
+
         <Card title="Kritische Alerts">
           <div className="kpi">{data.critical_alerts}</div>
           <p className="muted">Unaufgeloeste Alerts mit hoher oder kritischer Relevanz bleiben damit operativ sichtbar.</p>
         </Card>
 
+        <Card title="Uploads 7 Tage">
+          <div className="kpi">{data.uploads_last_7_days}</div>
+          <p className="muted">Neue Bilddokumentation der letzten sieben Tage fuer Verlauf und Nachweis.</p>
+        </Card>
+      </div>
+
+      <div className="grid cols-2">
         <Card title="Letzte Alerts">
           {data.recent_alerts.length === 0 ? (
             <p className="muted">Noch keine Alerts vorhanden.</p>
@@ -124,6 +138,36 @@ export default async function DashboardPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+        </Card>
+
+        <Card title="Letzte Uploads">
+          {data.recent_photos.length === 0 ? (
+            <p className="muted">Noch keine Fotos vorhanden.</p>
+          ) : (
+            <div className="photoGrid">
+              {data.recent_photos.map((photo) => (
+                <a
+                  key={photo.id}
+                  href={`${apiBase}${photo.file_url}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="photoTile"
+                >
+                  <img
+                    className="photoThumb"
+                    src={`${apiBase}${photo.file_url}`}
+                    alt={photo.title || photo.original_filename}
+                  />
+                  <div className="photoMeta">
+                    <strong>{photo.title || photo.original_filename}</strong>
+                    <span className="muted">
+                      {photo.charge_name || photo.reactor_name || 'Nicht zugeordnet'}
+                    </span>
+                  </div>
+                </a>
+              ))}
             </div>
           )}
         </Card>

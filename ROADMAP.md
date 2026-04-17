@@ -15,10 +15,11 @@ Aktueller Stand:
   - Reaktoren mit CRUD-Basis
   - Sensorik V1 mit Werte-Ingest und Verlauf
   - Tasks + Alerts V1
+  - Foto Upload + Vision Basis V1
   - Wiki
   - ABrain-Status
 - Seed-Daten vorhanden
-- API-Tests fuer Healthcheck, Charge-CRUD, Reactor-CRUD, Sensorik, Tasks und Alerts vorhanden
+- API-Tests fuer Healthcheck, Charge-CRUD, Reactor-CRUD, Sensorik, Tasks, Alerts und Fotos vorhanden
 - Alembic-Basis fuer reproduzierbare Migrationen vorhanden
 
 Ziel ist eine lokal betreibbare, modulare, skalierbare Labor-App für Raspberry Pi 4/5 und spätere Erweiterung auf Multi-Node-Setups.
@@ -244,16 +245,19 @@ Akzeptanzkriterien:
 ---
 
 ## v0.1.6 – Foto- und Vision-Basis
+Status: umgesetzt als aktueller Entwicklungsschritt
+
 Ziele:
 - visuelle Dokumentation und einfache Bildauswertung vorbereiten
 
 Umfang:
 - Foto-Upload
-- Zuordnung zu Charge/Reaktor/Ereignis
+- Zuordnung zu Charge/Reaktor
 - Foto-Timeline
 - Storage-Konzept
 - Vision-Service-Stubs
-- erste Metadatenextraktion
+- Dashboard-KPIs und letzte Uploads
+- API fuer Dateiausgabe und Metadatenpflege
 
 Später anschließbar:
 - Füllstandserkennung
@@ -266,6 +270,11 @@ Akzeptanzkriterien:
 - Fotos werden gespeichert und angezeigt
 - Fotos sind Objekten zugeordnet
 - Grundstruktur für Vision-Pipeline vorhanden
+
+Offen nach diesem Schritt:
+- noch keine echte Bildanalyse
+- noch keine Kamera-Streams oder automatische Bewertung
+- noch keine Rechte- und Freigabelogik fuer Uploads
 
 ---
 

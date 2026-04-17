@@ -108,6 +108,29 @@ class Alert(SQLModel, table=True):
     resolved_at: Optional[datetime] = None
 
 
+class Photo(SQLModel, table=True):
+    __table_args__ = (
+        Index('ix_photo_created_at', 'created_at'),
+        Index('ix_photo_charge_id', 'charge_id'),
+        Index('ix_photo_reactor_id', 'reactor_id'),
+        Index('ix_photo_captured_at', 'captured_at'),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    filename: str
+    original_filename: str
+    mime_type: str
+    size_bytes: int
+    storage_path: str
+    title: Optional[str] = None
+    notes: Optional[str] = None
+    charge_id: Optional[int] = None
+    reactor_id: Optional[int] = None
+    created_at: datetime = Field(default_factory=_utcnow)
+    uploaded_by: Optional[str] = None
+    captured_at: Optional[datetime] = None
+
+
 class WikiPage(SQLModel, table=True):
     slug: str = Field(primary_key=True)
     title: str

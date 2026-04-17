@@ -151,6 +151,31 @@ export type Alert = {
   resolved_at: string | null;
 };
 
+export type Photo = {
+  id: number;
+  filename: string;
+  original_filename: string;
+  mime_type: string;
+  size_bytes: number;
+  storage_path: string;
+  title: string | null;
+  notes: string | null;
+  charge_id: number | null;
+  reactor_id: number | null;
+  created_at: string;
+  uploaded_by: string | null;
+  captured_at: string | null;
+  charge_name: string | null;
+  reactor_name: string | null;
+  file_url: string;
+};
+
+export type PhotoAnalysisStatus = {
+  photo_id: number;
+  status: string;
+  detail: string;
+};
+
 export type DashboardSummary = {
   active_charges: number;
   reactors_online: number;
@@ -160,7 +185,10 @@ export type DashboardSummary = {
   due_today_tasks: number;
   critical_alerts: number;
   open_alerts: number;
+  photo_count: number;
+  uploads_last_7_days: number;
   sensor_overview: Sensor[];
   recent_alerts: Alert[];
+  recent_photos: Photo[];
   message: string;
 };

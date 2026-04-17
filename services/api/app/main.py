@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .db import run_migrations
-from .routers import abrain, alerts, charges, dashboard, reactors, sensors, tasks, wiki
+from .routers import abrain, alerts, charges, dashboard, photos, reactors, sensors, tasks, wiki
 from .seed import seed_data
 
 
@@ -42,6 +42,7 @@ app.include_router(dashboard.router, prefix=api_prefix)
 app.include_router(charges.router, prefix=api_prefix)
 app.include_router(reactors.router, prefix=api_prefix)
 app.include_router(sensors.router, prefix=api_prefix)
+app.include_router(photos.router, prefix=api_prefix)
 app.include_router(tasks.router, prefix=api_prefix)
 app.include_router(alerts.router, prefix=api_prefix)
 app.include_router(wiki.router, prefix=api_prefix)

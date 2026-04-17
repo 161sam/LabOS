@@ -12,6 +12,7 @@ const navItems = [
   ['Chargen', '/charges'],
   ['Reaktoren', '/reactors'],
   ['Sensoren', '/sensors'],
+  ['Fotos', '/photos'],
   ['Aufgaben', '/tasks'],
   ['Alerts', '/alerts'],
   ['Wiki', '/wiki'],

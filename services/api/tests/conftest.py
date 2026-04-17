@@ -10,12 +10,15 @@ if str(API_ROOT) not in sys.path:
     sys.path.insert(0, str(API_ROOT))
 
 from app import db, seed
+from app.config import settings
 from app.main import app
 
 
 @pytest.fixture()
 def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     db_path = tmp_path / 'labos-test.db'
+    storage_path = tmp_path / 'storage'
+    storage_path.mkdir(parents=True, exist_ok=True)
     test_engine = create_engine(
         f'sqlite:///{db_path}',
         echo=False,
@@ -23,6 +26,7 @@ def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     )
     monkeypatch.setattr(db, 'engine', test_engine)
     monkeypatch.setattr(seed, 'engine', test_engine)
+    monkeypatch.setattr(settings, 'storage_path', str(storage_path))
 
     with TestClient(app) as test_client:
         yield test_client

@@ -322,6 +322,53 @@ class AlertRead(AppSchema):
     resolved_at: datetime | None
 
 
+class PhotoPayload(AppSchema):
+    title: str | None = Field(default=None, max_length=160)
+    notes: str | None = Field(default=None, max_length=4000)
+    charge_id: int | None = Field(default=None, ge=1)
+    reactor_id: int | None = Field(default=None, ge=1)
+    uploaded_by: str | None = Field(default=None, max_length=120)
+    captured_at: datetime | None = None
+
+    @field_validator('title', 'notes', 'uploaded_by')
+    @classmethod
+    def normalize_optional_text(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class PhotoUploadData(PhotoPayload):
+    pass
+
+
+class PhotoUpdate(PhotoPayload):
+    pass
+
+
+class PhotoRead(AppSchema):
+    id: int
+    filename: str
+    original_filename: str
+    mime_type: str
+    size_bytes: int
+    storage_path: str
+    title: str | None
+    notes: str | None
+    charge_id: int | None
+    reactor_id: int | None
+    created_at: datetime
+    uploaded_by: str | None
+    captured_at: datetime | None
+    charge_name: str | None = None
+    reactor_name: str | None = None
+    file_url: str
+
+
+class PhotoAnalysisStatusRead(AppSchema):
+    photo_id: int
+    status: str
+    detail: str
+
+
 class DashboardSummaryRead(AppSchema):
     active_charges: int
     reactors_online: int
@@ -331,6 +378,9 @@ class DashboardSummaryRead(AppSchema):
     due_today_tasks: int
     critical_alerts: int
     open_alerts: int
+    photo_count: int
+    uploads_last_7_days: int
     sensor_overview: list[SensorOverviewRead]
     recent_alerts: list[AlertRead]
+    recent_photos: list[PhotoRead]
     message: str

@@ -15,7 +15,7 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
     inspector = inspect(engine)
 
     table_names = set(inspector.get_table_names())
-    assert {'charge', 'reactor', 'sensor', 'sensorvalue', 'task', 'alert', 'wikipage'} <= table_names
+    assert {'charge', 'reactor', 'sensor', 'sensorvalue', 'task', 'alert', 'photo', 'wikipage'} <= table_names
 
     charge_columns = {column['name'] for column in inspector.get_columns('charge')}
     assert {'id', 'name', 'species', 'status', 'volume_l', 'reactor_id', 'start_date', 'notes'} <= charge_columns
@@ -69,6 +69,23 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
         'resolved_at',
     } <= alert_columns
 
+    photo_columns = {column['name'] for column in inspector.get_columns('photo')}
+    assert {
+        'id',
+        'filename',
+        'original_filename',
+        'mime_type',
+        'size_bytes',
+        'storage_path',
+        'title',
+        'notes',
+        'charge_id',
+        'reactor_id',
+        'created_at',
+        'uploaded_by',
+        'captured_at',
+    } <= photo_columns
+
     charge_indexes = {index['name'] for index in inspector.get_indexes('charge')}
     assert {'ix_charge_name', 'ix_charge_status', 'ix_charge_reactor_id', 'ix_charge_start_date'} <= charge_indexes
 
@@ -102,8 +119,16 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
         'ix_alert_created_at',
     } <= alert_indexes
 
+    photo_indexes = {index['name'] for index in inspector.get_indexes('photo')}
+    assert {
+        'ix_photo_created_at',
+        'ix_photo_charge_id',
+        'ix_photo_reactor_id',
+        'ix_photo_captured_at',
+    } <= photo_indexes
+
     with engine.connect() as connection:
         version = connection.execute(text('SELECT version_num FROM alembic_version')).scalar_one()
-        assert version == '20260417_0003'
+        assert version == '20260417_0004'
 
     engine.dispose()
