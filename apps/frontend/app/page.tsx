@@ -20,11 +20,14 @@ async function getSummary(): Promise<DashboardSummary> {
     return {
       active_charges: 0,
       reactors_online: 0,
-      open_alerts: 0,
-      today_tasks: 0,
       active_sensors: 0,
       error_sensors: 0,
+      open_tasks: 0,
+      due_today_tasks: 0,
+      critical_alerts: 0,
+      open_alerts: 0,
       sensor_overview: [],
+      recent_alerts: [],
       message: 'API noch nicht erreichbar – Frontend läuft trotzdem.'
     };
   }
@@ -47,8 +50,8 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid cols-3">
-        <Card title="Offene Alerts"><div className="kpi">{data.open_alerts}</div></Card>
-        <Card title="Heutige Tasks"><div className="kpi">{data.today_tasks}</div></Card>
+        <Card title="Offene Tasks"><div className="kpi">{data.open_tasks}</div></Card>
+        <Card title="Heute faellig"><div className="kpi">{data.due_today_tasks}</div></Card>
         <Card title="Sensorfehler"><div className="kpi">{data.error_sensors}</div></Card>
       </div>
 
@@ -86,7 +89,43 @@ export default async function DashboardPage() {
 
         <Card title="Hinweis">
           <p>{data.message}</p>
-          <p className="muted">Sensorik V1 liefert jetzt letzte Werte, Status und Verlauf als Grundlage fuer spaetere Alerts und Automatisierung.</p>
+          <p className="muted">Dashboard zeigt jetzt neben Sensorik auch offene Aufgaben und kritische Alerts fuer den Laboralltag.</p>
+        </Card>
+      </div>
+
+      <div className="grid cols-2">
+        <Card title="Kritische Alerts">
+          <div className="kpi">{data.critical_alerts}</div>
+          <p className="muted">Unaufgeloeste Alerts mit hoher oder kritischer Relevanz bleiben damit operativ sichtbar.</p>
+        </Card>
+
+        <Card title="Letzte Alerts">
+          {data.recent_alerts.length === 0 ? (
+            <p className="muted">Noch keine Alerts vorhanden.</p>
+          ) : (
+            <div className="tableWrap">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Titel</th>
+                    <th>Severity</th>
+                    <th>Status</th>
+                    <th>Erstellt</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.recent_alerts.map((alert) => (
+                    <tr key={alert.id}>
+                      <td>{alert.title}</td>
+                      <td><span className={`badge badge-${alert.severity}`}>{alert.severity}</span></td>
+                      <td><span className={`badge badge-${alert.status}`}>{alert.status}</span></td>
+                      <td>{new Date(alert.created_at).toLocaleString('de-DE')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </Card>
       </div>
     </div>

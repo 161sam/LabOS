@@ -36,6 +36,41 @@ class SensorStatus(str, Enum):
     maintenance = 'maintenance'
 
 
+class TaskStatus(str, Enum):
+    open = 'open'
+    doing = 'doing'
+    blocked = 'blocked'
+    done = 'done'
+
+
+class TaskPriority(str, Enum):
+    low = 'low'
+    normal = 'normal'
+    high = 'high'
+    critical = 'critical'
+
+
+class AlertSeverity(str, Enum):
+    info = 'info'
+    warning = 'warning'
+    high = 'high'
+    critical = 'critical'
+
+
+class AlertStatus(str, Enum):
+    open = 'open'
+    acknowledged = 'acknowledged'
+    resolved = 'resolved'
+
+
+class AlertSourceType(str, Enum):
+    system = 'system'
+    sensor = 'sensor'
+    charge = 'charge'
+    reactor = 'reactor'
+    manual = 'manual'
+
+
 class AppSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -212,12 +247,90 @@ class SensorValueRead(AppSchema):
     recorded_at: datetime
 
 
+class TaskPayload(AppSchema):
+    title: str = Field(min_length=1, max_length=160)
+    description: str | None = Field(default=None, max_length=4000)
+    status: TaskStatus = TaskStatus.open
+    priority: TaskPriority = TaskPriority.normal
+    due_at: datetime | None = None
+    charge_id: int | None = Field(default=None, ge=1)
+    reactor_id: int | None = Field(default=None, ge=1)
+
+    @field_validator('title')
+    @classmethod
+    def normalize_required_text(cls, value: str) -> str:
+        return _normalize_required_text(value)
+
+    @field_validator('description')
+    @classmethod
+    def normalize_optional_text(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class TaskCreate(TaskPayload):
+    pass
+
+
+class TaskUpdate(TaskPayload):
+    pass
+
+
+class TaskStatusUpdate(AppSchema):
+    status: TaskStatus
+
+
+class TaskRead(AppSchema):
+    id: int
+    title: str
+    description: str | None
+    status: TaskStatus
+    priority: TaskPriority
+    due_at: datetime | None
+    charge_id: int | None
+    reactor_id: int | None
+    created_at: datetime
+    updated_at: datetime
+    completed_at: datetime | None
+    charge_name: str | None = None
+    reactor_name: str | None = None
+
+
+class AlertCreate(AppSchema):
+    title: str = Field(min_length=1, max_length=160)
+    message: str = Field(min_length=1, max_length=4000)
+    severity: AlertSeverity = AlertSeverity.warning
+    status: AlertStatus = AlertStatus.open
+    source_type: AlertSourceType = AlertSourceType.manual
+    source_id: int | None = Field(default=None, ge=1)
+
+    @field_validator('title', 'message')
+    @classmethod
+    def normalize_required_text(cls, value: str) -> str:
+        return _normalize_required_text(value)
+
+
+class AlertRead(AppSchema):
+    id: int
+    title: str
+    message: str
+    severity: AlertSeverity
+    status: AlertStatus
+    source_type: AlertSourceType
+    source_id: int | None
+    created_at: datetime
+    acknowledged_at: datetime | None
+    resolved_at: datetime | None
+
+
 class DashboardSummaryRead(AppSchema):
     active_charges: int
     reactors_online: int
-    open_alerts: int
-    today_tasks: int
     active_sensors: int
     error_sensors: int
+    open_tasks: int
+    due_today_tasks: int
+    critical_alerts: int
+    open_alerts: int
     sensor_overview: list[SensorOverviewRead]
+    recent_alerts: list[AlertRead]
     message: str

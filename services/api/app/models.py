@@ -67,18 +67,45 @@ class SensorValue(SQLModel, table=True):
 
 
 class Task(SQLModel, table=True):
+    __table_args__ = (
+        Index('ix_task_status', 'status'),
+        Index('ix_task_priority', 'priority'),
+        Index('ix_task_due_at', 'due_at'),
+        Index('ix_task_charge_id', 'charge_id'),
+        Index('ix_task_reactor_id', 'reactor_id'),
+    )
+
     id: Optional[int] = Field(default=None, primary_key=True)
     title: str
+    description: Optional[str] = None
     status: str = 'open'
-    due_date: Optional[date] = None
+    priority: str = 'normal'
+    due_at: Optional[datetime] = None
+    charge_id: Optional[int] = None
+    reactor_id: Optional[int] = None
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
+    completed_at: Optional[datetime] = None
 
 
 class Alert(SQLModel, table=True):
+    __table_args__ = (
+        Index('ix_alert_severity', 'severity'),
+        Index('ix_alert_status', 'status'),
+        Index('ix_alert_source_type', 'source_type'),
+        Index('ix_alert_created_at', 'created_at'),
+    )
+
     id: Optional[int] = Field(default=None, primary_key=True)
-    level: str = 'info'
+    title: str
     message: str
+    severity: str = 'info'
     status: str = 'open'
+    source_type: str = 'system'
+    source_id: Optional[int] = None
     created_at: datetime = Field(default_factory=_utcnow)
+    acknowledged_at: Optional[datetime] = None
+    resolved_at: Optional[datetime] = None
 
 
 class WikiPage(SQLModel, table=True):

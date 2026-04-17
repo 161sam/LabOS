@@ -30,10 +30,50 @@ export const sensorStatusOptions = [
   { value: 'maintenance', label: 'Wartung' },
 ] as const;
 
+export const taskStatusOptions = [
+  { value: 'open', label: 'Offen' },
+  { value: 'doing', label: 'In Arbeit' },
+  { value: 'blocked', label: 'Blockiert' },
+  { value: 'done', label: 'Erledigt' },
+] as const;
+
+export const taskPriorityOptions = [
+  { value: 'low', label: 'Niedrig' },
+  { value: 'normal', label: 'Normal' },
+  { value: 'high', label: 'Hoch' },
+  { value: 'critical', label: 'Kritisch' },
+] as const;
+
+export const alertSeverityOptions = [
+  { value: 'info', label: 'Info' },
+  { value: 'warning', label: 'Warnung' },
+  { value: 'high', label: 'Hoch' },
+  { value: 'critical', label: 'Kritisch' },
+] as const;
+
+export const alertStatusOptions = [
+  { value: 'open', label: 'Offen' },
+  { value: 'acknowledged', label: 'Quittiert' },
+  { value: 'resolved', label: 'Geloest' },
+] as const;
+
+export const alertSourceTypeOptions = [
+  { value: 'manual', label: 'Manuell' },
+  { value: 'sensor', label: 'Sensor' },
+  { value: 'charge', label: 'Charge' },
+  { value: 'reactor', label: 'Reaktor' },
+  { value: 'system', label: 'System' },
+] as const;
+
 export type ChargeStatus = (typeof chargeStatusOptions)[number]['value'];
 export type ReactorStatus = (typeof reactorStatusOptions)[number]['value'];
 export type SensorType = (typeof sensorTypeOptions)[number]['value'];
 export type SensorStatus = (typeof sensorStatusOptions)[number]['value'];
+export type TaskStatus = (typeof taskStatusOptions)[number]['value'];
+export type TaskPriority = (typeof taskPriorityOptions)[number]['value'];
+export type AlertSeverity = (typeof alertSeverityOptions)[number]['value'];
+export type AlertStatus = (typeof alertStatusOptions)[number]['value'];
+export type AlertSourceType = (typeof alertSourceTypeOptions)[number]['value'];
 
 export type Charge = {
   id: number;
@@ -82,13 +122,45 @@ export type SensorValue = {
   recorded_at: string;
 };
 
+export type Task = {
+  id: number;
+  title: string;
+  description: string | null;
+  status: TaskStatus;
+  priority: TaskPriority;
+  due_at: string | null;
+  charge_id: number | null;
+  reactor_id: number | null;
+  created_at: string;
+  updated_at: string;
+  completed_at: string | null;
+  charge_name: string | null;
+  reactor_name: string | null;
+};
+
+export type Alert = {
+  id: number;
+  title: string;
+  message: string;
+  severity: AlertSeverity;
+  status: AlertStatus;
+  source_type: AlertSourceType;
+  source_id: number | null;
+  created_at: string;
+  acknowledged_at: string | null;
+  resolved_at: string | null;
+};
+
 export type DashboardSummary = {
   active_charges: number;
   reactors_online: number;
-  open_alerts: number;
-  today_tasks: number;
   active_sensors: number;
   error_sensors: number;
+  open_tasks: number;
+  due_today_tasks: number;
+  critical_alerts: number;
+  open_alerts: number;
   sensor_overview: Sensor[];
+  recent_alerts: Alert[];
   message: string;
 };

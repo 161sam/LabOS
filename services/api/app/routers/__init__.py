@@ -1,3 +1,3 @@
-from . import abrain, charges, dashboard, reactors, sensors, wiki
+from . import abrain, alerts, charges, dashboard, reactors, sensors, tasks, wiki
 
-__all__ = ['abrain', 'charges', 'dashboard', 'reactors', 'sensors', 'wiki']
+__all__ = ['abrain', 'alerts', 'charges', 'dashboard', 'reactors', 'sensors', 'tasks', 'wiki']

@@ -8,7 +8,7 @@ LabOS ist ein Raspberry-Pi-taugliches Labor-Betriebssystem für Planung, Protoko
 - Chargenverwaltung mit Create/Edit/Statuswechsel
 - Reaktorverwaltung mit Create/Edit/Statuswechsel
 - Sensorik V1 mit CRUD, Werte-Ingest und Verlauf
-- Task- und Alert-Basis
+- Tasks + Alerts V1 mit operativen Dashboards
 - integriertes Wiki auf Markdown-Basis
 - ABrain-Connector als Platzhalter
 - Docker-Compose-Setup für lokale Entwicklung
@@ -40,7 +40,7 @@ Danach:
 - API: http://localhost:8000
 - API Docs: http://localhost:8000/docs
 
-Beim API-Start werden jetzt zuerst Alembic-Migrationen bis `head` ausgefuehrt. Danach wird nur dann Seed-Datenmaterial eingespielt, wenn noch keine Charges vorhanden sind.
+Beim API-Start werden zuerst Alembic-Migrationen bis `head` ausgefuehrt. Danach ergänzt der Seed-Flow nur fehlende Demo-Daten für Charges, Wiki, Sensoren, Tasks und Alerts.
 
 ## CRUD-Stand fuer Chargen und Reaktoren
 
@@ -135,6 +135,102 @@ Verlauf abrufen:
 curl "http://localhost:8000/api/v1/sensors/1/values?limit=20"
 ```
 
+## Tasks + Alerts V1
+
+LabOS bildet jetzt auch operative Arbeitsschritte und Laborhinweise direkt im System ab.
+
+Backend-Endpunkte fuer Tasks:
+
+- `GET /api/v1/tasks`
+- `GET /api/v1/tasks/{id}`
+- `POST /api/v1/tasks`
+- `PUT /api/v1/tasks/{id}`
+- `PATCH /api/v1/tasks/{id}/status`
+
+Backend-Endpunkte fuer Alerts:
+
+- `GET /api/v1/alerts`
+- `GET /api/v1/alerts/{id}`
+- `POST /api/v1/alerts`
+- `PATCH /api/v1/alerts/{id}/ack`
+- `PATCH /api/v1/alerts/{id}/resolve`
+
+Task-Felder:
+
+- `title`
+- `description`
+- `status`
+- `priority`
+- `due_at`
+- `charge_id`
+- `reactor_id`
+- `created_at`
+- `updated_at`
+- `completed_at`
+
+Task-Status:
+
+- `open`
+- `doing`
+- `blocked`
+- `done`
+
+Task-Prioritaeten:
+
+- `low`
+- `normal`
+- `high`
+- `critical`
+
+Alert-Felder:
+
+- `title`
+- `message`
+- `severity`
+- `status`
+- `source_type`
+- `source_id`
+- `created_at`
+- `acknowledged_at`
+- `resolved_at`
+
+Alert-Severity:
+
+- `info`
+- `warning`
+- `high`
+- `critical`
+
+Alert-Status:
+
+- `open`
+- `acknowledged`
+- `resolved`
+
+UI-Flows:
+
+- `/tasks` bietet Liste, Filter, Create/Edit und Statuswechsel
+- `/alerts` zeigt offene und historische Alerts, erlaubt manuelles Anlegen sowie `ack` und `resolve`
+- das Dashboard zeigt offene Tasks, heute faellige Tasks, kritische Alerts und die letzten Alerts
+
+Manuelle API-Beispiele:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Probe Charge X","status":"open","priority":"high","charge_id":1}'
+```
+
+```bash
+curl -X POST http://localhost:8000/api/v1/alerts \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Temperatur Warnung","message":"Medium ueber Soll","severity":"high","source_type":"sensor","source_id":1}'
+```
+
+```bash
+curl -X PATCH http://localhost:8000/api/v1/alerts/1/ack
+```
+
 ## Migrationen
 
 Alembic liegt unter `services/api/alembic`. Die Baseline-Migration ersetzt die bisherige implizite Schema-Reparaturlogik und bildet die aktuelle Core-Struktur reproduzierbar ab.
@@ -192,6 +288,12 @@ Nur Sensorik-API pruefen:
 .venv/bin/pytest services/api/tests/test_sensors_api.py -q
 ```
 
+Nur Tasks- und Alerts-API pruefen:
+
+```bash
+.venv/bin/pytest services/api/tests/test_tasks_api.py services/api/tests/test_alerts_api.py -q
+```
+
 Frontend-Build lokal:
 
 ```bash
@@ -203,14 +305,16 @@ npm run build
 ## Noch offen
 
 - Delete-/Archivierungsstrategie fuer Chargen und Reaktoren
+- automatische Sensor-zu-Alert-Regeln
+- Benachrichtigungskanaele fuer Alerts
 - Verknuepfung von Tasks, Sensorik und Wiki mit den CRUD-Objekten
 - Relationen und fachliche Constraints fuer weitere Module gezielt erweitern
-- Alerts, Aufgaben und Automationslogik auf Sensordaten aufbauen
+- Automationslogik kontrolliert auf Sensordaten und Aufgaben aufbauen
 
 ## Nächste Schritte
 
-1. Alerts und Tasks auf Sensordaten aufsetzen
-2. ABrain-Integration auf echte LabOS-Daten erweitern
-3. Auth und Rollenmodell ergaenzen
+1. Sensorbasierte Alert-Regeln und einfache Eskalationen einziehen
+2. Tasks enger mit Chargen, Reaktoren und Wiki verknuepfen
+3. ABrain-Integration auf echte LabOS-Daten erweitern
 4. Delete-/Archivierungsstrategie sauber festziehen
 5. Automationsregeln kontrolliert anbinden

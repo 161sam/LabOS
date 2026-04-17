@@ -1,0 +1,226 @@
+{
+  "main": {
+    "id": "bad6d402963996e0",
+    "type": "split",
+    "children": [
+      {
+        "id": "aa2dc4dbc6515873",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "d0e2a78fbe1b4f4f",
+            "type": "leaf",
+            "state": {
+              "type": "canvas",
+              "state": {
+                "file": "ESN.canvas",
+                "viewState": {
+                  "x": -2.5,
+                  "y": 5,
+                  "zoom": 0
+                }
+              },
+              "icon": "lucide-layout-dashboard",
+              "title": "ESN"
+            }
+          },
+          {
+            "id": "30abc14e6d0c0d3a",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "LabOS/LabOS.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "LabOS"
+            }
+          }
+        ],
+        "currentTab": 1
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "07dfbffd52ab1bd0",
+    "type": "split",
+    "children": [
+      {
+        "id": "2919a4788d740fa1",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "c61888a4df7f45f7",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "aabbef5528f58d25",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "bcadbedb64b8c49e",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "bb5fc36ad3fef394",
+    "type": "split",
+    "children": [
+      {
+        "id": "41378a7c0e72607c",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "02871ff9437a6ece",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "ESN.canvas",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for ESN"
+            }
+          },
+          {
+            "id": "0dffb60f0a46a088",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "ESN.canvas",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from ESN"
+            }
+          },
+          {
+            "id": "ecb83b50511d1426",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "9de79f2d40ffca19",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "ESN.canvas"
+              },
+              "icon": "lucide-list",
+              "title": "Outline of ESN"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "bases:Create new base": false,
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false
+    }
+  },
+  "active": "30abc14e6d0c0d3a",
+  "lastOpenFiles": [
+    "Algenzucht/Algenzucht.md",
+    "LabOS/LabOS.md",
+    "LabOS",
+    "LAB-Handbuch/Lab/Templates/Lab_TEMPLATES.md",
+    "LAB-Handbuch/Lab/Templates/TEMPLATE 5 – SOP Referenz.md",
+    "LAB-Handbuch/Lab/Templates/TEMPLATE 4 – Auswertung.md",
+    "LAB-Handbuch/Lab/Templates/TEMPLATE 3 – Charge (Kultur-Tracking).md",
+    "LAB-Handbuch/Lab/Templates/TEMPLATE 2 – Laborjournal (täglich).md",
+    "LAB-Handbuch/Lab/Referenzen/Use Case.md",
+    "LAB-Handbuch/Lab/Templates/TEMPLATE 1 – Experiment.md",
+    "LAB-Handbuch/Lab/Templates",
+    "LAB-Handbuch/Lab/Referenzen",
+    "LAB-Handbuch/Lab/SOP",
+    "LAB-Handbuch/Lab/Chargen",
+    "Experiment",
+    "LAB-Handbuch/Lab",
+    "LAB-Handbuch/Lab/Referenzen/SYSTEM-ARCHITEKTUR.md",
+    "Labor-Geräte",
+    "LAB-Handbuch.md",
+    "LAB-Handbuch",
+    "LAB-Handbuch/Lab/Experimente/Experiment-Design.md",
+    "BioGas/BiogasReaktorSystem.md",
+    "Algenzucht/Untitled.md",
+    "Labor-Geräte/Spektrophotometer/Spektrophotometer.md",
+    "Labor-Geräte/Sterile Luftstation/SterileLuftstation.md",
+    "Labor-Geräte/Agar-Setup/Agar-Setup.md",
+    "Labor-Geräte/Licht/Lichtsetup.md",
+    "Datenlogging und Automatisierung/Datenlogging und Automatisierung.md",
+    "LAB-Handbuch/Lab/Referenzen/Mikroalgen-Labor – Systemhandbuch.md",
+    "Labor-Geräte/Labor-Inkubator/Labor-Inkubator.md",
+    "Labor-Geräte/Zentrifuge/Zentrifugen.md",
+    "Labor-Geräte/Rüttler-Shaker/Rüttler-Shaker.md",
+    "LAB-Handbuch/Lab/Referenzen/Kontaminations-Atlas.md",
+    "LAB-Handbuch/Lab/SOP/SOP – Steriles Arbeiten.md",
+    "LAB-Handbuch/Lab/Referenzen/Freigabe-Workflow – Mikroalgen-Labor.md",
+    "LAB-Handbuch/Lab/Experimente",
+    "Projekt-Portfolio.canvas",
+    "ESN.canvas"
+  ]
+}

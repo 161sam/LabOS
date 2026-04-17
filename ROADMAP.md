@@ -14,10 +14,11 @@ Aktueller Stand:
   - Chargen mit CRUD-Basis
   - Reaktoren mit CRUD-Basis
   - Sensorik V1 mit Werte-Ingest und Verlauf
+  - Tasks + Alerts V1
   - Wiki
   - ABrain-Status
 - Seed-Daten vorhanden
-- API-Tests fuer Healthcheck, Charge-CRUD, Reactor-CRUD und Sensorik vorhanden
+- API-Tests fuer Healthcheck, Charge-CRUD, Reactor-CRUD, Sensorik, Tasks und Alerts vorhanden
 - Alembic-Basis fuer reproduzierbare Migrationen vorhanden
 
 Ziel ist eine lokal betreibbare, modulare, skalierbare Labor-App für Raspberry Pi 4/5 und spätere Erweiterung auf Multi-Node-Setups.
@@ -181,6 +182,8 @@ Offen nach diesem Schritt:
 ---
 
 ## v0.1.4 – Aufgaben, Planung und Alerts
+Status: umgesetzt als aktueller Entwicklungsschritt
+
 Ziele:
 - operative Laborarbeit im System abbilden
 
@@ -189,8 +192,11 @@ Umfang:
 - Fälligkeiten
 - Zustände (open, doing, done, blocked)
 - Alerts-Modul
-- Regelbasierte Benachrichtigung im System
+- manuelle Alerts mit Quittierung und Aufloesung
 - Dashboard-Widgets für heutige Aufgaben und kritische Alerts
+- Zuordnung von Tasks zu Chargen und Reaktoren
+- Seed-Daten fuer Aufgaben und Alerts
+- Backend-Tests fuer Task- und Alert-Flows
 
 Beispiele:
 - Probe ziehen
@@ -202,8 +208,12 @@ Beispiele:
 
 Akzeptanzkriterien:
 - Aufgaben lassen sich planen und abhaken
-- Alerts erscheinen automatisch im UI
+- Alerts erscheinen und sind im UI quittierbar bzw. aufloesbar
 - Chargen und Reaktoren können Aufgaben/Alerts zugeordnet werden
+
+Offen nach diesem Schritt:
+- automatische Sensor-zu-Alert-Regeln folgen bewusst spaeter
+- Benachrichtigungskanaele und Eskalationen sind noch nicht enthalten
 
 ---
 

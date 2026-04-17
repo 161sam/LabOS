@@ -1,0 +1,8 @@
+{
+	"nodes":[
+		{"id":"0a8a11de65b8abbb","type":"file","file":"Algenzucht/Algenzucht.md","x":-407,"y":-250,"width":400,"height":400},
+		{"id":"68c7f810bb822a1b","type":"file","file":"ModularSystem/ModularesSystem.md","x":-407,"y":920,"width":400,"height":400},
+		{"id":"83ca11b87b4e09b3","type":"file","file":"BioGas/BioGaseReaktor.md","x":-407,"y":320,"width":400,"height":400}
+	],
+	"edges":[]
+}
