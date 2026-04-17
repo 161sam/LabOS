@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from 'react';
 
 import { apiRequest } from '../lib/api';
 import {
+  Asset,
   Charge,
   Reactor,
   Task,
@@ -24,6 +25,7 @@ type TaskFormState = {
   due_at: string;
   charge_id: string;
   reactor_id: string;
+  asset_id: string;
 };
 
 type TaskFilters = {
@@ -40,6 +42,7 @@ function createEmptyTaskForm(): TaskFormState {
     due_at: '',
     charge_id: '',
     reactor_id: '',
+    asset_id: '',
   };
 }
 
@@ -52,6 +55,7 @@ function toTaskFormState(task: Task): TaskFormState {
     due_at: task.due_at ? task.due_at.slice(0, 16) : '',
     charge_id: task.charge_id ? String(task.charge_id) : '',
     reactor_id: task.reactor_id ? String(task.reactor_id) : '',
+    asset_id: task.asset_id ? String(task.asset_id) : '',
   };
 }
 
@@ -73,8 +77,13 @@ function badgeClass(tone: string) {
   return `badge badge-${tone}`;
 }
 
+function formatAssignment(task: Task) {
+  return [task.asset_name, task.reactor_name, task.charge_name].filter(Boolean).join(' / ') || 'Nicht zugeordnet';
+}
+
 export function TaskManager() {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [assets, setAssets] = useState<Asset[]>([]);
   const [charges, setCharges] = useState<Charge[]>([]);
   const [reactors, setReactors] = useState<Reactor[]>([]);
   const [filters, setFilters] = useState<TaskFilters>({ status: '', priority: '' });
@@ -100,12 +109,14 @@ export function TaskManager() {
     const path = params.size > 0 ? `/api/v1/tasks?${params.toString()}` : '/api/v1/tasks';
 
     try {
-      const [taskData, chargeData, reactorData] = await Promise.all([
+      const [taskData, assetData, chargeData, reactorData] = await Promise.all([
         apiRequest<Task[]>(path),
+        apiRequest<Asset[]>('/api/v1/assets'),
         apiRequest<Charge[]>('/api/v1/charges'),
         apiRequest<Reactor[]>('/api/v1/reactors'),
       ]);
       setTasks(taskData);
+      setAssets(assetData);
       setCharges(chargeData);
       setReactors(reactorData);
       setStatusDrafts(
@@ -163,6 +174,7 @@ export function TaskManager() {
       due_at: form.due_at || null,
       charge_id: form.charge_id ? Number(form.charge_id) : null,
       reactor_id: form.reactor_id ? Number(form.reactor_id) : null,
+      asset_id: form.asset_id ? Number(form.asset_id) : null,
     };
 
     try {
@@ -276,6 +288,17 @@ export function TaskManager() {
                   ))}
                 </select>
               </FormField>
+
+              <FormField label="Asset / Device">
+                <select className="input" value={form.asset_id} onChange={(event) => setFormValue('asset_id', event.target.value)}>
+                  <option value="">Nicht zugeordnet</option>
+                  {assets.map((asset) => (
+                    <option key={asset.id} value={asset.id}>
+                      {asset.name}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
             </div>
 
             <FormField label="Beschreibung">
@@ -376,7 +399,7 @@ export function TaskManager() {
                         </div>
                       </td>
                       <td>{formatDateTime(task.due_at)}</td>
-                      <td>{task.charge_name || task.reactor_name || 'Nicht zugeordnet'}</td>
+                      <td>{formatAssignment(task)}</td>
                       <td>
                         <button className="button buttonSecondary buttonCompact" type="button" onClick={() => void startEdit(task.id)}>
                           Bearbeiten

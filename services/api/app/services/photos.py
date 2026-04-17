@@ -7,7 +7,7 @@ from fastapi import HTTPException, UploadFile, status
 from sqlmodel import Session, select
 
 from ..config import settings
-from ..models import Charge, Photo, Reactor, _utcnow
+from ..models import Asset, Charge, Photo, Reactor, _utcnow
 from ..schemas import PhotoRead, PhotoUpdate, PhotoUploadData
 
 _ALLOWED_MIME_EXTENSIONS = {
@@ -21,6 +21,7 @@ def list_photos(
     session: Session,
     charge_id: int | None = None,
     reactor_id: int | None = None,
+    asset_id: int | None = None,
     latest: bool = False,
     limit: int | None = None,
 ) -> list[PhotoRead]:
@@ -29,6 +30,8 @@ def list_photos(
         statement = statement.where(Photo.charge_id == charge_id)
     if reactor_id is not None:
         statement = statement.where(Photo.reactor_id == reactor_id)
+    if asset_id is not None:
+        statement = statement.where(Photo.asset_id == asset_id)
 
     statement = statement.order_by(Photo.created_at.desc(), Photo.id.desc())
     if limit is not None:
@@ -66,7 +69,7 @@ async def create_photo_upload(
     upload: UploadFile,
     payload: PhotoUploadData,
 ) -> PhotoRead:
-    _validate_references(session, payload.charge_id, payload.reactor_id)
+    _validate_references(session, payload.charge_id, payload.reactor_id, payload.asset_id)
     _validate_upload(upload)
 
     file_bytes = await upload.read()
@@ -89,6 +92,7 @@ async def create_photo_upload(
         notes=payload.notes,
         charge_id=payload.charge_id,
         reactor_id=payload.reactor_id,
+        asset_id=payload.asset_id,
         uploaded_by=payload.uploaded_by,
         captured_at=payload.captured_at,
     )
@@ -99,11 +103,12 @@ async def create_photo_upload(
 
 
 def update_photo(session: Session, photo: Photo, payload: PhotoUpdate) -> PhotoRead:
-    _validate_references(session, payload.charge_id, payload.reactor_id)
+    _validate_references(session, payload.charge_id, payload.reactor_id, payload.asset_id)
     photo.title = payload.title
     photo.notes = payload.notes
     photo.charge_id = payload.charge_id
     photo.reactor_id = payload.reactor_id
+    photo.asset_id = payload.asset_id
     photo.uploaded_by = payload.uploaded_by
     photo.captured_at = payload.captured_at
     session.add(photo)
@@ -157,6 +162,7 @@ def _serialize_photos(session: Session, photos: list[Photo]) -> list[PhotoRead]:
 
     charge_ids = sorted({photo.charge_id for photo in photos if photo.charge_id is not None})
     reactor_ids = sorted({photo.reactor_id for photo in photos if photo.reactor_id is not None})
+    asset_ids = sorted({photo.asset_id for photo in photos if photo.asset_id is not None})
     charge_names = (
         {charge.id: charge.name for charge in session.exec(select(Charge).where(Charge.id.in_(charge_ids))).all()}
         if charge_ids
@@ -168,6 +174,11 @@ def _serialize_photos(session: Session, photos: list[Photo]) -> list[PhotoRead]:
             for reactor in session.exec(select(Reactor).where(Reactor.id.in_(reactor_ids))).all()
         }
         if reactor_ids
+        else {}
+    )
+    asset_names = (
+        {asset.id: asset.name for asset in session.exec(select(Asset).where(Asset.id.in_(asset_ids))).all()}
+        if asset_ids
         else {}
     )
 
@@ -183,18 +194,25 @@ def _serialize_photos(session: Session, photos: list[Photo]) -> list[PhotoRead]:
             notes=photo.notes,
             charge_id=photo.charge_id,
             reactor_id=photo.reactor_id,
+            asset_id=photo.asset_id,
             created_at=photo.created_at,
             uploaded_by=photo.uploaded_by,
             captured_at=photo.captured_at,
             charge_name=charge_names.get(photo.charge_id),
             reactor_name=reactor_names.get(photo.reactor_id),
+            asset_name=asset_names.get(photo.asset_id),
             file_url=f'/api/v1/photos/{photo.id}/file',
         )
         for photo in photos
     ]
 
 
-def _validate_references(session: Session, charge_id: int | None, reactor_id: int | None) -> None:
+def _validate_references(
+    session: Session,
+    charge_id: int | None,
+    reactor_id: int | None,
+    asset_id: int | None,
+) -> None:
     if charge_id is not None and session.get(Charge, charge_id) is None:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -204,4 +222,9 @@ def _validate_references(session: Session, charge_id: int | None, reactor_id: in
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail='Referenced reactor does not exist',
+        )
+    if asset_id is not None and session.get(Asset, asset_id) is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail='Referenced asset does not exist',
         )

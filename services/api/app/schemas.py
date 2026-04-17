@@ -20,6 +20,28 @@ class ReactorStatus(str, Enum):
     maintenance = 'maintenance'
 
 
+class AssetType(str, Enum):
+    printer_3d = 'printer_3d'
+    microscope = 'microscope'
+    soldering_station = 'soldering_station'
+    power_supply = 'power_supply'
+    pump = 'pump'
+    server = 'server'
+    gpu_node = 'gpu_node'
+    sbc = 'sbc'
+    network_device = 'network_device'
+    lab_device = 'lab_device'
+    tool = 'tool'
+
+
+class AssetStatus(str, Enum):
+    active = 'active'
+    maintenance = 'maintenance'
+    error = 'error'
+    inactive = 'inactive'
+    retired = 'retired'
+
+
 class SensorType(str, Enum):
     temperature = 'temperature'
     humidity = 'humidity'
@@ -293,6 +315,45 @@ class SensorValueRead(AppSchema):
     recorded_at: datetime
 
 
+class AssetPayload(AppSchema):
+    name: str = Field(min_length=1, max_length=160)
+    asset_type: AssetType
+    category: str = Field(min_length=1, max_length=80)
+    status: AssetStatus = AssetStatus.active
+    location: str = Field(min_length=1, max_length=160)
+    zone: str | None = Field(default=None, max_length=120)
+    serial_number: str | None = Field(default=None, max_length=120)
+    manufacturer: str | None = Field(default=None, max_length=120)
+    model: str | None = Field(default=None, max_length=120)
+    notes: str | None = Field(default=None, max_length=4000)
+    maintenance_notes: str | None = Field(default=None, max_length=4000)
+    last_maintenance_at: datetime | None = None
+    next_maintenance_at: datetime | None = None
+    wiki_ref: str | None = Field(default=None, max_length=255)
+
+    @field_validator('name', 'category', 'location')
+    @classmethod
+    def normalize_required_text(cls, value: str) -> str:
+        return _normalize_required_text(value)
+
+    @field_validator('zone', 'serial_number', 'manufacturer', 'model', 'notes', 'maintenance_notes', 'wiki_ref')
+    @classmethod
+    def normalize_optional_text(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class AssetCreate(AssetPayload):
+    pass
+
+
+class AssetUpdate(AssetPayload):
+    pass
+
+
+class AssetStatusUpdate(AppSchema):
+    status: AssetStatus
+
+
 class TaskPayload(AppSchema):
     title: str = Field(min_length=1, max_length=160)
     description: str | None = Field(default=None, max_length=4000)
@@ -301,6 +362,7 @@ class TaskPayload(AppSchema):
     due_at: datetime | None = None
     charge_id: int | None = Field(default=None, ge=1)
     reactor_id: int | None = Field(default=None, ge=1)
+    asset_id: int | None = Field(default=None, ge=1)
 
     @field_validator('title')
     @classmethod
@@ -334,11 +396,13 @@ class TaskRead(AppSchema):
     due_at: datetime | None
     charge_id: int | None
     reactor_id: int | None
+    asset_id: int | None
     created_at: datetime
     updated_at: datetime
     completed_at: datetime | None
     charge_name: str | None = None
     reactor_name: str | None = None
+    asset_name: str | None = None
 
 
 class AlertCreate(AppSchema):
@@ -373,6 +437,7 @@ class PhotoPayload(AppSchema):
     notes: str | None = Field(default=None, max_length=4000)
     charge_id: int | None = Field(default=None, ge=1)
     reactor_id: int | None = Field(default=None, ge=1)
+    asset_id: int | None = Field(default=None, ge=1)
     uploaded_by: str | None = Field(default=None, max_length=120)
     captured_at: datetime | None = None
 
@@ -401,12 +466,48 @@ class PhotoRead(AppSchema):
     notes: str | None
     charge_id: int | None
     reactor_id: int | None
+    asset_id: int | None
     created_at: datetime
     uploaded_by: str | None
     captured_at: datetime | None
     charge_name: str | None = None
     reactor_name: str | None = None
+    asset_name: str | None = None
     file_url: str
+
+
+class AssetRead(AppSchema):
+    id: int
+    name: str
+    asset_type: AssetType
+    category: str
+    status: AssetStatus
+    location: str
+    zone: str | None
+    serial_number: str | None
+    manufacturer: str | None
+    model: str | None
+    notes: str | None
+    maintenance_notes: str | None
+    last_maintenance_at: datetime | None
+    next_maintenance_at: datetime | None
+    wiki_ref: str | None
+    created_at: datetime
+    updated_at: datetime
+    open_task_count: int = 0
+    photo_count: int = 0
+
+
+class AssetDetailRead(AssetRead):
+    open_tasks: list[TaskRead]
+    recent_photos: list[PhotoRead]
+
+
+class AssetOverviewRead(AppSchema):
+    active_assets: int
+    assets_in_maintenance: int
+    assets_in_error: int
+    upcoming_maintenance_assets: list[AssetRead]
 
 
 class PhotoAnalysisStatusRead(AppSchema):
@@ -622,6 +723,9 @@ class DashboardSummaryRead(AppSchema):
     reactors_online: int
     active_sensors: int
     error_sensors: int
+    active_assets: int
+    assets_in_maintenance: int
+    assets_in_error: int
     open_tasks: int
     due_today_tasks: int
     critical_alerts: int
@@ -633,6 +737,7 @@ class DashboardSummaryRead(AppSchema):
     recent_alerts: list[AlertRead]
     recent_photos: list[PhotoRead]
     recent_rule_executions: list[RuleExecutionRead]
+    upcoming_maintenance_assets: list[AssetRead]
     message: str
 
 

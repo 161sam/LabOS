@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 
 import { apiRequest } from '../lib/api';
-import { Charge, Photo, PhotoAnalysisStatus, Reactor } from '../lib/lab-resources';
+import { Asset, Charge, Photo, PhotoAnalysisStatus, Reactor } from '../lib/lab-resources';
 import { Card } from './Card';
 import { FormField } from './FormField';
 import { InlineMessage } from './InlineMessage';
@@ -16,6 +16,7 @@ type UploadFormState = {
   notes: string;
   charge_id: string;
   reactor_id: string;
+  asset_id: string;
   uploaded_by: string;
   captured_at: string;
 };
@@ -23,6 +24,7 @@ type UploadFormState = {
 type PhotoFilters = {
   charge_id: string;
   reactor_id: string;
+  asset_id: string;
 };
 
 type EditFormState = {
@@ -30,6 +32,7 @@ type EditFormState = {
   notes: string;
   charge_id: string;
   reactor_id: string;
+  asset_id: string;
   uploaded_by: string;
   captured_at: string;
 };
@@ -41,6 +44,7 @@ function createEmptyUploadForm(): UploadFormState {
     notes: '',
     charge_id: '',
     reactor_id: '',
+    asset_id: '',
     uploaded_by: '',
     captured_at: '',
   };
@@ -52,6 +56,7 @@ function createEditForm(photo: Photo | null): EditFormState {
     notes: photo?.notes ?? '',
     charge_id: photo?.charge_id ? String(photo.charge_id) : '',
     reactor_id: photo?.reactor_id ? String(photo.reactor_id) : '',
+    asset_id: photo?.asset_id ? String(photo.asset_id) : '',
     uploaded_by: photo?.uploaded_by ?? '',
     captured_at: photo?.captured_at ? photo.captured_at.slice(0, 16) : '',
   };
@@ -83,9 +88,10 @@ function formatSize(sizeBytes: number) {
 
 export function PhotoManager() {
   const [photos, setPhotos] = useState<Photo[]>([]);
+  const [assets, setAssets] = useState<Asset[]>([]);
   const [charges, setCharges] = useState<Charge[]>([]);
   const [reactors, setReactors] = useState<Reactor[]>([]);
-  const [filters, setFilters] = useState<PhotoFilters>({ charge_id: '', reactor_id: '' });
+  const [filters, setFilters] = useState<PhotoFilters>({ charge_id: '', reactor_id: '', asset_id: '' });
   const [uploadForm, setUploadForm] = useState<UploadFormState>(createEmptyUploadForm);
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [editForm, setEditForm] = useState<EditFormState>(createEditForm(null));
@@ -106,15 +112,18 @@ export function PhotoManager() {
     const params = new URLSearchParams();
     if (nextFilters.charge_id) params.set('charge_id', nextFilters.charge_id);
     if (nextFilters.reactor_id) params.set('reactor_id', nextFilters.reactor_id);
+    if (nextFilters.asset_id) params.set('asset_id', nextFilters.asset_id);
     const photoPath = params.size > 0 ? `/api/v1/photos?${params.toString()}` : '/api/v1/photos';
 
     try {
-      const [photoData, chargeData, reactorData] = await Promise.all([
+      const [photoData, assetData, chargeData, reactorData] = await Promise.all([
         apiRequest<Photo[]>(photoPath),
+        apiRequest<Asset[]>('/api/v1/assets'),
         apiRequest<Charge[]>('/api/v1/charges'),
         apiRequest<Reactor[]>('/api/v1/reactors'),
       ]);
       setPhotos(photoData);
+      setAssets(assetData);
       setCharges(chargeData);
       setReactors(reactorData);
 
@@ -192,6 +201,7 @@ export function PhotoManager() {
     if (uploadForm.notes) formData.append('notes', uploadForm.notes);
     if (uploadForm.charge_id) formData.append('charge_id', uploadForm.charge_id);
     if (uploadForm.reactor_id) formData.append('reactor_id', uploadForm.reactor_id);
+    if (uploadForm.asset_id) formData.append('asset_id', uploadForm.asset_id);
     if (uploadForm.uploaded_by) formData.append('uploaded_by', uploadForm.uploaded_by);
     if (uploadForm.captured_at) formData.append('captured_at', uploadForm.captured_at);
 
@@ -228,6 +238,7 @@ export function PhotoManager() {
           notes: editForm.notes,
           charge_id: editForm.charge_id ? Number(editForm.charge_id) : null,
           reactor_id: editForm.reactor_id ? Number(editForm.reactor_id) : null,
+          asset_id: editForm.asset_id ? Number(editForm.asset_id) : null,
           uploaded_by: editForm.uploaded_by,
           captured_at: editForm.captured_at || null,
         }),
@@ -304,6 +315,17 @@ export function PhotoManager() {
                   ))}
                 </select>
               </FormField>
+
+              <FormField label="Asset / Device">
+                <select className="input" value={uploadForm.asset_id} onChange={(event) => setUploadValue('asset_id', event.target.value)}>
+                  <option value="">Nicht zugeordnet</option>
+                  {assets.map((asset) => (
+                    <option key={asset.id} value={asset.id}>
+                      {asset.name}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
             </div>
 
             <FormField label="Notiz">
@@ -338,6 +360,17 @@ export function PhotoManager() {
                   <option key={reactor.id} value={reactor.id}>
                     {reactor.name}
                   </option>
+                  ))}
+                </select>
+              </FormField>
+
+            <FormField label="Asset-Filter">
+              <select className="input" value={filters.asset_id} onChange={(event) => void applyFilters({ ...filters, asset_id: event.target.value })}>
+                <option value="">Alle</option>
+                {assets.map((asset) => (
+                  <option key={asset.id} value={asset.id}>
+                    {asset.name}
+                  </option>
                 ))}
               </select>
             </FormField>
@@ -360,7 +393,7 @@ export function PhotoManager() {
                   <div className="photoMeta">
                     <strong>{photo.title || photo.original_filename}</strong>
                     <span className="muted">{formatDateTime(photo.captured_at || photo.created_at)}</span>
-                    <span className="muted">{photo.charge_name || photo.reactor_name || 'Nicht zugeordnet'}</span>
+                    <span className="muted">{photo.asset_name || photo.charge_name || photo.reactor_name || 'Nicht zugeordnet'}</span>
                   </div>
                 </button>
               ))}
@@ -416,6 +449,17 @@ export function PhotoManager() {
                     {reactors.map((reactor) => (
                       <option key={reactor.id} value={reactor.id}>
                         {reactor.name}
+                      </option>
+                    ))}
+                  </select>
+                </FormField>
+
+                <FormField label="Asset / Device">
+                  <select className="input" value={editForm.asset_id} onChange={(event) => setEditValue('asset_id', event.target.value)}>
+                    <option value="">Nicht zugeordnet</option>
+                    {assets.map((asset) => (
+                      <option key={asset.id} value={asset.id}>
+                        {asset.name}
                       </option>
                     ))}
                   </select>

@@ -15,6 +15,7 @@ router = APIRouter(prefix='/photos', tags=['photos'])
 def list_photos(
     charge_id: int | None = Query(default=None, ge=1),
     reactor_id: int | None = Query(default=None, ge=1),
+    asset_id: int | None = Query(default=None, ge=1),
     latest: bool = False,
     limit: int | None = Query(default=None, ge=1, le=50),
     session: Session = Depends(get_session),
@@ -23,6 +24,7 @@ def list_photos(
         session,
         charge_id=charge_id,
         reactor_id=reactor_id,
+        asset_id=asset_id,
         latest=latest,
         limit=limit,
     )
@@ -35,6 +37,7 @@ async def upload_photo(
     notes: str | None = Form(default=None),
     charge_id: int | None = Form(default=None),
     reactor_id: int | None = Form(default=None),
+    asset_id: int | None = Form(default=None),
     uploaded_by: str | None = Form(default=None),
     captured_at: datetime | None = Form(default=None),
     session: Session = Depends(get_session),
@@ -44,6 +47,7 @@ async def upload_photo(
         notes=notes,
         charge_id=charge_id,
         reactor_id=reactor_id,
+        asset_id=asset_id,
         uploaded_by=uploaded_by,
         captured_at=captured_at,
     )

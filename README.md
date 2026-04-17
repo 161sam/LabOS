@@ -1,12 +1,13 @@
 # LabOS
 
-LabOS ist ein Raspberry-Pi-taugliches Labor-Betriebssystem für Planung, Protokollierung, Live-Monitoring, Wiki, Automatisierung und KI-Assistenz.
+LabOS ist ein Raspberry-Pi-taugliches Operating System fuer EcoSphereLab. Es verbindet BioOps, MakerOps, ITOps, R&D Ops, KnowledgeOps, Automation und AI-Assistenz in einem lokal betreibbaren modularen Monolithen.
 
 ## V1 Scope
 
 - Dashboard
 - Chargenverwaltung mit Create/Edit/Statuswechsel
 - Reaktorverwaltung mit Create/Edit/Statuswechsel
+- AssetOps / DeviceOps V1 mit CRUD, Wartungsfeldern und operativen Verknuepfungen
 - Sensorik V1 mit CRUD, Werte-Ingest und Verlauf
 - Tasks + Alerts V1 mit operativen Dashboards
 - Foto Upload + Vision Basis V1
@@ -42,7 +43,7 @@ Danach:
 - API: http://localhost:8000
 - API Docs: http://localhost:8000/docs
 
-Beim API-Start werden zuerst Alembic-Migrationen bis `head` ausgefuehrt. Danach ergänzt der Seed-Flow nur fehlende Demo-Daten für Charges, Wiki, Sensoren, Tasks und Alerts.
+Beim API-Start werden zuerst Alembic-Migrationen bis `head` ausgefuehrt. Danach ergänzt der Seed-Flow nur fehlende Demo-Daten fuer Charges, Assets, Wiki, Sensoren, Tasks, Alerts und Regeln.
 
 ## CRUD-Stand fuer Chargen und Reaktoren
 
@@ -166,6 +167,7 @@ Task-Felder:
 - `due_at`
 - `charge_id`
 - `reactor_id`
+- `asset_id`
 - `created_at`
 - `updated_at`
 - `completed_at`
@@ -266,6 +268,7 @@ Optionale Filter fuer `GET /api/v1/photos`:
 
 - `charge_id`
 - `reactor_id`
+- `asset_id`
 - `latest`
 - `limit`
 
@@ -280,6 +283,7 @@ Photo-Felder:
 - `notes`
 - `charge_id`
 - `reactor_id`
+- `asset_id`
 - `created_at`
 - `uploaded_by`
 - `captured_at`
@@ -449,6 +453,88 @@ curl http://localhost:8000/api/v1/rules/1/executions
 
 Die Weboberflaeche unter `/rules` bietet Regelliste, Bearbeitung, Enable-Toggle, Dry-Run, echte Ausfuehrung und die letzten Execution-Logs.
 
+## AssetOps / DeviceOps V1
+
+LabOS bildet jetzt reale Geraete und Assets als operative Objekte ab, ohne bereits ein Inventory-, ERP- oder CMDB-System einzufuehren.
+
+Dieses V1 umfasst:
+
+- Asset-Modell mit `name`, `asset_type`, `category`, `status`, `location`, `zone`
+- optionale Betriebs- und Wartungsfelder wie `serial_number`, `manufacturer`, `model`, `maintenance_notes`
+- `last_maintenance_at` und `next_maintenance_at`
+- optionale `wiki_ref`
+- Verknuepfung von Tasks und Photos ueber `asset_id`
+- eigene AssetOps-Seite unter `/assets`
+- Dashboard-KPIs fuer aktive Assets, Wartungsfaelle, Fehlerstatus und naechste Wartungen
+
+Backend-Endpunkte:
+
+- `GET /api/v1/assets`
+- `GET /api/v1/assets/overview`
+- `GET /api/v1/assets/{id}`
+- `POST /api/v1/assets`
+- `PUT /api/v1/assets/{id}`
+- `PATCH /api/v1/assets/{id}/status`
+
+Optionale Filter fuer `GET /api/v1/assets`:
+
+- `status`
+- `category`
+- `location`
+- `zone`
+
+Unterstuetzte `asset_type`-Werte:
+
+- `printer_3d`
+- `microscope`
+- `soldering_station`
+- `power_supply`
+- `pump`
+- `server`
+- `gpu_node`
+- `sbc`
+- `network_device`
+- `lab_device`
+- `tool`
+
+Unterstuetzte Asset-Status:
+
+- `active`
+- `maintenance`
+- `error`
+- `inactive`
+- `retired`
+
+Abgrenzung zu spaeteren Modulen:
+
+- AssetOps / DeviceOps beschreibt langlebige Geraete und Assets
+- Inventory / MaterialOps folgt spaeter separat fuer Verbrauchsmaterialien, Bestaende und Beschaffung
+- QR / Label, ITOps-Healthchecks und automatische Monitoring-Anbindung sind bewusst noch nicht Teil dieses Schritts
+
+Warum dieser Schritt wichtig ist:
+
+- schafft eine gemeinsame Objektbasis fuer BioOps, MakerOps und ITOps
+- bereitet Inventory, QR, Traceability und spaetere Infra-/ITOps-Flows sauber vor
+- haelt die Verknuepfung mit Tasks, Photos und Wiki lokal und nachvollziehbar
+
+Beispiel:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/assets \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Prusa MK4","asset_type":"printer_3d","category":"MakerOps","status":"active","location":"Werkbank 1","zone":"Maker Corner","next_maintenance_at":"2026-04-30T10:00:00"}'
+```
+
+```bash
+curl "http://localhost:8000/api/v1/assets?status=maintenance&location=Rack"
+```
+
+```bash
+curl -X PATCH http://localhost:8000/api/v1/assets/1/status \
+  -H "Content-Type: application/json" \
+  -d '{"status":"error"}'
+```
+
 ## Migrationen
 
 Alembic liegt unter `services/api/alembic`. Die Baseline-Migration ersetzt die bisherige implizite Schema-Reparaturlogik und bildet die aktuelle Core-Struktur reproduzierbar ab.
@@ -516,6 +602,12 @@ Nur Foto-API pruefen:
 
 ```bash
 .venv/bin/pytest services/api/tests/test_photos_api.py -q
+```
+
+Nur AssetOps pruefen:
+
+```bash
+.venv/bin/pytest services/api/tests/test_assets_api.py -q
 ```
 
 Nur ABrain-API pruefen:
