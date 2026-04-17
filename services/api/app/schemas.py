@@ -1,7 +1,8 @@
 from datetime import date, datetime
 from enum import Enum
+from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class ChargeStatus(str, Enum):
@@ -87,6 +88,33 @@ class ABrainContextSection(str, Enum):
     charges = 'charges'
     reactors = 'reactors'
     photos = 'photos'
+
+
+class RuleTriggerType(str, Enum):
+    sensor_threshold = 'sensor_threshold'
+    stale_sensor = 'stale_sensor'
+    overdue_tasks = 'overdue_tasks'
+    reactor_status = 'reactor_status'
+
+
+class RuleConditionType(str, Enum):
+    threshold_gt = 'threshold_gt'
+    threshold_lt = 'threshold_lt'
+    age_gt_hours = 'age_gt_hours'
+    count_gt = 'count_gt'
+    status_is = 'status_is'
+
+
+class RuleActionType(str, Enum):
+    create_alert = 'create_alert'
+    create_task = 'create_task'
+
+
+class RuleExecutionStatus(str, Enum):
+    matched = 'matched'
+    not_matched = 'not_matched'
+    executed = 'executed'
+    failed = 'failed'
 
 
 class AppSchema(BaseModel):
@@ -510,6 +538,85 @@ class ABrainQueryResponse(AppSchema):
     note: str | None = None
 
 
+class RulePayload(AppSchema):
+    name: str = Field(min_length=1, max_length=160)
+    description: str | None = Field(default=None, max_length=4000)
+    is_enabled: bool = True
+    trigger_type: RuleTriggerType
+    condition_type: RuleConditionType
+    condition_config: dict[str, Any] = Field(default_factory=dict)
+    action_type: RuleActionType
+    action_config: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator('name')
+    @classmethod
+    def normalize_required_text(cls, value: str) -> str:
+        return _normalize_required_text(value)
+
+    @field_validator('description')
+    @classmethod
+    def normalize_optional_text(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+    @model_validator(mode='after')
+    def validate_rule_payload(self):
+        _validate_rule_configuration(
+            self.trigger_type,
+            self.condition_type,
+            self.condition_config,
+            self.action_type,
+            self.action_config,
+        )
+        return self
+
+
+class RuleCreate(RulePayload):
+    pass
+
+
+class RuleUpdate(RulePayload):
+    pass
+
+
+class RuleEnabledUpdate(AppSchema):
+    is_enabled: bool
+
+
+class RuleRead(AppSchema):
+    id: int
+    name: str
+    description: str | None
+    is_enabled: bool
+    trigger_type: RuleTriggerType
+    condition_type: RuleConditionType
+    condition_config: dict[str, Any]
+    action_type: RuleActionType
+    action_config: dict[str, Any]
+    created_at: datetime
+    updated_at: datetime
+    last_evaluated_at: datetime | None
+
+
+class RuleExecutionRead(AppSchema):
+    id: int
+    rule_id: int
+    rule_name: str | None = None
+    status: RuleExecutionStatus
+    dry_run: bool
+    evaluation_summary: dict[str, Any]
+    action_result: dict[str, Any]
+    created_at: datetime
+
+
+class RuleEvaluationResponse(AppSchema):
+    rule: RuleRead
+    execution: RuleExecutionRead
+
+
+class EvaluateAllRulesResponse(AppSchema):
+    executions: list[RuleExecutionRead]
+
+
 class DashboardSummaryRead(AppSchema):
     active_charges: int
     reactors_online: int
@@ -521,7 +628,45 @@ class DashboardSummaryRead(AppSchema):
     open_alerts: int
     photo_count: int
     uploads_last_7_days: int
+    active_rules: int
     sensor_overview: list[SensorOverviewRead]
     recent_alerts: list[AlertRead]
     recent_photos: list[PhotoRead]
+    recent_rule_executions: list[RuleExecutionRead]
     message: str
+
+
+def _require_config_keys(config: dict[str, Any], keys: set[str], scope: str) -> None:
+    missing = sorted(key for key in keys if key not in config)
+    if missing:
+        raise ValueError(f'{scope} missing required keys: {", ".join(missing)}')
+
+
+def _validate_rule_configuration(
+    trigger_type: RuleTriggerType,
+    condition_type: RuleConditionType,
+    condition_config: dict[str, Any],
+    action_type: RuleActionType,
+    action_config: dict[str, Any],
+) -> None:
+    if trigger_type == RuleTriggerType.sensor_threshold:
+        if condition_type not in {RuleConditionType.threshold_gt, RuleConditionType.threshold_lt}:
+            raise ValueError('sensor_threshold supports only threshold_gt or threshold_lt')
+        _require_config_keys(condition_config, {'sensor_id', 'threshold'}, 'condition_config')
+    elif trigger_type == RuleTriggerType.stale_sensor:
+        if condition_type != RuleConditionType.age_gt_hours:
+            raise ValueError('stale_sensor supports only age_gt_hours')
+        _require_config_keys(condition_config, {'hours'}, 'condition_config')
+    elif trigger_type == RuleTriggerType.overdue_tasks:
+        if condition_type != RuleConditionType.count_gt:
+            raise ValueError('overdue_tasks supports only count_gt')
+        _require_config_keys(condition_config, {'count'}, 'condition_config')
+    elif trigger_type == RuleTriggerType.reactor_status:
+        if condition_type != RuleConditionType.status_is:
+            raise ValueError('reactor_status supports only status_is')
+        _require_config_keys(condition_config, {'reactor_id', 'status'}, 'condition_config')
+
+    if action_type == RuleActionType.create_alert:
+        _require_config_keys(action_config, {'title_template', 'message_template', 'severity'}, 'action_config')
+    elif action_type == RuleActionType.create_task:
+        _require_config_keys(action_config, {'title_template', 'priority'}, 'action_config')

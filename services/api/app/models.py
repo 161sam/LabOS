@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
-from typing import Optional
+from typing import Any, Optional
 
-from sqlalchemy import Index
+from sqlalchemy import Column, Index, JSON
 from sqlmodel import Field, SQLModel
 
 
@@ -129,6 +129,44 @@ class Photo(SQLModel, table=True):
     created_at: datetime = Field(default_factory=_utcnow)
     uploaded_by: Optional[str] = None
     captured_at: Optional[datetime] = None
+
+
+class Rule(SQLModel, table=True):
+    __table_args__ = (
+        Index('ix_rule_is_enabled', 'is_enabled'),
+        Index('ix_rule_trigger_type', 'trigger_type'),
+        Index('ix_rule_action_type', 'action_type'),
+        Index('ix_rule_updated_at', 'updated_at'),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str
+    description: Optional[str] = None
+    is_enabled: bool = True
+    trigger_type: str
+    condition_type: str
+    condition_config: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
+    action_type: str
+    action_config: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
+    last_evaluated_at: Optional[datetime] = None
+
+
+class RuleExecution(SQLModel, table=True):
+    __table_args__ = (
+        Index('ix_ruleexecution_rule_id', 'rule_id'),
+        Index('ix_ruleexecution_status', 'status'),
+        Index('ix_ruleexecution_created_at', 'created_at'),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    rule_id: int = Field(index=True)
+    status: str
+    dry_run: bool = False
+    evaluation_summary: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
+    action_result: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
+    created_at: datetime = Field(default_factory=_utcnow)
 
 
 class WikiPage(SQLModel, table=True):

@@ -15,7 +15,7 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
     inspector = inspect(engine)
 
     table_names = set(inspector.get_table_names())
-    assert {'charge', 'reactor', 'sensor', 'sensorvalue', 'task', 'alert', 'photo', 'wikipage'} <= table_names
+    assert {'charge', 'reactor', 'sensor', 'sensorvalue', 'task', 'alert', 'photo', 'rule', 'ruleexecution', 'wikipage'} <= table_names
 
     charge_columns = {column['name'] for column in inspector.get_columns('charge')}
     assert {'id', 'name', 'species', 'status', 'volume_l', 'reactor_id', 'start_date', 'notes'} <= charge_columns
@@ -86,6 +86,33 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
         'captured_at',
     } <= photo_columns
 
+    rule_columns = {column['name'] for column in inspector.get_columns('rule')}
+    assert {
+        'id',
+        'name',
+        'description',
+        'is_enabled',
+        'trigger_type',
+        'condition_type',
+        'condition_config',
+        'action_type',
+        'action_config',
+        'created_at',
+        'updated_at',
+        'last_evaluated_at',
+    } <= rule_columns
+
+    rule_execution_columns = {column['name'] for column in inspector.get_columns('ruleexecution')}
+    assert {
+        'id',
+        'rule_id',
+        'status',
+        'dry_run',
+        'evaluation_summary',
+        'action_result',
+        'created_at',
+    } <= rule_execution_columns
+
     charge_indexes = {index['name'] for index in inspector.get_indexes('charge')}
     assert {'ix_charge_name', 'ix_charge_status', 'ix_charge_reactor_id', 'ix_charge_start_date'} <= charge_indexes
 
@@ -127,8 +154,23 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
         'ix_photo_captured_at',
     } <= photo_indexes
 
+    rule_indexes = {index['name'] for index in inspector.get_indexes('rule')}
+    assert {
+        'ix_rule_is_enabled',
+        'ix_rule_trigger_type',
+        'ix_rule_action_type',
+        'ix_rule_updated_at',
+    } <= rule_indexes
+
+    rule_execution_indexes = {index['name'] for index in inspector.get_indexes('ruleexecution')}
+    assert {
+        'ix_ruleexecution_rule_id',
+        'ix_ruleexecution_status',
+        'ix_ruleexecution_created_at',
+    } <= rule_execution_indexes
+
     with engine.connect() as connection:
         version = connection.execute(text('SELECT version_num FROM alembic_version')).scalar_one()
-        assert version == '20260417_0004'
+        assert version == '20260417_0005'
 
     engine.dispose()

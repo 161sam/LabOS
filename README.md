@@ -11,6 +11,7 @@ LabOS ist ein Raspberry-Pi-taugliches Labor-Betriebssystem für Planung, Protoko
 - Tasks + Alerts V1 mit operativen Dashboards
 - Foto Upload + Vision Basis V1
 - ABrain Integration V1 mit echtem LabOS-Kontext
+- Regelengine / Automation V1
 - integriertes Wiki auf Markdown-Basis
 - Docker-Compose-Setup für lokale Entwicklung
 
@@ -375,6 +376,79 @@ curl -X POST http://localhost:8000/api/v1/abrain/query \
 
 Die Weboberflaeche unter `/abrain` bietet dazu Presets, freie Fragen, sichtbare Kontextbereiche und eine nachvollziehbare Antwortdarstellung.
 
+## Regelengine / Automation V1
+
+LabOS kann jetzt einfache, kontrollierte Regeln gegen aktuelle Systemdaten evaluieren und daraus Tasks oder Alerts erzeugen.
+
+Unterstuetzte Trigger:
+
+- `sensor_threshold`
+- `stale_sensor`
+- `overdue_tasks`
+- `reactor_status`
+
+Unterstuetzte Conditions:
+
+- `threshold_gt`
+- `threshold_lt`
+- `age_gt_hours`
+- `count_gt`
+- `status_is`
+
+Unterstuetzte Actions:
+
+- `create_alert`
+- `create_task`
+
+Backend-Endpunkte:
+
+- `GET /api/v1/rules`
+- `GET /api/v1/rules/{id}`
+- `POST /api/v1/rules`
+- `PUT /api/v1/rules/{id}`
+- `PATCH /api/v1/rules/{id}/enabled`
+- `POST /api/v1/rules/{id}/evaluate`
+- `GET /api/v1/rules/{id}/executions`
+- `GET /api/v1/rules/executions`
+- `POST /api/v1/rules/evaluate-all`
+
+Dry-Run:
+
+- `dry_run=true` evaluiert die Regel gegen aktuelle Daten, fuehrt aber keine Action aus
+- jede Dry-Run- oder Echt-Ausfuehrung wird als Execution-Log gespeichert
+
+Execution-Status:
+
+- `matched`
+- `not_matched`
+- `executed`
+- `failed`
+
+V1-Grenzen:
+
+- keine Hardwareaktionen
+- keine Notifications
+- keine Multi-Step-Workflows
+- keine versteckte Scheduler-Magie
+
+Manuelle Beispiele:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/rules \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Temperatur hoch","trigger_type":"sensor_threshold","condition_type":"threshold_gt","condition_config":{"sensor_id":1,"threshold":23.5},"action_type":"create_alert","action_config":{"title_template":"{sensor_name} zu hoch","message_template":"Sensor {sensor_name} meldet {value} {unit}.","severity":"high","source_type":"sensor"}}'
+```
+
+```bash
+curl -X POST "http://localhost:8000/api/v1/rules/1/evaluate?dry_run=true"
+```
+
+```bash
+curl http://localhost:8000/api/v1/rules/1/executions
+```
+
+Die Weboberflaeche unter `/rules` bietet Regelliste, Bearbeitung, Enable-Toggle, Dry-Run, echte Ausfuehrung und die letzten Execution-Logs.
+
 ## Migrationen
 
 Alembic liegt unter `services/api/alembic`. Die Baseline-Migration ersetzt die bisherige implizite Schema-Reparaturlogik und bildet die aktuelle Core-Struktur reproduzierbar ab.
@@ -450,6 +524,12 @@ Nur ABrain-API pruefen:
 .venv/bin/pytest services/api/tests/test_abrain_api.py -q
 ```
 
+Nur Regelengine-API pruefen:
+
+```bash
+.venv/bin/pytest services/api/tests/test_rules_api.py -q
+```
+
 Frontend-Build lokal:
 
 ```bash
@@ -471,13 +551,14 @@ Persistenz-Hinweis:
 - Verknuepfung von Tasks, Sensorik und Wiki mit den CRUD-Objekten
 - Vision-Auswertung und Bildanalyse auf Basis der gespeicherten Fotos
 - externe ABrain-Anbindung mit stabiler Produktionsschnittstelle
+- kontrollierte Scheduler-Anbindung fuer Regelevaluationen
 - Relationen und fachliche Constraints fuer weitere Module gezielt erweitern
 - Automationslogik kontrolliert auf Sensordaten und Aufgaben aufbauen
 
 ## Nächste Schritte
 
-1. Externe ABrain-Anbindung stabilisieren und spaeter kontrolliert erweitern
-2. Vision-Analyse kontrolliert an gespeicherte Fotos anbinden
-3. Sensorbasierte Alert-Regeln und einfache Eskalationen einziehen
+1. Regelengine kontrolliert um geplante Evaluationen und weitere sichere Trigger erweitern
+2. Externe ABrain-Anbindung stabilisieren und spaeter kontrolliert erweitern
+3. Vision-Analyse kontrolliert an gespeicherte Fotos anbinden
 4. Tasks enger mit Chargen, Reaktoren und Wiki verknuepfen
 5. Delete-/Archivierungsstrategie sauber festziehen

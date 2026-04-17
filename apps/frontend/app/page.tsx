@@ -28,9 +28,11 @@ async function getSummary(): Promise<DashboardSummary> {
       open_alerts: 0,
       photo_count: 0,
       uploads_last_7_days: 0,
+      active_rules: 0,
       sensor_overview: [],
       recent_alerts: [],
       recent_photos: [],
+      recent_rule_executions: [],
       message: 'API noch nicht erreichbar – Frontend läuft trotzdem.'
     };
   }
@@ -55,7 +57,7 @@ export default async function DashboardPage() {
       <div className="grid cols-3">
         <Card title="Offene Tasks"><div className="kpi">{data.open_tasks}</div></Card>
         <Card title="Heute faellig"><div className="kpi">{data.due_today_tasks}</div></Card>
-        <Card title="Fotos gesamt"><div className="kpi">{data.photo_count}</div></Card>
+        <Card title="Aktive Regeln"><div className="kpi">{data.active_rules}</div></Card>
       </div>
 
       <div className="grid cols-2">
@@ -118,6 +120,35 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid cols-2">
+        <Card title="Letzte Regelereignisse">
+          {data.recent_rule_executions.length === 0 ? (
+            <p className="muted">Noch keine Regelevaluierungen vorhanden.</p>
+          ) : (
+            <div className="tableWrap">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Regel</th>
+                    <th>Status</th>
+                    <th>Dry-Run</th>
+                    <th>Zeitpunkt</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.recent_rule_executions.map((execution) => (
+                    <tr key={execution.id}>
+                      <td>{execution.rule_name || `Rule #${execution.rule_id}`}</td>
+                      <td><span className={`badge badge-${execution.status}`}>{execution.status}</span></td>
+                      <td>{execution.dry_run ? 'Ja' : 'Nein'}</td>
+                      <td>{new Date(execution.created_at).toLocaleString('de-DE')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+
         <Card title="Letzte Alerts">
           {data.recent_alerts.length === 0 ? (
             <p className="muted">Noch keine Alerts vorhanden.</p>

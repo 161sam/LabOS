@@ -8,6 +8,7 @@ from ..models import Alert, Charge, Photo, Reactor, Sensor, Task
 from ..schemas import DashboardSummaryRead
 from ..services import alerts as alert_service
 from ..services import photos as photo_service
+from ..services import rules as rule_service
 from ..services import sensors as sensor_service
 
 router = APIRouter(prefix='/dashboard', tags=['dashboard'])
@@ -53,8 +54,10 @@ def dashboard_summary(session: Session = Depends(get_session)):
         'open_alerts': open_alerts,
         'photo_count': photo_count,
         'uploads_last_7_days': photo_service.count_recent_uploads(session, days=7),
+        'active_rules': rule_service.count_active_rules(session),
         'sensor_overview': sensor_service.list_sensor_overview(session, limit=4),
         'recent_alerts': alert_service.list_alerts(session, limit=4),
         'recent_photos': photo_service.list_photos(session, latest=True, limit=4),
+        'recent_rule_executions': rule_service.list_recent_executions(session, limit=4),
         'message': 'LabOS API erreichbar'
     }

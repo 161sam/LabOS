@@ -15,6 +15,7 @@ const navItems = [
   ['Fotos', '/photos'],
   ['Aufgaben', '/tasks'],
   ['Alerts', '/alerts'],
+  ['Automation', '/rules'],
   ['Wiki', '/wiki'],
   ['ABrain', '/abrain']
 ] as const;
