@@ -40,6 +40,8 @@ Danach:
 - API: http://localhost:8000
 - API Docs: http://localhost:8000/docs
 
+Beim API-Start werden jetzt zuerst Alembic-Migrationen bis `head` ausgefuehrt. Danach wird nur dann Seed-Datenmaterial eingespielt, wenn noch keine Charges vorhanden sind.
+
 ## CRUD-Stand fuer Chargen und Reaktoren
 
 Die Weboberflaeche unter `/charges` und `/reactors` unterstuetzt jetzt:
@@ -68,6 +70,41 @@ Kernfelder:
 - Charge: `name`, `species`, `status`, `reactor_id`, `start_date`, `volume_l`, `notes`
 - Reactor: `name`, `reactor_type`, `status`, `volume_l`, `location`, `last_cleaned_at`, `notes`
 
+## Migrationen
+
+Alembic liegt unter `services/api/alembic`. Die Baseline-Migration ersetzt die bisherige implizite Schema-Reparaturlogik und bildet die aktuelle Core-Struktur reproduzierbar ab.
+
+Lokales Upgrade:
+
+```bash
+DATABASE_URL=postgresql+psycopg://labos:labos@localhost:5432/labos .venv/bin/alembic -c services/api/alembic.ini upgrade head
+```
+
+Neue Migration erzeugen:
+
+```bash
+DATABASE_URL=postgresql+psycopg://labos:labos@localhost:5432/labos .venv/bin/alembic -c services/api/alembic.ini revision --autogenerate -m "describe schema change"
+```
+
+Docker-Workflow:
+
+```bash
+make migrate-api
+make make-migration MSG="describe schema change"
+```
+
+Hinweis:
+
+- im Docker-Compose-Setup zeigt `DATABASE_URL` auf den Service-Namen `db`
+- fuer Host-Kommandos ausserhalb des Containers sollte `DATABASE_URL` auf `localhost:5432` gesetzt werden
+
+Bei Schemaaenderungen gilt:
+
+- zuerst SQLModel-Modelle anpassen
+- dann Alembic-Revision mit `--autogenerate` erzeugen
+- generierte Migration pruefen und nachhaerten
+- danach Tests laufen lassen
+
 ## Tests
 
 API-Tests lokal:
@@ -76,6 +113,12 @@ API-Tests lokal:
 python3 -m venv .venv
 .venv/bin/pip install -r services/api/requirements.txt
 .venv/bin/pytest services/api/tests -q
+```
+
+Migrationen explizit pruefen:
+
+```bash
+.venv/bin/pytest services/api/tests/test_migrations.py -q
 ```
 
 Frontend-Build lokal:
@@ -89,13 +132,13 @@ npm run build
 ## Noch offen
 
 - Delete-/Archivierungsstrategie fuer Chargen und Reaktoren
-- Alembic-Migrationen fuer reproduzierbare Schemaaenderungen
 - Verknuepfung von Tasks, Sensorik und Wiki mit den CRUD-Objekten
+- Relationen und fachliche Constraints fuer weitere Module gezielt erweitern
 
 ## Nächste Schritte
 
-1. Alembic-Migrationen einfuehren
-2. Sensoren und Sensorwerte anbinden
-3. Tasks und Alerts enger an Chargen/Reaktoren koppeln
-4. ABrain-Integration auf echte LabOS-Daten erweitern
-5. Auth und Rollenmodell ergaenzen
+1. Sensoren und Sensorwerte anbinden
+2. Tasks und Alerts enger an Chargen/Reaktoren koppeln
+3. ABrain-Integration auf echte LabOS-Daten erweitern
+4. Auth und Rollenmodell ergaenzen
+5. Delete-/Archivierungsstrategie sauber festziehen

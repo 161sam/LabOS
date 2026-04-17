@@ -8,20 +8,20 @@ from sqlmodel import Field, SQLModel
 
 class Charge(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    name: str
+    name: str = Field(index=True)
     species: str
-    status: str = 'planned'
+    status: str = Field(default='planned', index=True)
     volume_l: float = 1.0
-    reactor_id: Optional[int] = None
-    start_date: date = Field(default_factory=date.today)
+    reactor_id: Optional[int] = Field(default=None, index=True)
+    start_date: date = Field(default_factory=date.today, index=True)
     notes: Optional[str] = None
 
 
 class Reactor(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    name: str
+    name: str = Field(index=True)
     reactor_type: str
-    status: str = 'online'
+    status: str = Field(default='online', index=True)
     volume_l: float = 1.0
     location: Optional[str] = None
     last_cleaned_at: Optional[datetime] = None

@@ -4,11 +4,11 @@ from .db import engine
 from .models import Alert, Charge, Reactor, Task, WikiPage
 
 
-def seed_data() -> None:
+def seed_data() -> bool:
     with Session(engine) as session:
         has_charge = session.exec(select(Charge)).first()
         if has_charge:
-            return
+            return False
 
         reactor = Reactor(
             name='Reaktor-A1',
@@ -28,3 +28,8 @@ def seed_data() -> None:
         session.add(WikiPage(slug='howto/erste-charge', title='Erste Charge anlegen', summary='Kurzanleitung für die erste Charge'))
         session.add(WikiPage(slug='sop/reinigung-reaktor', title='SOP Reaktor reinigen', summary='Reinigungsschritte für mobile Reaktoren'))
         session.commit()
+        return True
+
+
+if __name__ == '__main__':
+    seed_data()

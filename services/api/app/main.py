@@ -4,14 +4,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
-from .db import create_db_and_tables
+from .db import run_migrations
 from .routers import abrain, charges, dashboard, reactors, wiki
 from .seed import seed_data
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    create_db_and_tables()
+    run_migrations()
     seed_data()
     yield
 

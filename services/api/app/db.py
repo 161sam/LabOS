@@ -1,36 +1,26 @@
-from sqlalchemy import inspect, text
-from sqlmodel import Session, SQLModel, create_engine
+from pathlib import Path
+
+from alembic import command
+from alembic.config import Config
+from sqlmodel import Session, create_engine
+
 from .config import settings
 
 engine = create_engine(settings.database_url, echo=False)
 
 
-def create_db_and_tables() -> None:
-    SQLModel.metadata.create_all(engine)
-    _ensure_bootstrap_columns()
+def get_alembic_config(database_url: str | None = None) -> Config:
+    api_root = Path(__file__).resolve().parents[1]
+    config = Config(str(api_root / 'alembic.ini'))
+    config.set_main_option('script_location', str(api_root / 'alembic'))
+
+    resolved_url = database_url or engine.url.render_as_string(hide_password=False)
+    config.set_main_option('sqlalchemy.url', resolved_url)
+    return config
 
 
-def _ensure_bootstrap_columns() -> None:
-    inspector = inspect(engine)
-    table_names = set(inspector.get_table_names())
-
-    if 'reactor' not in table_names:
-        return
-
-    column_names = {column['name'] for column in inspector.get_columns('reactor')}
-    statements: list[str] = []
-
-    if 'last_cleaned_at' not in column_names:
-        statements.append('ALTER TABLE reactor ADD COLUMN last_cleaned_at TIMESTAMP')
-    if 'notes' not in column_names:
-        statements.append('ALTER TABLE reactor ADD COLUMN notes VARCHAR')
-
-    if not statements:
-        return
-
-    with engine.begin() as connection:
-        for statement in statements:
-            connection.execute(text(statement))
+def run_migrations(database_url: str | None = None) -> None:
+    command.upgrade(get_alembic_config(database_url), 'head')
 
 
 def get_session():

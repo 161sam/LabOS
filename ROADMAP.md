@@ -17,6 +17,7 @@ Aktueller Stand:
   - ABrain-Status
 - Seed-Daten vorhanden
 - API-Tests fuer Healthcheck, Charge-CRUD und Reactor-CRUD vorhanden
+- Alembic-Basis fuer reproduzierbare Migrationen vorhanden
 
 Ziel ist eine lokal betreibbare, modulare, skalierbare Labor-App für Raspberry Pi 4/5 und spätere Erweiterung auf Multi-Node-Setups.
 
@@ -114,6 +115,8 @@ Offen nach diesem Schritt:
 ---
 
 ## v0.1.2 – Datenmodell und Persistenz härten
+Status: umgesetzt als aktueller Entwicklungsschritt
+
 Ziele:
 - Alembic-Migrationen einführen
 - DB-Struktur stabilisieren
@@ -122,16 +125,20 @@ Ziele:
 
 Umfang:
 - Migration-Setup
-- eindeutige Statusmodelle
-- Timestamps für alle Kernobjekte
-- Soft Delete / Archivierungsstrategie
-- Relations sauber definieren
-- Konfigurationsmodell verbessern
+- initiale Baseline-Migration fuer aktuelles Kernschema
+- reproduzierbare DB-Upgrades fuer leere und bestehende Bootstrap-Datenbanken
+- Indizes fuer Charge- und Reactor-Listen/Statusabfragen
+- dokumentierter Workflow fuer Upgrade und neue Migrationen
+- Seed-Flow sauber hinter Migrationen eingehangen
 
 Akzeptanzkriterien:
 - DB-Änderungen reproduzierbar migrierbar
 - Kein Schema-Drift
 - Entwicklungsumgebung zuverlässig neu aufsetzbar
+
+Offen nach diesem Schritt:
+- fachliche Constraints und Relationen mit den naechsten Modulen erweitern
+- Archivierungsstrategie und spaetere Deletes bewusst separat behandeln
 
 ---
 
