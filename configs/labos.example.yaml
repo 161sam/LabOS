@@ -1,0 +1,10 @@
+project_name: LabOS
+site:
+  name: Local Lab
+  timezone: Europe/Berlin
+features:
+  wiki: true
+  abrain: true
+  vision: false
+  automations: true
+  sensor_ingest: true
