@@ -16,10 +16,10 @@ Aktueller Stand:
   - Sensorik V1 mit Werte-Ingest und Verlauf
   - Tasks + Alerts V1
   - Foto Upload + Vision Basis V1
+  - ABrain Integration V1 mit LabOS-Kontext
   - Wiki
-  - ABrain-Status
 - Seed-Daten vorhanden
-- API-Tests fuer Healthcheck, Charge-CRUD, Reactor-CRUD, Sensorik, Tasks, Alerts und Fotos vorhanden
+- API-Tests fuer Healthcheck, Charge-CRUD, Reactor-CRUD, Sensorik, Tasks, Alerts, Fotos und ABrain vorhanden
 - Alembic-Basis fuer reproduzierbare Migrationen vorhanden
 
 Ziel ist eine lokal betreibbare, modulare, skalierbare Labor-App für Raspberry Pi 4/5 und spätere Erweiterung auf Multi-Node-Setups.
@@ -279,15 +279,18 @@ Offen nach diesem Schritt:
 ---
 
 ## v0.1.7 – ABrain Integration V1
+Status: umgesetzt als aktueller Entwicklungsschritt
+
 Ziele:
 - LabOS mit Assistenzlogik verbinden
 
 Umfang:
 - ABrain-Connector erweitern
-- Kontextabfragen aus LabOS
-- feste Prompts / Tools für Laborfragen
-- erste Chat-/Assistenzseite
+- strukturierter LabOS-Kontext aus echten Daten
+- Presets fuer wiederkehrende Laborfragen
+- erste Assistenzseite mit freier Frage und nachvollziehbarer Antwort
 - Status- und Fehlerhandling
+- sauberer Fallback auf lokale Assistenzlogik
 
 Beispiel-Fragen:
 - Welche Charge braucht heute Aufmerksamkeit?
@@ -299,6 +302,11 @@ Akzeptanzkriterien:
 - ABrain kann strukturierte LabOS-Daten lesen
 - Antworten basieren nachvollziehbar auf Systemdaten
 - Kein harter Zwang zu Cloud-Modellen
+
+Offen nach diesem Schritt:
+- keine autonome Ausfuehrung oder Agenten-Orchestrierung
+- keine automatische Task-/Alert-Erzeugung
+- keine Vision-Auswertung oder Wiki-RAG in dieser V1
 
 ---
 

@@ -71,6 +71,24 @@ class AlertSourceType(str, Enum):
     manual = 'manual'
 
 
+class ABrainPreset(str, Enum):
+    daily_overview = 'daily_overview'
+    critical_issues = 'critical_issues'
+    overdue_tasks = 'overdue_tasks'
+    sensor_attention = 'sensor_attention'
+    reactor_attention = 'reactor_attention'
+    recent_activity = 'recent_activity'
+
+
+class ABrainContextSection(str, Enum):
+    tasks = 'tasks'
+    alerts = 'alerts'
+    sensors = 'sensors'
+    charges = 'charges'
+    reactors = 'reactors'
+    photos = 'photos'
+
+
 class AppSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -367,6 +385,129 @@ class PhotoAnalysisStatusRead(AppSchema):
     photo_id: int
     status: str
     detail: str
+
+
+class ABrainStatusRead(AppSchema):
+    connected: bool
+    mode: str
+    base_url: str
+    timeout_seconds: float
+    fallback_available: bool
+    note: str
+
+
+class ABrainPresetRead(AppSchema):
+    id: ABrainPreset
+    title: str
+    description: str
+    default_question: str
+    default_sections: list[ABrainContextSection]
+
+
+class ABrainReferenceRead(AppSchema):
+    entity_type: str
+    entity_id: int
+    label: str
+
+
+class ABrainSummaryCountsRead(AppSchema):
+    open_tasks: int
+    overdue_tasks: int
+    due_today_tasks: int
+    critical_alerts: int
+    open_alerts: int
+    sensor_attention: int
+    active_charges: int
+    reactors_online: int
+    recent_photos: int
+
+
+class ABrainTaskContextItemRead(AppSchema):
+    id: int
+    title: str
+    status: TaskStatus
+    priority: TaskPriority
+    due_at: datetime | None
+    charge_name: str | None = None
+    reactor_name: str | None = None
+
+
+class ABrainAlertContextItemRead(AppSchema):
+    id: int
+    title: str
+    severity: AlertSeverity
+    status: AlertStatus
+    source_type: AlertSourceType
+    created_at: datetime
+
+
+class ABrainSensorAttentionItemRead(AppSchema):
+    id: int
+    name: str
+    status: SensorStatus
+    reactor_name: str | None = None
+    last_recorded_at: datetime | None = None
+    last_value: float | None = None
+    attention_reason: str
+
+
+class ABrainChargeContextItemRead(AppSchema):
+    id: int
+    name: str
+    species: str
+    status: ChargeStatus
+
+
+class ABrainReactorContextItemRead(AppSchema):
+    id: int
+    name: str
+    status: ReactorStatus
+    open_task_count: int
+
+
+class ABrainPhotoContextItemRead(AppSchema):
+    id: int
+    title: str | None
+    created_at: datetime
+    captured_at: datetime | None
+    charge_name: str | None = None
+    reactor_name: str | None = None
+
+
+class ABrainContextRead(AppSchema):
+    generated_at: datetime
+    included_sections: list[ABrainContextSection]
+    summary: ABrainSummaryCountsRead
+    tasks: list[ABrainTaskContextItemRead] | None = None
+    alerts: list[ABrainAlertContextItemRead] | None = None
+    sensors: list[ABrainSensorAttentionItemRead] | None = None
+    charges: list[ABrainChargeContextItemRead] | None = None
+    reactors: list[ABrainReactorContextItemRead] | None = None
+    photos: list[ABrainPhotoContextItemRead] | None = None
+
+
+class ABrainQueryRequest(AppSchema):
+    question: str = Field(min_length=1, max_length=1000)
+    preset: ABrainPreset | None = None
+    include_context_sections: list[ABrainContextSection] | None = None
+
+    @field_validator('question')
+    @classmethod
+    def normalize_required_text(cls, value: str) -> str:
+        return _normalize_required_text(value)
+
+
+class ABrainQueryResponse(AppSchema):
+    question: str
+    preset: ABrainPreset | None
+    mode: str
+    fallback_used: bool
+    summary: str
+    highlights: list[str]
+    recommended_actions: list[str]
+    referenced_entities: list[ABrainReferenceRead]
+    used_context_sections: list[ABrainContextSection]
+    note: str | None = None
 
 
 class DashboardSummaryRead(AppSchema):

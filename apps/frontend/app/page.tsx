@@ -93,6 +93,11 @@ export default async function DashboardPage() {
         <Card title="Hinweis">
           <p>{data.message}</p>
           <p className="muted">Dashboard zeigt jetzt neben Sensorik und Aufgaben auch die letzten visuellen Uploads fuer die Labor-Dokumentation.</p>
+          <div className="buttonRow">
+            <a className="button buttonSecondary" href="/abrain">
+              Heutige ABrain-Analyse
+            </a>
+          </div>
         </Card>
       </div>
 

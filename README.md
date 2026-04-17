@@ -10,8 +10,8 @@ LabOS ist ein Raspberry-Pi-taugliches Labor-Betriebssystem für Planung, Protoko
 - Sensorik V1 mit CRUD, Werte-Ingest und Verlauf
 - Tasks + Alerts V1 mit operativen Dashboards
 - Foto Upload + Vision Basis V1
+- ABrain Integration V1 mit echtem LabOS-Kontext
 - integriertes Wiki auf Markdown-Basis
-- ABrain-Connector als Platzhalter
 - Docker-Compose-Setup für lokale Entwicklung
 
 ## Struktur
@@ -311,6 +311,70 @@ Vision-Stub pruefen:
 curl http://localhost:8000/api/v1/photos/1/analysis-status
 ```
 
+## ABrain Integration V1
+
+LabOS stellt jetzt einen ersten datenbasierten Assistenz-Layer bereit, der echte Systemdaten zusammenfasst und fuer feste Laborfragen nutzbar macht.
+
+Kontextquellen:
+
+- offene und ueberfaellige Tasks
+- kritische und offene Alerts
+- Sensor-Overview und auffaellige Sensorzustände
+- aktive Charges
+- Reaktoren mit Status und offenen Tasks
+- letzte Fotos
+
+Backend-Endpunkte:
+
+- `GET /api/v1/abrain/status`
+- `GET /api/v1/abrain/presets`
+- `GET /api/v1/abrain/context`
+- `POST /api/v1/abrain/query`
+
+Presets:
+
+- `daily_overview`
+- `critical_issues`
+- `overdue_tasks`
+- `sensor_attention`
+- `reactor_attention`
+- `recent_activity`
+
+Antwortformat:
+
+- `summary`
+- `highlights`
+- `recommended_actions`
+- `referenced_entities`
+- `used_context_sections`
+- `fallback_used`
+
+Fallback-Verhalten:
+
+- standardmaessig arbeitet LabOS im lokalen Stub-Modus mit echter LabOS-Datengrundlage
+- wenn `ABRAIN_USE_STUB=false` gesetzt wird, versucht LabOS ein externes ABrain unter `ABRAIN_BASE_URL`
+- ist dieses nicht erreichbar, faellt der Query-Endpunkt sauber auf die lokale Assistenzlogik zurueck
+
+Optionale Konfiguration:
+
+- `ABRAIN_BASE_URL`
+- `ABRAIN_USE_STUB`
+- `ABRAIN_TIMEOUT_SECONDS`
+
+Manuelle Beispiele:
+
+```bash
+curl http://localhost:8000/api/v1/abrain/context
+```
+
+```bash
+curl -X POST http://localhost:8000/api/v1/abrain/query \
+  -H "Content-Type: application/json" \
+  -d '{"question":"Was sind die wichtigsten offenen Punkte heute?","preset":"daily_overview"}'
+```
+
+Die Weboberflaeche unter `/abrain` bietet dazu Presets, freie Fragen, sichtbare Kontextbereiche und eine nachvollziehbare Antwortdarstellung.
+
 ## Migrationen
 
 Alembic liegt unter `services/api/alembic`. Die Baseline-Migration ersetzt die bisherige implizite Schema-Reparaturlogik und bildet die aktuelle Core-Struktur reproduzierbar ab.
@@ -380,6 +444,12 @@ Nur Foto-API pruefen:
 .venv/bin/pytest services/api/tests/test_photos_api.py -q
 ```
 
+Nur ABrain-API pruefen:
+
+```bash
+.venv/bin/pytest services/api/tests/test_abrain_api.py -q
+```
+
 Frontend-Build lokal:
 
 ```bash
@@ -400,13 +470,14 @@ Persistenz-Hinweis:
 - Benachrichtigungskanaele fuer Alerts
 - Verknuepfung von Tasks, Sensorik und Wiki mit den CRUD-Objekten
 - Vision-Auswertung und Bildanalyse auf Basis der gespeicherten Fotos
+- externe ABrain-Anbindung mit stabiler Produktionsschnittstelle
 - Relationen und fachliche Constraints fuer weitere Module gezielt erweitern
 - Automationslogik kontrolliert auf Sensordaten und Aufgaben aufbauen
 
 ## Nächste Schritte
 
-1. Vision-Analyse kontrolliert an gespeicherte Fotos anbinden
-2. Sensorbasierte Alert-Regeln und einfache Eskalationen einziehen
-3. Tasks enger mit Chargen, Reaktoren und Wiki verknuepfen
-4. ABrain-Integration auf echte LabOS-Daten erweitern
+1. Externe ABrain-Anbindung stabilisieren und spaeter kontrolliert erweitern
+2. Vision-Analyse kontrolliert an gespeicherte Fotos anbinden
+3. Sensorbasierte Alert-Regeln und einfache Eskalationen einziehen
+4. Tasks enger mit Chargen, Reaktoren und Wiki verknuepfen
 5. Delete-/Archivierungsstrategie sauber festziehen

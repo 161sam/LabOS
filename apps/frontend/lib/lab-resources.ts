@@ -65,6 +65,24 @@ export const alertSourceTypeOptions = [
   { value: 'system', label: 'System' },
 ] as const;
 
+export const abrainPresetOptions = [
+  { value: 'daily_overview', label: 'Tagesueberblick' },
+  { value: 'critical_issues', label: 'Kritische Themen' },
+  { value: 'overdue_tasks', label: 'Ueberfaellige Aufgaben' },
+  { value: 'sensor_attention', label: 'Sensor Aufmerksamkeit' },
+  { value: 'reactor_attention', label: 'Reaktor Aufmerksamkeit' },
+  { value: 'recent_activity', label: 'Letzte Aktivitaet' },
+] as const;
+
+export const abrainContextSectionOptions = [
+  { value: 'tasks', label: 'Tasks' },
+  { value: 'alerts', label: 'Alerts' },
+  { value: 'sensors', label: 'Sensoren' },
+  { value: 'charges', label: 'Charges' },
+  { value: 'reactors', label: 'Reaktoren' },
+  { value: 'photos', label: 'Fotos' },
+] as const;
+
 export type ChargeStatus = (typeof chargeStatusOptions)[number]['value'];
 export type ReactorStatus = (typeof reactorStatusOptions)[number]['value'];
 export type SensorType = (typeof sensorTypeOptions)[number]['value'];
@@ -74,6 +92,8 @@ export type TaskPriority = (typeof taskPriorityOptions)[number]['value'];
 export type AlertSeverity = (typeof alertSeverityOptions)[number]['value'];
 export type AlertStatus = (typeof alertStatusOptions)[number]['value'];
 export type AlertSourceType = (typeof alertSourceTypeOptions)[number]['value'];
+export type ABrainPreset = (typeof abrainPresetOptions)[number]['value'];
+export type ABrainContextSection = (typeof abrainContextSectionOptions)[number]['value'];
 
 export type Charge = {
   id: number;
@@ -174,6 +194,118 @@ export type PhotoAnalysisStatus = {
   photo_id: number;
   status: string;
   detail: string;
+};
+
+export type ABrainStatus = {
+  connected: boolean;
+  mode: string;
+  base_url: string;
+  timeout_seconds: number;
+  fallback_available: boolean;
+  note: string;
+};
+
+export type ABrainPresetDefinition = {
+  id: ABrainPreset;
+  title: string;
+  description: string;
+  default_question: string;
+  default_sections: ABrainContextSection[];
+};
+
+export type ABrainReference = {
+  entity_type: string;
+  entity_id: number;
+  label: string;
+};
+
+export type ABrainSummaryCounts = {
+  open_tasks: number;
+  overdue_tasks: number;
+  due_today_tasks: number;
+  critical_alerts: number;
+  open_alerts: number;
+  sensor_attention: number;
+  active_charges: number;
+  reactors_online: number;
+  recent_photos: number;
+};
+
+export type ABrainTaskContextItem = {
+  id: number;
+  title: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  due_at: string | null;
+  charge_name: string | null;
+  reactor_name: string | null;
+};
+
+export type ABrainAlertContextItem = {
+  id: number;
+  title: string;
+  severity: AlertSeverity;
+  status: AlertStatus;
+  source_type: AlertSourceType;
+  created_at: string;
+};
+
+export type ABrainSensorAttentionItem = {
+  id: number;
+  name: string;
+  status: SensorStatus;
+  reactor_name: string | null;
+  last_recorded_at: string | null;
+  last_value: number | null;
+  attention_reason: string;
+};
+
+export type ABrainChargeContextItem = {
+  id: number;
+  name: string;
+  species: string;
+  status: ChargeStatus;
+};
+
+export type ABrainReactorContextItem = {
+  id: number;
+  name: string;
+  status: ReactorStatus;
+  open_task_count: number;
+};
+
+export type ABrainPhotoContextItem = {
+  id: number;
+  title: string | null;
+  created_at: string;
+  captured_at: string | null;
+  charge_name: string | null;
+  reactor_name: string | null;
+};
+
+export type ABrainContext = {
+  generated_at: string;
+  included_sections: ABrainContextSection[];
+  summary: ABrainSummaryCounts;
+  tasks: ABrainTaskContextItem[] | null;
+  alerts: ABrainAlertContextItem[] | null;
+  sensors: ABrainSensorAttentionItem[] | null;
+  charges: ABrainChargeContextItem[] | null;
+  reactors: ABrainReactorContextItem[] | null;
+  photos: ABrainPhotoContextItem[] | null;
+};
+
+export type ABrainQueryResponse = {
+  question: string;
+  preset: ABrainPreset | null;
+  mode: string;
+  fallback_used: boolean;
+  summary: string;
+  highlights: string[];
+  recommended_actions: string[];
+  referenced_entities: ABrainReference[];
+  used_context_sections: ABrainContextSection[];
+  note: string | null;
 };
 
 export type DashboardSummary = {
