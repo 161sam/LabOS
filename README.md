@@ -7,7 +7,7 @@ LabOS ist ein Raspberry-Pi-taugliches Labor-Betriebssystem für Planung, Protoko
 - Dashboard
 - Chargenverwaltung mit Create/Edit/Statuswechsel
 - Reaktorverwaltung mit Create/Edit/Statuswechsel
-- Sensor-API
+- Sensorik V1 mit CRUD, Werte-Ingest und Verlauf
 - Task- und Alert-Basis
 - integriertes Wiki auf Markdown-Basis
 - ABrain-Connector als Platzhalter
@@ -70,6 +70,71 @@ Kernfelder:
 - Charge: `name`, `species`, `status`, `reactor_id`, `start_date`, `volume_l`, `notes`
 - Reactor: `name`, `reactor_type`, `status`, `volume_l`, `location`, `last_cleaned_at`, `notes`
 
+## Sensorik V1
+
+LabOS verarbeitet jetzt erste Sensordaten direkt in PostgreSQL ohne zusaetzliche Time-Series-Datenbank.
+
+Backend-Endpunkte:
+
+- `GET /api/v1/sensors`
+- `GET /api/v1/sensors/overview`
+- `GET /api/v1/sensors/{id}`
+- `POST /api/v1/sensors`
+- `PUT /api/v1/sensors/{id}`
+- `PATCH /api/v1/sensors/{id}/status`
+- `POST /api/v1/sensors/{id}/values`
+- `GET /api/v1/sensors/{id}/values`
+
+Sensor-Felder:
+
+- `name`
+- `sensor_type`
+- `unit`
+- `status`
+- `reactor_id`
+- `location`
+- `notes`
+- `created_at`
+- `updated_at`
+
+SensorValue-Felder:
+
+- `sensor_id`
+- `value`
+- `recorded_at`
+- `source`
+
+Unterstuetzte `sensor_type`-Werte:
+
+- `temperature`
+- `humidity`
+- `water_temperature`
+- `ph`
+- `ec`
+- `light`
+- `co2`
+
+Unterstuetzte `status`-Werte:
+
+- `active`
+- `inactive`
+- `error`
+- `maintenance`
+
+Manueller Beispiel-Ingest:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/sensors/1/values \
+  -H "Content-Type: application/json" \
+  -d '{"value": 23.7, "source": "manual"}'
+```
+
+Verlauf abrufen:
+
+```bash
+curl "http://localhost:8000/api/v1/sensors/1/values?limit=20"
+```
+
 ## Migrationen
 
 Alembic liegt unter `services/api/alembic`. Die Baseline-Migration ersetzt die bisherige implizite Schema-Reparaturlogik und bildet die aktuelle Core-Struktur reproduzierbar ab.
@@ -121,6 +186,12 @@ Migrationen explizit pruefen:
 .venv/bin/pytest services/api/tests/test_migrations.py -q
 ```
 
+Nur Sensorik-API pruefen:
+
+```bash
+.venv/bin/pytest services/api/tests/test_sensors_api.py -q
+```
+
 Frontend-Build lokal:
 
 ```bash
@@ -134,11 +205,12 @@ npm run build
 - Delete-/Archivierungsstrategie fuer Chargen und Reaktoren
 - Verknuepfung von Tasks, Sensorik und Wiki mit den CRUD-Objekten
 - Relationen und fachliche Constraints fuer weitere Module gezielt erweitern
+- Alerts, Aufgaben und Automationslogik auf Sensordaten aufbauen
 
 ## Nächste Schritte
 
-1. Sensoren und Sensorwerte anbinden
-2. Tasks und Alerts enger an Chargen/Reaktoren koppeln
-3. ABrain-Integration auf echte LabOS-Daten erweitern
-4. Auth und Rollenmodell ergaenzen
-5. Delete-/Archivierungsstrategie sauber festziehen
+1. Alerts und Tasks auf Sensordaten aufsetzen
+2. ABrain-Integration auf echte LabOS-Daten erweitern
+3. Auth und Rollenmodell ergaenzen
+4. Delete-/Archivierungsstrategie sauber festziehen
+5. Automationsregeln kontrolliert anbinden

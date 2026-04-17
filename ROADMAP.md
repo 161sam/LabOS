@@ -13,10 +13,11 @@ Aktueller Stand:
   - Dashboard
   - Chargen mit CRUD-Basis
   - Reaktoren mit CRUD-Basis
+  - Sensorik V1 mit Werte-Ingest und Verlauf
   - Wiki
   - ABrain-Status
 - Seed-Daten vorhanden
-- API-Tests fuer Healthcheck, Charge-CRUD und Reactor-CRUD vorhanden
+- API-Tests fuer Healthcheck, Charge-CRUD, Reactor-CRUD und Sensorik vorhanden
 - Alembic-Basis fuer reproduzierbare Migrationen vorhanden
 
 Ziel ist eine lokal betreibbare, modulare, skalierbare Labor-App für Raspberry Pi 4/5 und spätere Erweiterung auf Multi-Node-Setups.
@@ -143,6 +144,8 @@ Offen nach diesem Schritt:
 ---
 
 ## v0.1.3 – Sensorik V1
+Status: umgesetzt als aktueller Entwicklungsschritt
+
 Ziele:
 - Sensoren als erste echte Live-Datenquelle integrieren
 
@@ -153,6 +156,8 @@ Umfang:
 - Sensor-Übersicht im Frontend
 - Zeitreihen-Grundansicht
 - Zustandsampel für Sensoren
+- manuelle Werterfassung ueber UI und API
+- Dashboard-Ueberblick fuer letzte Sensorwerte
 
 Mögliche Sensoren:
 - Temperatur
@@ -168,6 +173,10 @@ Akzeptanzkriterien:
 - Sensorwerte werden im Dashboard angezeigt
 - Verlauf ist pro Sensor sichtbar
 - Fehlerhafte/fehlende Werte werden markiert
+
+Offen nach diesem Schritt:
+- Alerts, Aufgaben und Automationsregeln noch bewusst separat halten
+- keine Live-Streams, keine Hardware-Treiber und keine Spezialdatenbank in V1
 
 ---
 

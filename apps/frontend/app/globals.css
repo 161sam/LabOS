@@ -44,6 +44,10 @@ a { color: inherit; text-decoration: none; }
 .inlineMessage-success { border-color: rgba(34, 197, 94, 0.45); background: rgba(20, 83, 45, 0.25); }
 .inlineMessage-error { border-color: rgba(248, 113, 113, 0.45); background: rgba(127, 29, 29, 0.25); }
 .statusControl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.stackCompact { display: grid; gap: 4px; }
+.stackBlock { display: grid; gap: 16px; }
+.detailList { display: grid; gap: 10px; }
+.detailRow { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
 pre { white-space: pre-wrap; background: #020617; padding: 12px; border-radius: 12px; border: 1px solid var(--border); }
 @media (max-width: 900px) {
   .shell { grid-template-columns: 1fr; }
