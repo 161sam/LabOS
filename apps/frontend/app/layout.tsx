@@ -12,6 +12,9 @@ const navItems = [
   ['Chargen', '/charges'],
   ['Reaktoren', '/reactors'],
   ['Sensoren', '/sensors'],
+  ['Fotos', '/photos'],
+  ['Aufgaben', '/tasks'],
+  ['Alerts', '/alerts'],
   ['Wiki', '/wiki'],
   ['ABrain', '/abrain']
 ] as const;
@@ -24,7 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <aside className="sidebar">
             <div>
               <div className="brand">LabOS</div>
-              <div className="muted">V1 Bootstrap</div>
+              <div className="muted">V1 Operations</div>
             </div>
             <nav>
               {navItems.map(([label, href]) => (

@@ -1,0 +1,151 @@
+PNG_BYTES = (
+    b'\x89PNG\r\n\x1a\n'
+    b'\x00\x00\x00\rIHDR'
+    b'\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00'
+    b'\x90wS\xde'
+    b'\x00\x00\x00\x0cIDAT\x08\xd7c\xf8\x0f\x00\x01\x01\x01\x00'
+    b'\x18\xdd\x8d\xb1'
+    b'\x00\x00\x00\x00IEND\xaeB`\x82'
+)
+
+
+def _seed_charge_id(client) -> int:
+    response = client.get('/api/v1/charges')
+    assert response.status_code == 200
+    return response.json()[0]['id']
+
+
+def _seed_reactor_id(client) -> int:
+    response = client.get('/api/v1/reactors')
+    assert response.status_code == 200
+    return response.json()[0]['id']
+
+
+def test_upload_photo_and_get_detail(client):
+    charge_id = _seed_charge_id(client)
+    reactor_id = _seed_reactor_id(client)
+
+    response = client.post(
+        '/api/v1/photos/upload',
+        data={
+            'title': '  Charge Blick oben  ',
+            'notes': '  Farbe und Schaumbild pruefen  ',
+            'charge_id': str(charge_id),
+            'reactor_id': str(reactor_id),
+            'uploaded_by': '  lab-tech  ',
+            'captured_at': '2026-04-17T10:30:00',
+        },
+        files={'file': ('sample.png', PNG_BYTES, 'image/png')},
+    )
+
+    assert response.status_code == 201
+    created = response.json()
+    assert created['title'] == 'Charge Blick oben'
+    assert created['notes'] == 'Farbe und Schaumbild pruefen'
+    assert created['uploaded_by'] == 'lab-tech'
+    assert created['mime_type'] == 'image/png'
+    assert created['size_bytes'] == len(PNG_BYTES)
+    assert created['charge_id'] == charge_id
+    assert created['reactor_id'] == reactor_id
+    assert created['storage_path'].startswith('photos/')
+    assert created['file_url'] == f"/api/v1/photos/{created['id']}/file"
+
+    detail = client.get(f"/api/v1/photos/{created['id']}")
+    assert detail.status_code == 200
+    assert detail.json()['id'] == created['id']
+
+
+def test_upload_photo_rejects_invalid_type(client):
+    response = client.post(
+        '/api/v1/photos/upload',
+        files={'file': ('notes.txt', b'not-an-image', 'text/plain')},
+    )
+
+    assert response.status_code == 415
+    assert 'Unsupported photo type' in response.json()['detail']
+
+
+def test_list_photos_can_filter_by_charge_and_reactor(client):
+    charge_id = _seed_charge_id(client)
+    reactor_id = _seed_reactor_id(client)
+
+    first = client.post(
+        '/api/v1/photos/upload',
+        data={'title': 'Charge Foto', 'charge_id': str(charge_id)},
+        files={'file': ('charge.png', PNG_BYTES, 'image/png')},
+    )
+    assert first.status_code == 201
+
+    second = client.post(
+        '/api/v1/photos/upload',
+        data={'title': 'Reaktor Foto', 'reactor_id': str(reactor_id)},
+        files={'file': ('reactor.png', PNG_BYTES, 'image/png')},
+    )
+    assert second.status_code == 201
+
+    by_charge = client.get('/api/v1/photos', params={'charge_id': charge_id})
+    assert by_charge.status_code == 200
+    assert all(photo['charge_id'] == charge_id for photo in by_charge.json())
+
+    by_reactor = client.get('/api/v1/photos', params={'reactor_id': reactor_id})
+    assert by_reactor.status_code == 200
+    assert all(photo['reactor_id'] == reactor_id for photo in by_reactor.json())
+
+
+def test_photo_file_serving_returns_binary_content(client):
+    upload = client.post(
+        '/api/v1/photos/upload',
+        data={'title': 'Dokufoto'},
+        files={'file': ('doc.png', PNG_BYTES, 'image/png')},
+    )
+    photo_id = upload.json()['id']
+
+    file_response = client.get(f'/api/v1/photos/{photo_id}/file')
+    assert file_response.status_code == 200
+    assert file_response.headers['content-type'] == 'image/png'
+    assert file_response.content == PNG_BYTES
+
+
+def test_update_photo_metadata(client):
+    charge_id = _seed_charge_id(client)
+    reactor_id = _seed_reactor_id(client)
+
+    upload = client.post(
+        '/api/v1/photos/upload',
+        files={'file': ('meta.png', PNG_BYTES, 'image/png')},
+    )
+    photo_id = upload.json()['id']
+
+    update = client.put(
+        f'/api/v1/photos/{photo_id}',
+        json={
+            'title': '  Neues Foto Label  ',
+            'notes': '  Dokumentation aktualisiert  ',
+            'charge_id': charge_id,
+            'reactor_id': reactor_id,
+            'uploaded_by': '  operator-1  ',
+            'captured_at': '2026-04-17T12:45:00',
+        },
+    )
+
+    assert update.status_code == 200
+    updated = update.json()
+    assert updated['title'] == 'Neues Foto Label'
+    assert updated['notes'] == 'Dokumentation aktualisiert'
+    assert updated['uploaded_by'] == 'operator-1'
+    assert updated['charge_id'] == charge_id
+    assert updated['reactor_id'] == reactor_id
+
+
+def test_photo_analysis_status_stub(client):
+    upload = client.post(
+        '/api/v1/photos/upload',
+        files={'file': ('analysis.png', PNG_BYTES, 'image/png')},
+    )
+    photo_id = upload.json()['id']
+
+    response = client.get(f'/api/v1/photos/{photo_id}/analysis-status')
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload['photo_id'] == photo_id
+    assert payload['status'] == 'pending'

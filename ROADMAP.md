@@ -11,12 +11,16 @@ Aktueller Stand:
 - Docker Compose vorhanden
 - Erste Bereiche umgesetzt:
   - Dashboard
-  - Chargen
-  - Reaktoren
+  - Chargen mit CRUD-Basis
+  - Reaktoren mit CRUD-Basis
+  - Sensorik V1 mit Werte-Ingest und Verlauf
+  - Tasks + Alerts V1
+  - Foto Upload + Vision Basis V1
+  - ABrain Integration V1 mit LabOS-Kontext
   - Wiki
-  - ABrain-Status
 - Seed-Daten vorhanden
-- Basis-Test für Healthcheck vorhanden
+- API-Tests fuer Healthcheck, Charge-CRUD, Reactor-CRUD, Sensorik, Tasks, Alerts, Fotos und ABrain vorhanden
+- Alembic-Basis fuer reproduzierbare Migrationen vorhanden
 
 Ziel ist eine lokal betreibbare, modulare, skalierbare Labor-App für Raspberry Pi 4/5 und spätere Erweiterung auf Multi-Node-Setups.
 
@@ -80,11 +84,11 @@ Ergebnis:
 ---
 
 ## v0.1.1 – Solide CRUD-Basis
-Status: als Nächstes
+Status: umgesetzt als aktueller Entwicklungsschritt
 
 Ziele:
-- echte Create/Edit/Delete-Flows für Chargen
-- echte Create/Edit/Delete-Flows für Reaktoren
+- echte Create/Edit/Status-Flows fuer Chargen
+- echte Create/Edit/Status-Flows fuer Reaktoren
 - Formulare im Frontend
 - Validierung im Backend
 - Fehlerzustände sauber behandeln
@@ -98,6 +102,8 @@ Umfang:
 - Reaktor bearbeiten
 - Reaktor stilllegen / Status ändern
 - UI-Feedback (loading, success, error)
+- Detailendpunkte fuer Charge und Reaktor
+- Backend-Tests fuer Create, Update, Detail und Statuswechsel
 
 Akzeptanzkriterien:
 - Chargen und Reaktoren vollständig im UI pflegbar
@@ -105,9 +111,15 @@ Akzeptanzkriterien:
 - Alle Kernfelder validiert
 - Fehler im UI verständlich sichtbar
 
+Offen nach diesem Schritt:
+- Delete-/Archivierungsstrategie bewusst separat halten
+- Alembic als naechsten Schritt nachziehen
+
 ---
 
 ## v0.1.2 – Datenmodell und Persistenz härten
+Status: umgesetzt als aktueller Entwicklungsschritt
+
 Ziele:
 - Alembic-Migrationen einführen
 - DB-Struktur stabilisieren
@@ -116,20 +128,26 @@ Ziele:
 
 Umfang:
 - Migration-Setup
-- eindeutige Statusmodelle
-- Timestamps für alle Kernobjekte
-- Soft Delete / Archivierungsstrategie
-- Relations sauber definieren
-- Konfigurationsmodell verbessern
+- initiale Baseline-Migration fuer aktuelles Kernschema
+- reproduzierbare DB-Upgrades fuer leere und bestehende Bootstrap-Datenbanken
+- Indizes fuer Charge- und Reactor-Listen/Statusabfragen
+- dokumentierter Workflow fuer Upgrade und neue Migrationen
+- Seed-Flow sauber hinter Migrationen eingehangen
 
 Akzeptanzkriterien:
 - DB-Änderungen reproduzierbar migrierbar
 - Kein Schema-Drift
 - Entwicklungsumgebung zuverlässig neu aufsetzbar
 
+Offen nach diesem Schritt:
+- fachliche Constraints und Relationen mit den naechsten Modulen erweitern
+- Archivierungsstrategie und spaetere Deletes bewusst separat behandeln
+
 ---
 
 ## v0.1.3 – Sensorik V1
+Status: umgesetzt als aktueller Entwicklungsschritt
+
 Ziele:
 - Sensoren als erste echte Live-Datenquelle integrieren
 
@@ -140,6 +158,8 @@ Umfang:
 - Sensor-Übersicht im Frontend
 - Zeitreihen-Grundansicht
 - Zustandsampel für Sensoren
+- manuelle Werterfassung ueber UI und API
+- Dashboard-Ueberblick fuer letzte Sensorwerte
 
 Mögliche Sensoren:
 - Temperatur
@@ -156,9 +176,15 @@ Akzeptanzkriterien:
 - Verlauf ist pro Sensor sichtbar
 - Fehlerhafte/fehlende Werte werden markiert
 
+Offen nach diesem Schritt:
+- Alerts, Aufgaben und Automationsregeln noch bewusst separat halten
+- keine Live-Streams, keine Hardware-Treiber und keine Spezialdatenbank in V1
+
 ---
 
 ## v0.1.4 – Aufgaben, Planung und Alerts
+Status: umgesetzt als aktueller Entwicklungsschritt
+
 Ziele:
 - operative Laborarbeit im System abbilden
 
@@ -167,8 +193,11 @@ Umfang:
 - Fälligkeiten
 - Zustände (open, doing, done, blocked)
 - Alerts-Modul
-- Regelbasierte Benachrichtigung im System
+- manuelle Alerts mit Quittierung und Aufloesung
 - Dashboard-Widgets für heutige Aufgaben und kritische Alerts
+- Zuordnung von Tasks zu Chargen und Reaktoren
+- Seed-Daten fuer Aufgaben und Alerts
+- Backend-Tests fuer Task- und Alert-Flows
 
 Beispiele:
 - Probe ziehen
@@ -180,8 +209,12 @@ Beispiele:
 
 Akzeptanzkriterien:
 - Aufgaben lassen sich planen und abhaken
-- Alerts erscheinen automatisch im UI
+- Alerts erscheinen und sind im UI quittierbar bzw. aufloesbar
 - Chargen und Reaktoren können Aufgaben/Alerts zugeordnet werden
+
+Offen nach diesem Schritt:
+- automatische Sensor-zu-Alert-Regeln folgen bewusst spaeter
+- Benachrichtigungskanaele und Eskalationen sind noch nicht enthalten
 
 ---
 
@@ -212,16 +245,19 @@ Akzeptanzkriterien:
 ---
 
 ## v0.1.6 – Foto- und Vision-Basis
+Status: umgesetzt als aktueller Entwicklungsschritt
+
 Ziele:
 - visuelle Dokumentation und einfache Bildauswertung vorbereiten
 
 Umfang:
 - Foto-Upload
-- Zuordnung zu Charge/Reaktor/Ereignis
+- Zuordnung zu Charge/Reaktor
 - Foto-Timeline
 - Storage-Konzept
 - Vision-Service-Stubs
-- erste Metadatenextraktion
+- Dashboard-KPIs und letzte Uploads
+- API fuer Dateiausgabe und Metadatenpflege
 
 Später anschließbar:
 - Füllstandserkennung
@@ -235,18 +271,26 @@ Akzeptanzkriterien:
 - Fotos sind Objekten zugeordnet
 - Grundstruktur für Vision-Pipeline vorhanden
 
+Offen nach diesem Schritt:
+- noch keine echte Bildanalyse
+- noch keine Kamera-Streams oder automatische Bewertung
+- noch keine Rechte- und Freigabelogik fuer Uploads
+
 ---
 
 ## v0.1.7 – ABrain Integration V1
+Status: umgesetzt als aktueller Entwicklungsschritt
+
 Ziele:
 - LabOS mit Assistenzlogik verbinden
 
 Umfang:
 - ABrain-Connector erweitern
-- Kontextabfragen aus LabOS
-- feste Prompts / Tools für Laborfragen
-- erste Chat-/Assistenzseite
+- strukturierter LabOS-Kontext aus echten Daten
+- Presets fuer wiederkehrende Laborfragen
+- erste Assistenzseite mit freier Frage und nachvollziehbarer Antwort
 - Status- und Fehlerhandling
+- sauberer Fallback auf lokale Assistenzlogik
 
 Beispiel-Fragen:
 - Welche Charge braucht heute Aufmerksamkeit?
@@ -258,6 +302,11 @@ Akzeptanzkriterien:
 - ABrain kann strukturierte LabOS-Daten lesen
 - Antworten basieren nachvollziehbar auf Systemdaten
 - Kein harter Zwang zu Cloud-Modellen
+
+Offen nach diesem Schritt:
+- keine autonome Ausfuehrung oder Agenten-Orchestrierung
+- keine automatische Task-/Alert-Erzeugung
+- keine Vision-Auswertung oder Wiki-RAG in dieser V1
 
 ---
 

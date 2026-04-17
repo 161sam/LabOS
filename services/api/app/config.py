@@ -2,13 +2,19 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file='.env', extra='ignore')
+    model_config = SettingsConfigDict(
+        env_file=('.env', '../../.env'),
+        extra='ignore',
+    )
 
     app_name: str = 'LabOS API'
     database_url: str = 'sqlite:///./labos.db'
     redis_url: str = 'redis://localhost:6379/0'
     abrain_base_url: str = 'http://abrain:8080'
+    abrain_use_stub: bool = True
+    abrain_timeout_seconds: float = 8.0
     storage_path: str = 'storage'
+    photo_max_upload_bytes: int = 8 * 1024 * 1024
 
 
 settings = Settings()
