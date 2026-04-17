@@ -3,7 +3,7 @@ from datetime import timedelta
 from sqlmodel import Session, select
 
 from .db import engine
-from .models import Alert, Charge, Reactor, Sensor, SensorValue, Task, WikiPage, _utcnow
+from .models import Alert, Charge, Reactor, Rule, Sensor, SensorValue, Task, WikiPage, _utcnow
 
 
 def seed_data() -> bool:
@@ -172,6 +172,90 @@ def seed_data() -> bool:
                     status='open',
                     source_type='sensor',
                     source_id=temp_sensor.id if temp_sensor else None,
+                )
+            )
+            seeded_any = True
+
+        temp_sensor = session.exec(select(Sensor).where(Sensor.name == 'Mediumtemperatur A1')).first()
+        ph_sensor = session.exec(select(Sensor).where(Sensor.name == 'pH Sonde A1')).first()
+
+        if session.exec(select(Rule).where(Rule.name == 'Temperatur zu hoch -> Alert')).first() is None and temp_sensor is not None:
+            session.add(
+                Rule(
+                    name='Temperatur zu hoch -> Alert',
+                    description='Erzeugt einen Alert, wenn die Mediumtemperatur ueber dem Grenzwert liegt.',
+                    is_enabled=True,
+                    trigger_type='sensor_threshold',
+                    condition_type='threshold_gt',
+                    condition_config={'sensor_id': temp_sensor.id, 'threshold': 23.5},
+                    action_type='create_alert',
+                    action_config={
+                        'title_template': 'Automationsregel: {sensor_name} zu hoch',
+                        'message_template': 'Sensor {sensor_name} meldet {value} {unit} und liegt damit ueber {threshold} {unit}.',
+                        'severity': 'high',
+                        'source_type': 'sensor',
+                    },
+                )
+            )
+            seeded_any = True
+
+        if session.exec(select(Rule).where(Rule.name == 'pH zu niedrig -> Task')).first() is None and ph_sensor is not None:
+            session.add(
+                Rule(
+                    name='pH zu niedrig -> Task',
+                    description='Erzeugt eine Aufgabe, wenn der pH-Wert unter den Grenzwert faellt.',
+                    is_enabled=True,
+                    trigger_type='sensor_threshold',
+                    condition_type='threshold_lt',
+                    condition_config={'sensor_id': ph_sensor.id, 'threshold': 7.0},
+                    action_type='create_task',
+                    action_config={
+                        'title_template': 'Automationsregel: {sensor_name} pruefen',
+                        'description_template': 'Der Sensor {sensor_name} meldet {value} {unit} und liegt unter {threshold} {unit}. Bitte Charge und Reaktor pruefen.',
+                        'priority': 'high',
+                        'reactor_id': '{reactor_id}',
+                        'due_in_hours': 4,
+                    },
+                )
+            )
+            seeded_any = True
+
+        if session.exec(select(Rule).where(Rule.name == 'Sensor ohne Werte 24h -> Alert')).first() is None:
+            session.add(
+                Rule(
+                    name='Sensor ohne Werte 24h -> Alert',
+                    description='Erzeugt einen Alert, wenn ein Sensor seit mehr als 24 Stunden keine Werte geliefert hat.',
+                    is_enabled=True,
+                    trigger_type='stale_sensor',
+                    condition_type='age_gt_hours',
+                    condition_config={'hours': 24},
+                    action_type='create_alert',
+                    action_config={
+                        'title_template': 'Automationsregel: Sensor stale',
+                        'message_template': 'Sensor {sensor_name} hat seit mehr als {hours} Stunden keine aktuellen Werte geliefert.',
+                        'severity': 'warning',
+                        'source_type': 'sensor',
+                    },
+                )
+            )
+            seeded_any = True
+
+        if session.exec(select(Rule).where(Rule.name == 'Ueberfaellige Tasks -> Alert')).first() is None:
+            session.add(
+                Rule(
+                    name='Ueberfaellige Tasks -> Alert',
+                    description='Erzeugt einen Alert, wenn ueberfaellige Aufgaben vorhanden sind.',
+                    is_enabled=True,
+                    trigger_type='overdue_tasks',
+                    condition_type='count_gt',
+                    condition_config={'count': 0, 'overdue_by_hours': 0},
+                    action_type='create_alert',
+                    action_config={
+                        'title_template': 'Automationsregel: Ueberfaellige Aufgaben',
+                        'message_template': 'Es gibt {count} ueberfaellige Aufgaben. Aelteste Aufgabe: {oldest_task_title}.',
+                        'severity': 'warning',
+                        'source_type': 'system',
+                    },
                 )
             )
             seeded_any = True

@@ -1,566 +1,415 @@
-# LabOS Roadmap
+Du arbeitest im Repository **LabOS**.
 
-## Projektstatus
+Kontext:
+LabOS entwickelt sich von einer einzelnen Labor-App zu einem modularen Operating System für EcoSphereLab.
 
-LabOS ist eine Raspberry-Pi-fähige Laborplattform für Planung, Protokollierung, Live-Monitoring, Chargenverwaltung, Reaktorverwaltung, Wiki/Dokumentation, Automatisierung und KI-Assistenz.
+LabOS ist nicht nur für Bio-Prozesse gedacht, sondern für ein reales Multi-Domain-Lab mit:
+- BioOps
+- MakerOps
+- ITOps
+- R&D Ops
+- KnowledgeOps
+- Automation
+- AI Assistenz
 
-Aktueller Stand:
-- Monorepo angelegt
-- Frontend-Grundgerüst mit Next.js vorhanden
-- FastAPI-Backend vorhanden
-- Docker Compose vorhanden
-- Erste Bereiche umgesetzt:
-  - Dashboard
-  - Chargen mit CRUD-Basis
-  - Reaktoren mit CRUD-Basis
-  - Sensorik V1 mit Werte-Ingest und Verlauf
-  - Tasks + Alerts V1
-  - Foto Upload + Vision Basis V1
-  - ABrain Integration V1 mit LabOS-Kontext
-  - Wiki
-- Seed-Daten vorhanden
-- API-Tests fuer Healthcheck, Charge-CRUD, Reactor-CRUD, Sensorik, Tasks, Alerts, Fotos und ABrain vorhanden
-- Alembic-Basis fuer reproduzierbare Migrationen vorhanden
-
-Ziel ist eine lokal betreibbare, modulare, skalierbare Labor-App für Raspberry Pi 4/5 und spätere Erweiterung auf Multi-Node-Setups.
-
----
-
-## Leitprinzipien
-
-1. Local first
-2. Raspberry-Pi-tauglich
-3. Offline-fähig
-4. Modular statt monolithisch
-5. Saubere APIs statt enger Kopplung
-6. Dokumentation als Produktbestandteil
-7. Automatisierung kontrolliert und nachvollziehbar
-8. KI als Assistenz, nicht als Blackbox-Kern
-9. Laborbetrieb vor Feature-Spielerei
-10. Kleine, saubere, testbare Inkremente
-
----
-
-## Produktvision
-
-LabOS soll das zentrale Betriebssystem für das Projekt werden. Alles, was im Labor passiert, wird darüber:
-
-- geplant
-- dokumentiert
-- überwacht
-- ausgewertet
-- automatisiert
-- historisiert
-- erklärt
-- verbessert
-
-Langfristig bildet LabOS den digitalen Zwilling des realen Laborbetriebs.
-
----
-
-# Versionen und Meilensteine
-
-## v0.1.0 – Bootstrap
-Status: abgeschlossen
-
-Inhalt:
-- Repo-Struktur
-- Docker Compose
-- Frontend-Basis
-- API-Basis
-- Dashboard-Übersicht
-- Chargen-Liste
-- Reaktoren-Liste
+Bereits umgesetzt:
+- Charges CRUD
+- Reactors CRUD
+- Alembic Migrationen
+- Sensorik V1
+- Tasks + Alerts V1
+- Photo Upload + Vision Basis V1
+- ABrain Integration V1 mit echtem lab_context
+- Dashboard-Basis
 - Wiki-Basis
-- ABrain-Status-Endpunkt
-- Seed-Daten
-- Health-Test
 
-Ergebnis:
-- startfähiges Grundsystem
-- lokal entwickelbar
-- Basis für alle Folgearbeiten
+Stack:
+- Frontend: Next.js
+- Backend: FastAPI
+- PostgreSQL
+- Docker Compose
 
----
-
-## v0.1.1 – Solide CRUD-Basis
-Status: umgesetzt als aktueller Entwicklungsschritt
-
-Ziele:
-- echte Create/Edit/Status-Flows fuer Chargen
-- echte Create/Edit/Status-Flows fuer Reaktoren
-- Formulare im Frontend
-- Validierung im Backend
-- Fehlerzustände sauber behandeln
-- API-Antworten konsistent machen
-
-Umfang:
-- Charge anlegen
-- Charge bearbeiten
-- Charge archivieren / Status ändern
-- Reaktor anlegen
-- Reaktor bearbeiten
-- Reaktor stilllegen / Status ändern
-- UI-Feedback (loading, success, error)
-- Detailendpunkte fuer Charge und Reaktor
-- Backend-Tests fuer Create, Update, Detail und Statuswechsel
-
-Akzeptanzkriterien:
-- Chargen und Reaktoren vollständig im UI pflegbar
-- Keine Seed-Abhängigkeit für sinnvolle Nutzung
-- Alle Kernfelder validiert
-- Fehler im UI verständlich sichtbar
-
-Offen nach diesem Schritt:
-- Delete-/Archivierungsstrategie bewusst separat halten
-- Alembic als naechsten Schritt nachziehen
+Wichtige Dateien:
+- README.md
+- ROADMAP.md
+- AGENTS.md
 
 ---
 
-## v0.1.2 – Datenmodell und Persistenz härten
-Status: umgesetzt als aktueller Entwicklungsschritt
+# Deine Aufgabe
 
-Ziele:
-- Alembic-Migrationen einführen
-- DB-Struktur stabilisieren
-- Basisschema erweitern
-- technische Schulden aus Bootstrap abbauen
+Baue als nächsten sauberen Entwicklungsschritt:
 
-Umfang:
-- Migration-Setup
-- initiale Baseline-Migration fuer aktuelles Kernschema
-- reproduzierbare DB-Upgrades fuer leere und bestehende Bootstrap-Datenbanken
-- Indizes fuer Charge- und Reactor-Listen/Statusabfragen
-- dokumentierter Workflow fuer Upgrade und neue Migrationen
-- Seed-Flow sauber hinter Migrationen eingehangen
+# Regelengine / Automation V1
 
-Akzeptanzkriterien:
-- DB-Änderungen reproduzierbar migrierbar
-- Kein Schema-Drift
-- Entwicklungsumgebung zuverlässig neu aufsetzbar
+Ziel:
+LabOS soll kontrollierte, nachvollziehbare Regeln ausführen können, die auf bestehenden LabOS-Daten basieren.
 
-Offen nach diesem Schritt:
-- fachliche Constraints und Relationen mit den naechsten Modulen erweitern
-- Archivierungsstrategie und spaetere Deletes bewusst separat behandeln
+Nach diesem Schritt soll LabOS können:
+
+- Regeln definieren
+- Regeln aktiv/inaktiv schalten
+- Regeln manuell testen
+- Regeln gegen aktuelle Daten evaluieren
+- aus Regeln Tasks und/oder Alerts erzeugen
+- Regelereignisse protokollieren
+
+Wichtig:
+Dieser Schritt soll keine vollautonome Hardwaresteuerung einführen.
+Es geht um eine sichere, nachvollziehbare V1-Regelschicht für operative Reaktionen im Laborbetrieb.
 
 ---
 
-## v0.1.3 – Sensorik V1
-Status: umgesetzt als aktueller Entwicklungsschritt
+# Warum dieser Schritt jetzt sinnvoll ist
 
-Ziele:
-- Sensoren als erste echte Live-Datenquelle integrieren
+LabOS hat genug operative Kernobjekte und Datenquellen:
 
-Umfang:
-- Datenmodell für Sensoren und Sensorwerte
-- Ingest-Endpunkt
-- Testdaten-Generator
-- Sensor-Übersicht im Frontend
-- Zeitreihen-Grundansicht
-- Zustandsampel für Sensoren
-- manuelle Werterfassung ueber UI und API
-- Dashboard-Ueberblick fuer letzte Sensorwerte
-
-Mögliche Sensoren:
-- Temperatur
-- Luftfeuchte
-- Wassertemperatur
-- pH
-- EC
-- Licht
-- CO₂ optional
-
-Akzeptanzkriterien:
-- Sensorwerte werden gespeichert
-- Sensorwerte werden im Dashboard angezeigt
-- Verlauf ist pro Sensor sichtbar
-- Fehlerhafte/fehlende Werte werden markiert
-
-Offen nach diesem Schritt:
-- Alerts, Aufgaben und Automationsregeln noch bewusst separat halten
-- keine Live-Streams, keine Hardware-Treiber und keine Spezialdatenbank in V1
-
----
-
-## v0.1.4 – Aufgaben, Planung und Alerts
-Status: umgesetzt als aktueller Entwicklungsschritt
-
-Ziele:
-- operative Laborarbeit im System abbilden
-
-Umfang:
-- Tasks-Modul
-- Fälligkeiten
-- Zustände (open, doing, done, blocked)
-- Alerts-Modul
-- manuelle Alerts mit Quittierung und Aufloesung
-- Dashboard-Widgets für heutige Aufgaben und kritische Alerts
-- Zuordnung von Tasks zu Chargen und Reaktoren
-- Seed-Daten fuer Aufgaben und Alerts
-- Backend-Tests fuer Task- und Alert-Flows
-
-Beispiele:
-- Probe ziehen
-- pH prüfen
-- Medium wechseln
-- Ernten
-- Reinigung
-- Sensor kalibrieren
-
-Akzeptanzkriterien:
-- Aufgaben lassen sich planen und abhaken
-- Alerts erscheinen und sind im UI quittierbar bzw. aufloesbar
-- Chargen und Reaktoren können Aufgaben/Alerts zugeordnet werden
-
-Offen nach diesem Schritt:
-- automatische Sensor-zu-Alert-Regeln folgen bewusst spaeter
-- Benachrichtigungskanaele und Eskalationen sind noch nicht enthalten
-
----
-
-## v0.1.5 – Wiki V1 integrieren
-Ziele:
-- LabOS als Wissens- und Betriebsplattform nutzbar machen
-
-Umfang:
-- Wiki-Index
-- Markdown-Rendering
-- Kategorien
-- Suche
-- Verknüpfung aus operativen Bereichen ins Wiki
-- Bereiche:
-  - How-to
-  - SOP
-  - FAQ
-  - Dev Docs
-  - User Docs
-  - Biology
-  - Hardware
-
-Akzeptanzkriterien:
-- Wiki-Seiten im UI lesbar
-- Seiten logisch gruppiert
-- Laborobjekte können auf relevante Doku verweisen
-
----
-
-## v0.1.6 – Foto- und Vision-Basis
-Status: umgesetzt als aktueller Entwicklungsschritt
-
-Ziele:
-- visuelle Dokumentation und einfache Bildauswertung vorbereiten
-
-Umfang:
-- Foto-Upload
-- Zuordnung zu Charge/Reaktor
-- Foto-Timeline
-- Storage-Konzept
-- Vision-Service-Stubs
-- Dashboard-KPIs und letzte Uploads
-- API fuer Dateiausgabe und Metadatenpflege
-
-Später anschließbar:
-- Füllstandserkennung
-- Farbveränderung
-- Kontaminationshinweise
-- Trübungsentwicklung
-- Schaumerkennung
-
-Akzeptanzkriterien:
-- Fotos werden gespeichert und angezeigt
-- Fotos sind Objekten zugeordnet
-- Grundstruktur für Vision-Pipeline vorhanden
-
-Offen nach diesem Schritt:
-- noch keine echte Bildanalyse
-- noch keine Kamera-Streams oder automatische Bewertung
-- noch keine Rechte- und Freigabelogik fuer Uploads
-
----
-
-## v0.1.7 – ABrain Integration V1
-Status: umgesetzt als aktueller Entwicklungsschritt
-
-Ziele:
-- LabOS mit Assistenzlogik verbinden
-
-Umfang:
-- ABrain-Connector erweitern
-- strukturierter LabOS-Kontext aus echten Daten
-- Presets fuer wiederkehrende Laborfragen
-- erste Assistenzseite mit freier Frage und nachvollziehbarer Antwort
-- Status- und Fehlerhandling
-- sauberer Fallback auf lokale Assistenzlogik
-
-Beispiel-Fragen:
-- Welche Charge braucht heute Aufmerksamkeit?
-- Welche Reaktoren sind ohne aktuelle Werte?
-- Welche Aufgaben sind überfällig?
-- Welche Probleme traten in den letzten 7 Tagen gehäuft auf?
-
-Akzeptanzkriterien:
-- ABrain kann strukturierte LabOS-Daten lesen
-- Antworten basieren nachvollziehbar auf Systemdaten
-- Kein harter Zwang zu Cloud-Modellen
-
-Offen nach diesem Schritt:
-- keine autonome Ausfuehrung oder Agenten-Orchestrierung
-- keine automatische Task-/Alert-Erzeugung
-- keine Vision-Auswertung oder Wiki-RAG in dieser V1
-
----
-
-## v0.1.8 – Automationsregeln V1
-Ziele:
-- nachvollziehbare, kontrollierte Automatisierung einführen
-
-Umfang:
-- Rule-Modell
-- einfache IF/THEN-Regeln
-- Regel-Editor
-- Event-Log
-- Dry-Run-Modus
-- manuelle Freigabeoption für kritische Aktionen
-
-Beispiele:
-- Wenn Temperatur > X, Alert erzeugen
-- Wenn pH außerhalb Bereich, Aufgabe anlegen
-- Wenn Charge Tag 10 erreicht, Probenahme erinnern
-
-Akzeptanzkriterien:
-- Regeln sind im System sichtbar
-- Regelaktionen werden protokolliert
-- Keine unsichtbare Automatisierung
-
----
-
-## v0.1.9 – Auth, Rollen, Sicherheit
-Ziele:
-- Vorbereitung für Mehrnutzerbetrieb
-
-Umfang:
-- Login
-- Benutzerrollen
-- einfache Rechteprüfung
-- sichere Konfiguration
-- Secrets nicht im Repo
-- Backups/Restore-Konzept
-- Audit-Logs vorbereiten
-
-Rollen anfangs:
-- admin
-- operator
-- viewer
-
-Akzeptanzkriterien:
-- Zugriff ist absicherbar
-- kritische Aktionen sind autorisierbar
-- grundlegende Sicherheitsbasis vorhanden
-
----
-
-## v0.2.0 – Operativ nutzbares LabOS
-Zielbild:
-- Chargenverwaltung nutzbar
-- Reaktorverwaltung nutzbar
-- Sensorik eingebunden
-- Aufgaben und Alerts aktiv
-- Wiki integriert
-- Fotos nutzbar
-- ABrain-Grundanbindung vorhanden
-- erste Automationsregeln vorhanden
-- auf Raspberry Pi stabil lauffähig
-
----
-
-# Funktionsbereiche
-
-## 1. Core Lab Operations
-- Chargen
-- Reaktoren
-- Aufgaben
-- Events
-- Statusmodelle
-- Historie
-
-## 2. Monitoring
-- Sensoren
+## Datenquellen
 - Sensorwerte
-- Live-Anzeige
-- Zeitreihen
-- Zustandsbewertung
+- Sensorstatus
+- Tasks
 - Alerts
+- Charges
+- Reactors
+- später anschlussfähig für Assets, ITOps und weitere Bereiche
 
-## 3. Knowledge
-- Wiki
-- SOPs
-- Tutorials
-- FAQ
-- Dev Docs
-- Verknüpfungen zu realen Objekten
+## Zielobjekte
+- neue Alerts erzeugen
+- neue Tasks erzeugen
 
-## 4. Intelligence
-- ABrain
-- Kontextabfragen
-- Auswertung
-- Assistenz
-- Vision-Integration
-
-## 5. Automation
-- Regeln
-- Event-Handling
-- Planbare Jobs
-- Logging
-- Nachvollziehbarkeit
-
-## 6. Platform
-- Auth
-- Rollen
-- Backups
-- Config
-- Deployment
-- Tests
-- Observability
+Die Regelengine ist der nächste logische Schritt, bevor LabOS auf weitere Domänen wie Geräte, Inventory oder ITOps ausgeweitet wird.
 
 ---
 
-# Technische Roadmap
+# Wichtige Anforderungen
 
-## Frontend
-- konsistentes Layout
-- Navigation vereinheitlichen
-- Form-Komponenten
-- Tabellenansichten
-- Detailseiten
-- Charts
-- Fehler-/Loading-Zustände
-- mobile brauchbar
-- Pi-Touchscreen-tauglich
-
-## Backend
-- CRUD konsolidieren
-- Schemas härten
-- Services statt Logik in Routern
-- Migrationen
-- Tests ausbauen
-- Jobs/Worker einführen
-- Sensor-Ingest
-- Regel-Engine vorbereiten
-
-## Datenbank
-- Migrationsstrategie
-- Indizes
-- Historisierung
-- Attachments/Fotos
-- Ereignisprotokoll
-- klare Statusfelder
-- referenzielle Integrität
-
-## Infrastruktur
-- Dev/Prod-Konfiguration
-- Volumes/Storage
-- Backup
-- Restore
-- Reverse Proxy optional
-- Raspberry-Pi-Deployment
-- Update-Strategie
+1. Bestehende Architektur respektieren.
+2. Raspberry-Pi-tauglich bleiben.
+3. Keine überkomplexe Workflow-Engine bauen.
+4. Regeln müssen nachvollziehbar und protokolliert sein.
+5. Kein Cloud-Zwang.
+6. Keine versteckte Magie.
+7. Keine Hardware-/GPIO-Aktionen in diesem Schritt.
+8. Dokumentation aktualisieren.
+9. Scope strikt halten.
+10. Die Umsetzung soll später sauber auf weitere Domänen erweiterbar sein.
 
 ---
 
-# Nicht-Ziele für frühe Versionen
+# Zielbild nach diesem Schritt
 
-Folgendes ist bewusst nicht Priorität für die ersten Versionen:
-- komplexe Multi-Tenant-Cloud
-- native Mobile App
-- vollautonome Regelung ohne Kontrollmechanismen
-- übertriebene Microservice-Zersplitterung
-- schwere Enterprise-Features vor operativer Nutzbarkeit
-- Vision/LLM als Kernersatz für saubere Datenerfassung
+Nach diesem Schritt soll LabOS bieten:
 
----
-
-# Risiken
-
-## Produkt-Risiken
-- zu breite Vision bei zu wenig operativem Kern
-- Dokumentation und Produkt driften auseinander
-- Sensorik wird geplant, aber nicht real integriert
-- Automatisierung wird zu früh zu komplex
-
-## Technische Risiken
-- Raspberry-Pi-Ressourcenlimit
-- zu schwere Frontend-/KI-Stacks
-- fehlende Datenmodell-Disziplin
-- fehlende Migrationsstrategie
-- UI wächst inkonsistent
-
-## Gegenmaßnahmen
-- kleine Meilensteine
-- Raspberry-Pi-Testbarkeit immer mitdenken
-- zuerst Kern-CRUD + Datenmodell
-- AI/Vision modular anbinden
-- jede größere Änderung dokumentieren
+- Rule-Modell in der DB
+- einfache regelbasierte Evaluation
+- UI für Regeln
+- Dry-Run/Test-Funktion
+- Event-/Execution-Log
+- echte V1-Aktionen:
+  - Task erzeugen
+  - Alert erzeugen
 
 ---
 
-# Definition of Done
+# Scope
 
-Ein Feature gilt als fertig, wenn:
-1. Code implementiert ist
-2. UI oder API sinnvoll nutzbar ist
-3. Fehlerfälle berücksichtigt sind
-4. Tests angemessen ergänzt wurden
-5. Doku aktualisiert wurde
-6. Docker/dev Setup weiter funktioniert
-7. Raspberry-Pi-Tauglichkeit mitgedacht wurde
+## 1. Datenmodell
+
+Ergänze mindestens:
+
+### Rule
+Mindestens Felder wie:
+- id
+- name
+- description
+- is_enabled
+- trigger_type
+- condition_type
+- condition_config
+- action_type
+- action_config
+- created_at
+- updated_at
+- last_evaluated_at optional
+
+Beispiele:
+- trigger_type: sensor_threshold, stale_sensor, overdue_tasks
+- condition_type: threshold_gt, threshold_lt, age_gt_hours, count_gt
+- action_type: create_alert, create_task
+
+### RuleExecution / RuleEvent
+Mindestens:
+- id
+- rule_id
+- status
+- dry_run
+- evaluation_summary
+- action_result
+- created_at
+
+Status z. B.:
+- matched
+- not_matched
+- executed
+- failed
+
+Wichtig:
+- Protokollierung muss nachvollziehbar sein
+- JSON/Text-basierte Zusammenfassungen sind okay
+- nicht übermodellieren
 
 ---
 
-# Nächste konkrete Schritte
+## 2. Alembic Migration
 
-## Sofort
-1. CRUD für Chargen fertig bauen
-2. CRUD für Reaktoren fertig bauen
-3. Alembic einführen
-4. API-Struktur härten
-5. Frontend-Formulare bauen
-
-## Danach
-6. Sensoren + Sensorwerte
-7. Tasks + Alerts
-8. Wiki-UI erweitern
-9. Foto-Upload
-10. ABrain mit echten LabOS-Daten koppeln
+Neue saubere Migration erstellen.
 
 ---
 
-# Release-Logik
+## 3. Backend Regel-Engine V1
 
-## Branching
-- `main` = stabiler Hauptstand
-- kurze Feature-Branches für zusammenhängende Arbeitspakete
-- kleine Commits, klare Commit-Messages
+Baue eine kleine, saubere Service-Schicht für:
+- Regeln laden
+- Regel validieren
+- Regel evaluieren
+- Action auslösen
+- Execution loggen
 
-## Releases
-- `v0.1.1`
-- `v0.1.2`
-- ...
-- `v0.1.9`
-- `v0.2.0`
+Wichtig:
+- keine große generische Engine
+- lieber wenige klar unterstützte Regeltypen
+- Code gut erweiterbar halten
 
 ---
 
-# Langfristige Perspektive
+## 4. Unterstützte V1-Regeln
 
-Später soll LabOS zusätzlich können:
-- mehrere Laborstandorte
-- mehrere Pis / Nodes
-- Geräte-Autodiscovery
-- Hardware-Profile
-- fortgeschrittene Vision-Module
-- Experiment-Design und Auswertung
-- digitale SOP-Ausführung
-- QR/Barcode-Workflows
-- digitale Laborzwillinge
-- vollständige Auditierbarkeit
-- optionale Cloud-Sync
+Bitte bewusst klein halten.
+
+Mindestens diese V1-Regeltypen:
+
+### A. Sensor Threshold
+Beispiel:
+- Wenn Sensor X > Schwellwert -> Alert erzeugen
+- Wenn Sensor X < Schwellwert -> Task erzeugen
+
+### B. Stale Sensor
+Beispiel:
+- Wenn Sensor seit N Stunden keine Werte hat -> Alert erzeugen
+
+### C. Overdue Tasks
+Beispiel:
+- Wenn offene Tasks überfällig sind -> Alert erzeugen
+
+Optional klein, wenn sauber:
+### D. Reactor Status
+- Wenn Reactor im Fehlerstatus -> Task erzeugen
+
+Bitte keine wilde DSL bauen.
+Eine einfache, kontrollierte JSON-/Schema-basierte Konfiguration reicht.
+
+---
+
+## 5. Backend API
+
+Implementiere mindestens:
+
+### Rules
+- GET /api/v1/rules
+- GET /api/v1/rules/{id}
+- POST /api/v1/rules
+- PUT /api/v1/rules/{id}
+- PATCH /api/v1/rules/{id}/enabled
+
+### Rule execution
+- POST /api/v1/rules/{id}/evaluate
+  - optional dry_run=true/false
+
+### Rule logs
+- GET /api/v1/rules/{id}/executions
+- optional GET /api/v1/rule-executions
+
+Optional sinnvoll:
+- POST /api/v1/rules/evaluate-all?dry_run=true
+
+Wichtig:
+- saubere Request-/Response-Schemas
+- klare Fehlerantworten
+- Rule-Konfiguration validieren
+- Router schlank halten
+
+---
+
+## 6. Actions V1
+
+Unterstützte Aktionen:
+
+### create_alert
+Mit konfigurierbaren Feldern wie:
+- title template
+- message template
+- severity
+- source_type
+- source_id optional
+
+### create_task
+Mit konfigurierbaren Feldern wie:
+- title template
+- description template
+- priority
+- due_at offset optional
+- charge_id/reactor_id optional wenn sauber ableitbar
+
+Wichtig:
+- keine Duplikats-Explosion erzeugen
+- wenn sinnvoll kleine Schutzlogik gegen identische Wiederholungen einbauen
+- aber V1 pragmatisch halten
+
+---
+
+## 7. Frontend
+
+Baue neue Seite:
+
+### /automation
+oder
+### /rules
+
+Mit:
+- Regelliste
+- Regel anlegen
+- Regel bearbeiten
+- aktiv/inaktiv schalten
+- dry-run / evaluate button
+- Anzeige letzter Ausführungen
+- Ergebnis sichtbar:
+  - matched / not matched
+  - action executed
+  - error
+
+UX:
+- funktional
+- erklärbar
+- keine unnötige Design-Spielerei
+- Regelkonfiguration lieber klar als hyper-generisch
+
+---
+
+## 8. Dashboard klein ergänzen
+
+Wenn sinnvoll klein umsetzbar:
+- Anzahl aktiver Regeln
+- letzte Regelereignisse oder letzte Ausführungen
+
+Dashboard nicht aufblasen.
+
+---
+
+## 9. Seed / Demo
+
+Ergänze einige sinnvolle Demo-Regeln, z. B.:
+- Temperatur zu hoch -> Alert
+- pH zu niedrig -> Task
+- Sensor ohne Werte 24h -> Alert
+- überfällige Tasks -> Alert
+
+Wichtig:
+- Seed klein und nachvollziehbar
+- keine riesige Demo-Magie
+
+---
+
+## 10. Tests
+
+Ergänze sinnvolle Backend-Tests für:
+- Regel anlegen
+- Regel validieren
+- dry-run evaluation
+- echte execution
+- create_alert action
+- create_task action
+- stale sensor case
+- overdue tasks case
+- execution log retrieval
+- Migration darf nicht brechen
+
+Bitte robust, aber pragmatisch.
+
+---
+
+## 11. Doku
+
+Aktualisiere mindestens:
+- README.md
+- ROADMAP.md
+
+Dokumentiere:
+- welche Regeltypen unterstützt werden
+- welche Actions unterstützt werden
+- was dry_run bedeutet
+- wie Regeln getestet werden
+- wie die Engine bewusst begrenzt ist
+- wie dieser Schritt als Grundlage für spätere Multi-Domain-Erweiterungen dient
+
+---
+
+# Wichtige Abgrenzung
+
+NICHT in diesem Schritt:
+- GPIO / Relais / Pumpensteuerung
+- Hardware Actions
+- Mail / SMS / Push Notifications
+- Cron-/Scheduler-Cluster
+- komplexe DSL
+- Multi-Step Workflows
+- autonome ABrain-Ausführung
+- Vision-Regeln
+- Wiki-RAG oder Wissensregeln
+- Rollen/Auth
+- AssetOps / InventoryOps / ITOps bereits implementieren
+
+Nur:
+
+eine nachvollziehbare, kontrollierte Regelengine V1 mit Task/Alert-Aktionen.
+
+---
+
+# Technische Leitlinien
+
+- Pi-freundlich
+- keine schweren neuen Libraries
+- kleine Service-Schicht
+- klare API-Struktur
+- lieber wenige gute Regeltypen als halbfertige Universal-Engine
+- nachvollziehbare Logs
+- keine stille Automatik
+- spätere Erweiterung auf weitere Domänen ermöglichen, aber in diesem Schritt nicht vorwegnehmen
+
+---
+
+# Arbeitsweise
+
+1. Analyse aktueller Module und vorhandener Datenquellen/Zielobjekte.
+2. Minimal sauberes Rule-Modell definieren.
+3. Migration bauen.
+4. Backend-Engine + API implementieren.
+5. UI für Regeln und Dry-Run bauen.
+6. Tests ergänzen.
+7. Doku aktualisieren.
+
+---
+
+# Abschlussausgabe
+
+Bitte liefern:
+
+1. Welcher Schritt wurde umgesetzt?
+2. Warum war das der richtige nächste Schritt?
+3. Welche Dateien wurden geändert?
+4. Was wurde konkret gebaut?
+5. Welche Entscheidungen wurden getroffen?
+6. Welche offenen Punkte bleiben?
+7. Exakte lokale Test-/Start-/Migrationsbefehle
+8. Passender Commit-Message-Vorschlag
+
+Falls sinnvoll kleine Konsistenzverbesserungen im Scope durchführen.

@@ -83,6 +83,33 @@ export const abrainContextSectionOptions = [
   { value: 'photos', label: 'Fotos' },
 ] as const;
 
+export const ruleTriggerTypeOptions = [
+  { value: 'sensor_threshold', label: 'Sensor Threshold' },
+  { value: 'stale_sensor', label: 'Stale Sensor' },
+  { value: 'overdue_tasks', label: 'Overdue Tasks' },
+  { value: 'reactor_status', label: 'Reactor Status' },
+] as const;
+
+export const ruleConditionTypeOptions = [
+  { value: 'threshold_gt', label: 'Threshold >' },
+  { value: 'threshold_lt', label: 'Threshold <' },
+  { value: 'age_gt_hours', label: 'Age > Hours' },
+  { value: 'count_gt', label: 'Count >' },
+  { value: 'status_is', label: 'Status Is' },
+] as const;
+
+export const ruleActionTypeOptions = [
+  { value: 'create_alert', label: 'Alert erzeugen' },
+  { value: 'create_task', label: 'Task erzeugen' },
+] as const;
+
+export const ruleExecutionStatusOptions = [
+  { value: 'matched', label: 'Matched' },
+  { value: 'not_matched', label: 'Not Matched' },
+  { value: 'executed', label: 'Executed' },
+  { value: 'failed', label: 'Failed' },
+] as const;
+
 export type ChargeStatus = (typeof chargeStatusOptions)[number]['value'];
 export type ReactorStatus = (typeof reactorStatusOptions)[number]['value'];
 export type SensorType = (typeof sensorTypeOptions)[number]['value'];
@@ -94,6 +121,10 @@ export type AlertStatus = (typeof alertStatusOptions)[number]['value'];
 export type AlertSourceType = (typeof alertSourceTypeOptions)[number]['value'];
 export type ABrainPreset = (typeof abrainPresetOptions)[number]['value'];
 export type ABrainContextSection = (typeof abrainContextSectionOptions)[number]['value'];
+export type RuleTriggerType = (typeof ruleTriggerTypeOptions)[number]['value'];
+export type RuleConditionType = (typeof ruleConditionTypeOptions)[number]['value'];
+export type RuleActionType = (typeof ruleActionTypeOptions)[number]['value'];
+export type RuleExecutionStatus = (typeof ruleExecutionStatusOptions)[number]['value'];
 
 export type Charge = {
   id: number;
@@ -308,6 +339,37 @@ export type ABrainQueryResponse = {
   note: string | null;
 };
 
+export type Rule = {
+  id: number;
+  name: string;
+  description: string | null;
+  is_enabled: boolean;
+  trigger_type: RuleTriggerType;
+  condition_type: RuleConditionType;
+  condition_config: Record<string, unknown>;
+  action_type: RuleActionType;
+  action_config: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+  last_evaluated_at: string | null;
+};
+
+export type RuleExecution = {
+  id: number;
+  rule_id: number;
+  rule_name: string | null;
+  status: RuleExecutionStatus;
+  dry_run: boolean;
+  evaluation_summary: Record<string, unknown>;
+  action_result: Record<string, unknown>;
+  created_at: string;
+};
+
+export type RuleEvaluationResponse = {
+  rule: Rule;
+  execution: RuleExecution;
+};
+
 export type DashboardSummary = {
   active_charges: number;
   reactors_online: number;
@@ -319,8 +381,10 @@ export type DashboardSummary = {
   open_alerts: number;
   photo_count: number;
   uploads_last_7_days: number;
+  active_rules: number;
   sensor_overview: Sensor[];
   recent_alerts: Alert[];
   recent_photos: Photo[];
+  recent_rule_executions: RuleExecution[];
   message: string;
 };
