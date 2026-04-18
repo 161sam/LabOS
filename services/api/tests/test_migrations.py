@@ -20,6 +20,10 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
         'reactor',
         'sensor',
         'sensorvalue',
+        'telemetryvalue',
+        'devicenode',
+        'reactorsetpoint',
+        'reactorcommand',
         'task',
         'alert',
         'photo',
@@ -56,6 +60,52 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
 
     sensor_value_columns = {column['name'] for column in inspector.get_columns('sensorvalue')}
     assert {'id', 'sensor_id', 'value', 'recorded_at', 'source'} <= sensor_value_columns
+
+    telemetry_value_columns = {column['name'] for column in inspector.get_columns('telemetryvalue')}
+    assert {
+        'id',
+        'reactor_id',
+        'sensor_type',
+        'value',
+        'unit',
+        'source',
+        'timestamp',
+        'created_at',
+    } <= telemetry_value_columns
+
+    device_node_columns = {column['name'] for column in inspector.get_columns('devicenode')}
+    assert {
+        'id',
+        'name',
+        'node_type',
+        'status',
+        'last_seen_at',
+        'firmware_version',
+        'reactor_id',
+        'created_at',
+        'updated_at',
+    } <= device_node_columns
+
+    reactor_setpoint_columns = {column['name'] for column in inspector.get_columns('reactorsetpoint')}
+    assert {
+        'id',
+        'reactor_id',
+        'parameter',
+        'target_value',
+        'min_value',
+        'max_value',
+        'mode',
+        'updated_at',
+    } <= reactor_setpoint_columns
+
+    reactor_command_columns = {column['name'] for column in inspector.get_columns('reactorcommand')}
+    assert {
+        'id',
+        'reactor_id',
+        'command_type',
+        'status',
+        'created_at',
+    } <= reactor_command_columns
 
     task_columns = {column['name'] for column in inspector.get_columns('task')}
     assert {
@@ -282,6 +332,39 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
         'ix_sensorvalue_sensor_id_recorded_at',
     } <= sensor_value_indexes
 
+    telemetry_value_indexes = {index['name'] for index in inspector.get_indexes('telemetryvalue')}
+    assert {
+        'ix_telemetryvalue_reactor_id',
+        'ix_telemetryvalue_reactor_id_timestamp',
+        'ix_telemetryvalue_sensor_type',
+        'ix_telemetryvalue_timestamp',
+    } <= telemetry_value_indexes
+
+    device_node_indexes = {index['name'] for index in inspector.get_indexes('devicenode')}
+    assert {
+        'ix_devicenode_name',
+        'ix_devicenode_node_type',
+        'ix_devicenode_status',
+        'ix_devicenode_reactor_id',
+        'ix_devicenode_last_seen_at',
+    } <= device_node_indexes
+
+    reactor_setpoint_indexes = {index['name'] for index in inspector.get_indexes('reactorsetpoint')}
+    assert {
+        'ix_reactorsetpoint_reactor_id',
+        'ix_reactorsetpoint_reactor_id_parameter',
+        'ix_reactorsetpoint_parameter',
+        'ix_reactorsetpoint_mode',
+    } <= reactor_setpoint_indexes
+
+    reactor_command_indexes = {index['name'] for index in inspector.get_indexes('reactorcommand')}
+    assert {
+        'ix_reactorcommand_reactor_id',
+        'ix_reactorcommand_reactor_id_created_at',
+        'ix_reactorcommand_status',
+        'ix_reactorcommand_command_type',
+    } <= reactor_command_indexes
+
     task_indexes = {index['name'] for index in inspector.get_indexes('task')}
     assert {
         'ix_task_status',
@@ -368,6 +451,6 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
 
     with engine.connect() as connection:
         version = connection.execute(text('SELECT version_num FROM alembic_version')).scalar_one()
-        assert version == '20260418_0010'
+        assert version == '20260418_0011'
 
     engine.dispose()

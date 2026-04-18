@@ -12,6 +12,7 @@ from ..services import alerts as alert_service
 from ..services import inventory as inventory_service
 from ..services import labels as label_service
 from ..services import photos as photo_service
+from ..services import reactor_control as reactor_control_service
 from ..services import reactor_ops as reactor_ops_service
 from ..services import rules as rule_service
 from ..services import sensors as sensor_service
@@ -32,6 +33,7 @@ def dashboard_summary(session: Session = Depends(get_session)):
     reactors_attention = reactor_ops_service.count_reactors_with_attention(session)
     reactors_harvest_ready = reactor_ops_service.count_harvest_ready_reactors(session)
     reactors_incident_or_contamination = reactor_ops_service.count_reactors_with_incident_or_contamination(session)
+    offline_devices = reactor_control_service.count_offline_devices(session)
     active_sensors = len(session.exec(select(Sensor).where(Sensor.status == 'active')).all())
     error_sensors = len(session.exec(select(Sensor).where(Sensor.status == 'error')).all())
     active_assets = len(session.exec(select(Asset).where(Asset.status == 'active')).all())
@@ -67,6 +69,7 @@ def dashboard_summary(session: Session = Depends(get_session)):
         'reactors_attention': reactors_attention,
         'reactors_harvest_ready': reactors_harvest_ready,
         'reactors_incident_or_contamination': reactors_incident_or_contamination,
+        'offline_devices': offline_devices,
         'active_sensors': active_sensors,
         'error_sensors': error_sensors,
         'active_assets': active_assets,
@@ -85,6 +88,7 @@ def dashboard_summary(session: Session = Depends(get_session)):
         'uploads_last_7_days': photo_service.count_recent_uploads(session, days=7),
         'active_rules': rule_service.count_active_rules(session),
         'sensor_overview': sensor_service.list_sensor_overview(session, limit=4),
+        'reactor_telemetry_overview': reactor_control_service.list_reactor_telemetry_overview(session),
         'recent_alerts': alert_service.list_alerts(session, limit=4),
         'recent_photos': photo_service.list_photos(session, latest=True, limit=4),
         'recent_reactor_events': reactor_ops_service.list_recent_events(session, limit=4),

@@ -83,6 +83,12 @@ export function DashboardClient() {
       </div>
 
       <div className="grid cols-3">
+        <Card title="Offline Devices"><div className="kpi">{data.offline_devices}</div></Card>
+        <Card title="Reactor Control Layer"><div className="kpi">{data.reactor_telemetry_overview.length}</div></Card>
+        <Card title="Offene Alerts"><div className="kpi">{data.open_alerts}</div></Card>
+      </div>
+
+      <div className="grid cols-3">
         <Card title="Aktive Assets"><div className="kpi">{data.active_assets}</div></Card>
         <Card title="Assets in Wartung"><div className="kpi">{data.assets_in_maintenance}</div></Card>
         <Card title="Assets im Fehler"><div className="kpi">{data.assets_in_error}</div></Card>
@@ -228,6 +234,35 @@ export function DashboardClient() {
                       <td><span className={`badge badge-${execution.status}`}>{execution.status}</span></td>
                       <td>{execution.dry_run ? 'Ja' : 'Nein'}</td>
                       <td>{new Date(execution.created_at).toLocaleString('de-DE')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+
+        <Card title="Reactor Telemetry">
+          {data.reactor_telemetry_overview.length === 0 ? (
+            <p className="muted">Noch keine Reactor-Control-Telemetry vorhanden.</p>
+          ) : (
+            <div className="tableWrap">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Reaktor</th>
+                    <th>Temp</th>
+                    <th>pH</th>
+                    <th>Last Telemetry</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.reactor_telemetry_overview.map((item) => (
+                    <tr key={item.reactor_id}>
+                      <td>{item.reactor_name}</td>
+                      <td>{item.latest_temp !== null ? `${item.latest_temp} ${item.latest_temp_unit || ''}` : 'n/a'}</td>
+                      <td>{item.latest_ph !== null ? `${item.latest_ph} ${item.latest_ph_unit || ''}` : 'n/a'}</td>
+                      <td>{item.last_telemetry_at ? new Date(item.last_telemetry_at).toLocaleString('de-DE') : 'Noch kein Wert'}</td>
                     </tr>
                   ))}
                 </tbody>

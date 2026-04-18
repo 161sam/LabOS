@@ -87,6 +87,73 @@ class ReactorEvent(SQLModel, table=True):
     created_by_user_id: Optional[int] = Field(default=None, foreign_key='useraccount.id', index=True)
 
 
+class TelemetryValue(SQLModel, table=True):
+    __table_args__ = (
+        Index('ix_telemetryvalue_reactor_id_timestamp', 'reactor_id', 'timestamp'),
+        Index('ix_telemetryvalue_sensor_type', 'sensor_type'),
+        Index('ix_telemetryvalue_timestamp', 'timestamp'),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    reactor_id: int = Field(foreign_key='reactor.id', index=True)
+    sensor_type: str
+    value: float
+    unit: str
+    source: str = 'manual'
+    timestamp: datetime = Field(default_factory=_utcnow)
+    created_at: datetime = Field(default_factory=_utcnow)
+
+
+class DeviceNode(SQLModel, table=True):
+    __table_args__ = (
+        Index('ix_devicenode_node_type', 'node_type'),
+        Index('ix_devicenode_status', 'status'),
+        Index('ix_devicenode_reactor_id', 'reactor_id'),
+        Index('ix_devicenode_last_seen_at', 'last_seen_at'),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(index=True)
+    node_type: str
+    status: str = 'online'
+    last_seen_at: datetime = Field(default_factory=_utcnow)
+    firmware_version: Optional[str] = None
+    reactor_id: Optional[int] = Field(default=None, foreign_key='reactor.id', index=True)
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
+
+
+class ReactorSetpoint(SQLModel, table=True):
+    __table_args__ = (
+        Index('ix_reactorsetpoint_reactor_id_parameter', 'reactor_id', 'parameter'),
+        Index('ix_reactorsetpoint_parameter', 'parameter'),
+        Index('ix_reactorsetpoint_mode', 'mode'),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    reactor_id: int = Field(foreign_key='reactor.id', index=True)
+    parameter: str
+    target_value: float
+    min_value: Optional[float] = None
+    max_value: Optional[float] = None
+    mode: str = 'manual'
+    updated_at: datetime = Field(default_factory=_utcnow)
+
+
+class ReactorCommand(SQLModel, table=True):
+    __table_args__ = (
+        Index('ix_reactorcommand_reactor_id_created_at', 'reactor_id', 'created_at'),
+        Index('ix_reactorcommand_status', 'status'),
+        Index('ix_reactorcommand_command_type', 'command_type'),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    reactor_id: int = Field(foreign_key='reactor.id', index=True)
+    command_type: str
+    status: str = 'pending'
+    created_at: datetime = Field(default_factory=_utcnow)
+
+
 class Sensor(SQLModel, table=True):
     __table_args__ = (
         Index('ix_sensor_name', 'name'),

@@ -52,34 +52,38 @@ LabOS ist nicht nur eine einzelne Labor-App, sondern das zentrale Betriebssystem
 - QR / Label / Traceability V1
 - Rollen / Auth V1
 - ReactorOps / Digital Twin V1
+- Reactor Control / Telemetry V1
 - Dashboard-Basis
 - Wiki-Basis
 
 ---
 
-# Aktueller Status: ReactorOps / Digital Twin V1
+# Aktueller Status: Reactor Control / Telemetry V1
 
-Der aktuelle Schritt macht Reaktoren in LabOS von reinen Stammdatensaetzen zu gefuehrten biologischen und technischen Prozessobjekten.
+Der aktuelle Schritt erweitert LabOS von ReactorOps-Sollzustand zu einer ersten Ist-/Control-Schicht fuer reale Messwerte, Setpoints und vorbereitete Kommandos.
 
 ## Enthalten
 
-- `ReactorTwin` pro Reaktor fuer Phase, biologische Lage, technische Lage und Sollbereiche
-- `ReactorEvent` als kleine Prozesshistorie fuer Inokulation, Beobachtung, Mediumwechsel, Wartung und Incident-Kontext
-- aggregierte ReactorOps-Sicht mit offenen Tasks, letzten Alerts, Photos und Sensoren pro Reaktor
-- Dashboard-KPIs fuer ReactorOps Attention, Harvest Ready und Incident-/Kontaminationslagen
-- Seed-Datensaetze fuer Growth, Stabilization und Maintenance/Warning
-- Grundlage fuer spaetere Reactor Control / Telemetry / Calibration / Safety ohne schon Steuerungslogik einzubauen
+- `TelemetryValue` als Pi-taugliche Zeitreihenbasis pro Reaktor mit Index auf Reaktor und Zeit
+- `DeviceNode` als minimale Node-/Hardware-Abstraktion fuer spaetere ESP32- und Controller-Anbindung
+- `ReactorSetpoint` fuer Sollwerte und Korridore je Parameter
+- `ReactorCommand` als stubartige Queue-/Log-Schicht fuer vorbereitete Geraetekommandos
+- Reactor-Control-UI fuer letzte Werte, Historie, Setpoints und Command-Buttons
+- Dashboard-Erweiterung fuer Temp-/pH-Ueberblick, Offline-Devices und letzte Telemetrie
+- Seed-Daten fuer Devices, Setpoints und Beispiel-Telemetrie
+- Grundlage fuer spaetere Hardwareintegration, Automation, Calibration und Safety ohne schon echte Steuerbefehle auszufuehren
 
 ## Bewusst noch nicht enthalten
 
-- Hardware-Kommandos
+- MQTT oder WebSockets
+- GPIO-, Serial- oder Firmware-Aufrufe
+- echte Command-Ausfuehrung mit ACK/Retry
 - Licht-/Temperatur-Scheduler
 - Dosing- und PID-Logik
 - Kalibrier-Workflows als eigenes Modul
 - Safety-/Interlock-Systeme
 - Incident-Automation
 - Multi-Reactor-Orchestrierung
-- komplexe Rezept- oder Medien-Engine
 
 ---
 
@@ -105,7 +109,7 @@ Das bedeutet:
 2. Asset-nahe Wartungslogik mit Alerts und Regeln
 3. Verbrauchshistorie / Nachkauf-Vorbereitung auf Basis des Inventory- und Label-Modells
 4. Rollen / Auth V1 zu feineren Berechtigungen, Safety-Guards und spaeterem Audit-Ausbau vorbereiten
-5. ReactorOps V1 an Telemetry-, Calibration- und Safety-Module anschlussfaehig vertiefen
+5. Reactor Control V1 an echte Hardwarepfade, Device-Health und spaetere Safety-Guards anschlussfaehig vertiefen
 
 ---
 
@@ -154,6 +158,7 @@ Ziel:
 - QR-fähige reale Objekte
 - Rollenmodell und lokale Auth-Basis
 - ReactorOps-Grundlage mit Digital Twin
+- Reactor-Control-Basis mit Telemetrie, Setpoints und Devices
 - Wartungslogik
 - erste ReactorOps-Strukturen
 
@@ -220,11 +225,11 @@ Ein Reaktor wird nicht nur Stammdatensatz, sondern Prozessobjekt.
   - Licht
   - Flow
 - Setpoints
-- Scheduler
-- Manual Override
-- Modul-/Node-Struktur
-- ACK-/Command-Vorbereitung
-- Export / API
+- Device- / Node-Struktur
+- Command-Log / Stub-Queue
+- API fuer Ingest, Latest und History
+- vorbereitete spaetere ACK-/Command-Pipeline
+- einfache UI fuer Werte, Setpoints und Commands
 
 ---
 

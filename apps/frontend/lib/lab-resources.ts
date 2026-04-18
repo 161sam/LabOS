@@ -60,6 +60,68 @@ export const reactorEventTypeOptions = [
   { value: 'incident', label: 'Incident' },
 ] as const;
 
+export const telemetrySensorTypeOptions = [
+  { value: 'temp', label: 'Temperatur' },
+  { value: 'ph', label: 'pH' },
+  { value: 'light', label: 'Licht' },
+  { value: 'flow', label: 'Flow' },
+  { value: 'ec', label: 'EC' },
+  { value: 'co2', label: 'CO2' },
+  { value: 'humidity', label: 'Luftfeuchte' },
+] as const;
+
+export const telemetrySourceOptions = [
+  { value: 'manual', label: 'Manual' },
+  { value: 'device', label: 'Device' },
+  { value: 'simulated', label: 'Simulated' },
+] as const;
+
+export const deviceNodeTypeOptions = [
+  { value: 'sampling', label: 'Sampling' },
+  { value: 'env_control', label: 'Env Control' },
+  { value: 'sensor_bridge', label: 'Sensor Bridge' },
+  { value: 'pump_driver', label: 'Pump Driver' },
+  { value: 'light_controller', label: 'Light Controller' },
+] as const;
+
+export const deviceNodeStatusOptions = [
+  { value: 'online', label: 'Online' },
+  { value: 'offline', label: 'Offline' },
+  { value: 'warning', label: 'Warning' },
+  { value: 'error', label: 'Error' },
+] as const;
+
+export const reactorControlParameterOptions = [
+  { value: 'temp', label: 'Temperatur' },
+  { value: 'ph', label: 'pH' },
+  { value: 'light', label: 'Licht' },
+  { value: 'flow', label: 'Flow' },
+  { value: 'ec', label: 'EC' },
+  { value: 'co2', label: 'CO2' },
+  { value: 'humidity', label: 'Luftfeuchte' },
+] as const;
+
+export const reactorSetpointModeOptions = [
+  { value: 'auto', label: 'Auto' },
+  { value: 'manual', label: 'Manual' },
+] as const;
+
+export const reactorCommandTypeOptions = [
+  { value: 'light_on', label: 'Light On' },
+  { value: 'light_off', label: 'Light Off' },
+  { value: 'pump_on', label: 'Pump On' },
+  { value: 'pump_off', label: 'Pump Off' },
+  { value: 'aeration_start', label: 'Aeration Start' },
+  { value: 'aeration_stop', label: 'Aeration Stop' },
+  { value: 'sample_capture', label: 'Sample Capture' },
+] as const;
+
+export const reactorCommandStatusOptions = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'sent', label: 'Sent' },
+  { value: 'failed', label: 'Failed' },
+] as const;
+
 export const assetTypeOptions = [
   { value: 'printer_3d', label: '3D-Drucker' },
   { value: 'microscope', label: 'Mikroskop' },
@@ -225,6 +287,14 @@ export type ReactorTechnicalState = (typeof reactorTechnicalStateOptions)[number
 export type ReactorBiologicalState = (typeof reactorBiologicalStateOptions)[number]['value'];
 export type ReactorContaminationState = (typeof reactorContaminationStateOptions)[number]['value'];
 export type ReactorEventType = (typeof reactorEventTypeOptions)[number]['value'];
+export type TelemetrySensorType = (typeof telemetrySensorTypeOptions)[number]['value'];
+export type TelemetrySource = (typeof telemetrySourceOptions)[number]['value'];
+export type DeviceNodeType = (typeof deviceNodeTypeOptions)[number]['value'];
+export type DeviceNodeStatus = (typeof deviceNodeStatusOptions)[number]['value'];
+export type ReactorControlParameter = (typeof reactorControlParameterOptions)[number]['value'];
+export type ReactorSetpointMode = (typeof reactorSetpointModeOptions)[number]['value'];
+export type ReactorCommandType = (typeof reactorCommandTypeOptions)[number]['value'];
+export type ReactorCommandStatus = (typeof reactorCommandStatusOptions)[number]['value'];
 export type AssetType = (typeof assetTypeOptions)[number]['value'];
 export type AssetStatus = (typeof assetStatusOptions)[number]['value'];
 export type InventoryCategory = (typeof inventoryCategoryOptions)[number]['value'];
@@ -282,6 +352,52 @@ export type ReactorEvent = {
   created_by_username: string | null;
 };
 
+export type TelemetryValue = {
+  id: number;
+  reactor_id: number;
+  reactor_name: string | null;
+  sensor_type: TelemetrySensorType;
+  value: number;
+  unit: string;
+  source: TelemetrySource;
+  timestamp: string;
+  created_at: string;
+};
+
+export type DeviceNode = {
+  id: number;
+  name: string;
+  node_type: DeviceNodeType;
+  status: DeviceNodeStatus;
+  last_seen_at: string;
+  firmware_version: string | null;
+  reactor_id: number | null;
+  reactor_name: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ReactorSetpoint = {
+  id: number;
+  reactor_id: number;
+  reactor_name: string | null;
+  parameter: ReactorControlParameter;
+  target_value: number;
+  min_value: number | null;
+  max_value: number | null;
+  mode: ReactorSetpointMode;
+  updated_at: string;
+};
+
+export type ReactorCommand = {
+  id: number;
+  reactor_id: number;
+  reactor_name: string | null;
+  command_type: ReactorCommandType;
+  status: ReactorCommandStatus;
+  created_at: string;
+};
+
 export type ReactorTwin = {
   id: number | null;
   is_configured: boolean;
@@ -326,6 +442,16 @@ export type ReactorTwinDetail = ReactorTwin & {
   recent_alerts: Alert[];
   recent_photos: Photo[];
   recent_sensors: Sensor[];
+};
+
+export type ReactorTelemetryOverview = {
+  reactor_id: number;
+  reactor_name: string;
+  latest_temp: number | null;
+  latest_temp_unit: string | null;
+  latest_ph: number | null;
+  latest_ph_unit: string | null;
+  last_telemetry_at: string | null;
 };
 
 export type Asset = {
@@ -680,6 +806,7 @@ export type DashboardSummary = {
   reactors_attention: number;
   reactors_harvest_ready: number;
   reactors_incident_or_contamination: number;
+  offline_devices: number;
   active_sensors: number;
   error_sensors: number;
   active_assets: number;
@@ -698,6 +825,7 @@ export type DashboardSummary = {
   uploads_last_7_days: number;
   active_rules: number;
   sensor_overview: Sensor[];
+  reactor_telemetry_overview: ReactorTelemetryOverview[];
   recent_alerts: Alert[];
   recent_photos: Photo[];
   recent_reactor_events: ReactorEvent[];

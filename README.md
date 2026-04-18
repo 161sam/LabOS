@@ -12,6 +12,7 @@ LabOS ist ein Raspberry-Pi-taugliches Operating System fuer EcoSphereLab. Es ver
 - QR / Label / Traceability V1 mit scan-faehigen Objekt-Links
 - Rollen / Auth V1 mit lokalen Benutzerkonten, Login und API-Schutz
 - ReactorOps / Digital Twin V1 mit Betriebszustand, Zielbereichen und Event-Historie pro Reaktor
+- Reactor Control / Telemetry V1 mit Zeitreihen, Setpoints, Devices und Command-Stub-Queue
 - Sensorik V1 mit CRUD, Werte-Ingest und Verlauf
 - Tasks + Alerts V1 mit operativen Dashboards
 - Foto Upload + Vision Basis V1
@@ -159,6 +160,66 @@ Bewusst noch nicht enthalten:
 - komplexe Medien-/Rezept-Engine
 
 ReactorOps V1 schafft damit die Bruecke zwischen Reactor-Stammdaten, Sensorik, Fotos, Alerts und spaeterer Reactor Control / Telemetry / Calibration / Safety.
+
+## Reactor Control / Telemetry V1
+
+Reactor Control erweitert LabOS von reinem Soll- und Prozesskontext auf die erste Ist-/Control-Schicht.
+
+Unterschied zu ReactorOps:
+
+- `ReactorOps` beschreibt den digitalen Betriebszwilling: Phase, biologischer Zustand, technischer Zustand und Zielkorridore
+- `Reactor Control` sammelt reale Telemetrie, verwaltet Setpoints, fuehrt Devices/Nodes und protokolliert vorbereitete Kommandos
+- in V1 bleibt die Hardwareausfuehrung bewusst aus; LabOS baut nur die saubere Bruecke zwischen Twin, Telemetrie und spaeterer Geraeteintegration
+
+Enthalten:
+
+- `TelemetryValue` als leichte Zeitreihen-Tabelle pro Reaktor fuer `temp`, `ph`, `light`, `flow`, `ec`, `co2` und `humidity`
+- `DeviceNode` als minimale Hardware-/Node-Schicht fuer ESP32-, Sensor-Bridge- oder Controller-Knoten
+- `ReactorSetpoint` fuer Zielwerte und optionale Min-/Max-Korridore pro Parameter
+- `ReactorCommand` als Command-Log bzw. Stub-Queue ohne echte Ausfuehrung
+- Reactor-Control-Seite unter `/reactor-control`
+- Dashboard-Erweiterung mit letztem Telemetriezeitpunkt, Temp-/pH-Uebersicht und Offline-Devices
+
+Backend-Endpunkte:
+
+- `POST /api/v1/telemetry`
+- `GET /api/v1/reactors/{reactor_id}/telemetry`
+- `GET /api/v1/reactors/{reactor_id}/telemetry/latest`
+- `GET /api/v1/devices`
+- `POST /api/v1/devices`
+- `PATCH /api/v1/devices/{device_id}`
+- `GET /api/v1/reactors/{reactor_id}/setpoints`
+- `POST /api/v1/reactors/{reactor_id}/setpoints`
+- `PATCH /api/v1/setpoints/{setpoint_id}`
+- `POST /api/v1/reactors/{reactor_id}/commands`
+- `GET /api/v1/reactors/{reactor_id}/commands`
+
+Beispiel fuer Telemetry-Ingest:
+
+```bash
+curl -b .labos-cookie.txt -X POST http://localhost:8000/api/v1/telemetry \
+  -H "Content-Type: application/json" \
+  -d '{"reactor_id":1,"sensor_type":"temp","value":29.8,"unit":"degC","source":"device"}'
+```
+
+Setpoints pro Reaktor abrufen:
+
+```bash
+curl -b .labos-cookie.txt http://localhost:8000/api/v1/reactors/1/setpoints
+```
+
+Bewusst noch nicht enthalten:
+
+- MQTT
+- WebSockets
+- GPIO- oder Firmware-Aufrufe
+- PID-Regelung
+- Scheduler fuer Licht-/Temperaturzyklen
+- Dosing-Logik
+- echte Command-Dispatch- oder ACK-Pipelines
+- externe Device-Services
+
+Reactor Control / Telemetry V1 schafft damit die erste belastbare Bruecke von ReactorOps-Sollzustand zu realen Ist-Werten und bereitet spaetere Hardwareintegration, Automation, Calibration und Safety sauber vor.
 
 ## CRUD-Stand fuer Chargen und Reaktoren
 

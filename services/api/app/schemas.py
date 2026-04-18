@@ -67,6 +67,68 @@ class ReactorEventType(str, Enum):
     incident = 'incident'
 
 
+class TelemetrySensorType(str, Enum):
+    temp = 'temp'
+    ph = 'ph'
+    light = 'light'
+    flow = 'flow'
+    ec = 'ec'
+    co2 = 'co2'
+    humidity = 'humidity'
+
+
+class TelemetrySource(str, Enum):
+    manual = 'manual'
+    device = 'device'
+    simulated = 'simulated'
+
+
+class DeviceNodeType(str, Enum):
+    sampling = 'sampling'
+    env_control = 'env_control'
+    sensor_bridge = 'sensor_bridge'
+    pump_driver = 'pump_driver'
+    light_controller = 'light_controller'
+
+
+class DeviceNodeStatus(str, Enum):
+    online = 'online'
+    offline = 'offline'
+    warning = 'warning'
+    error = 'error'
+
+
+class ReactorControlParameter(str, Enum):
+    temp = 'temp'
+    ph = 'ph'
+    light = 'light'
+    flow = 'flow'
+    ec = 'ec'
+    co2 = 'co2'
+    humidity = 'humidity'
+
+
+class ReactorSetpointMode(str, Enum):
+    auto = 'auto'
+    manual = 'manual'
+
+
+class ReactorCommandType(str, Enum):
+    light_on = 'light_on'
+    light_off = 'light_off'
+    pump_on = 'pump_on'
+    pump_off = 'pump_off'
+    aeration_start = 'aeration_start'
+    aeration_stop = 'aeration_stop'
+    sample_capture = 'sample_capture'
+
+
+class ReactorCommandStatus(str, Enum):
+    pending = 'pending'
+    sent = 'sent'
+    failed = 'failed'
+
+
 class AssetType(str, Enum):
     printer_3d = 'printer_3d'
     microscope = 'microscope'
@@ -394,6 +456,135 @@ class ReactorEventPayload(AppSchema):
 
 class ReactorEventCreate(ReactorEventPayload):
     pass
+
+
+class TelemetryValueCreate(AppSchema):
+    reactor_id: int = Field(ge=1)
+    sensor_type: TelemetrySensorType
+    value: float
+    unit: str = Field(min_length=1, max_length=40)
+    source: TelemetrySource = TelemetrySource.manual
+    timestamp: datetime | None = None
+
+    @field_validator('unit')
+    @classmethod
+    def normalize_required_unit(cls, value: str) -> str:
+        return _normalize_required_text(value)
+
+
+class TelemetryValueRead(AppSchema):
+    id: int
+    reactor_id: int
+    reactor_name: str | None = None
+    sensor_type: TelemetrySensorType
+    value: float
+    unit: str
+    source: TelemetrySource
+    timestamp: datetime
+    created_at: datetime
+
+
+class DeviceNodePayload(AppSchema):
+    name: str = Field(min_length=1, max_length=160)
+    node_type: DeviceNodeType
+    status: DeviceNodeStatus = DeviceNodeStatus.online
+    last_seen_at: datetime | None = None
+    firmware_version: str | None = Field(default=None, max_length=80)
+    reactor_id: int | None = Field(default=None, ge=1)
+
+    @field_validator('name')
+    @classmethod
+    def normalize_required_name(cls, value: str) -> str:
+        return _normalize_required_text(value)
+
+    @field_validator('firmware_version')
+    @classmethod
+    def normalize_optional_version(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class DeviceNodeCreate(DeviceNodePayload):
+    pass
+
+
+class DeviceNodeUpdate(AppSchema):
+    status: DeviceNodeStatus | None = None
+    last_seen_at: datetime | None = None
+    firmware_version: str | None = Field(default=None, max_length=80)
+    reactor_id: int | None = Field(default=None, ge=1)
+
+    @field_validator('firmware_version')
+    @classmethod
+    def normalize_optional_version(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class DeviceNodeRead(AppSchema):
+    id: int
+    name: str
+    node_type: DeviceNodeType
+    status: DeviceNodeStatus
+    last_seen_at: datetime
+    firmware_version: str | None
+    reactor_id: int | None
+    reactor_name: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class ReactorSetpointPayload(AppSchema):
+    parameter: ReactorControlParameter
+    target_value: float
+    min_value: float | None = None
+    max_value: float | None = None
+    mode: ReactorSetpointMode = ReactorSetpointMode.manual
+
+    @model_validator(mode='after')
+    def validate_range(self) -> 'ReactorSetpointPayload':
+        _validate_optional_range(self.min_value, self.max_value, 'setpoint')
+        return self
+
+
+class ReactorSetpointCreate(ReactorSetpointPayload):
+    pass
+
+
+class ReactorSetpointUpdate(AppSchema):
+    target_value: float | None = None
+    min_value: float | None = None
+    max_value: float | None = None
+    mode: ReactorSetpointMode | None = None
+
+    @model_validator(mode='after')
+    def validate_range(self) -> 'ReactorSetpointUpdate':
+        if self.min_value is not None or self.max_value is not None:
+            _validate_optional_range(self.min_value, self.max_value, 'setpoint')
+        return self
+
+
+class ReactorSetpointRead(AppSchema):
+    id: int
+    reactor_id: int
+    reactor_name: str | None = None
+    parameter: ReactorControlParameter
+    target_value: float
+    min_value: float | None
+    max_value: float | None
+    mode: ReactorSetpointMode
+    updated_at: datetime
+
+
+class ReactorCommandCreate(AppSchema):
+    command_type: ReactorCommandType
+
+
+class ReactorCommandRead(AppSchema):
+    id: int
+    reactor_id: int
+    reactor_name: str | None = None
+    command_type: ReactorCommandType
+    status: ReactorCommandStatus
+    created_at: datetime
 
 
 class SensorPayload(AppSchema):
@@ -821,6 +1012,16 @@ class ReactorTwinDetailRead(ReactorTwinRead):
     recent_sensors: list[SensorRead]
 
 
+class ReactorTelemetryOverviewRead(AppSchema):
+    reactor_id: int
+    reactor_name: str
+    latest_temp: float | None = None
+    latest_temp_unit: str | None = None
+    latest_ph: float | None = None
+    latest_ph_unit: str | None = None
+    last_telemetry_at: datetime | None = None
+
+
 class AssetRead(AppSchema):
     id: int
     name: str
@@ -1156,6 +1357,7 @@ class DashboardSummaryRead(AppSchema):
     reactors_attention: int
     reactors_harvest_ready: int
     reactors_incident_or_contamination: int
+    offline_devices: int
     active_sensors: int
     error_sensors: int
     active_assets: int
@@ -1174,6 +1376,7 @@ class DashboardSummaryRead(AppSchema):
     uploads_last_7_days: int
     active_rules: int
     sensor_overview: list[SensorOverviewRead]
+    reactor_telemetry_overview: list[ReactorTelemetryOverviewRead]
     recent_alerts: list[AlertRead]
     recent_photos: list[PhotoRead]
     recent_reactor_events: list[ReactorEventRead]

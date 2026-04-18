@@ -8,15 +8,19 @@ from .models import (
     Asset,
     Alert,
     Charge,
+    DeviceNode,
     InventoryItem,
     Label,
     Reactor,
+    ReactorCommand,
     ReactorEvent,
+    ReactorSetpoint,
     ReactorTwin,
     Rule,
     Sensor,
     SensorValue,
     Task,
+    TelemetryValue,
     UserAccount,
     WikiPage,
     _utcnow,
@@ -28,6 +32,10 @@ def seed_data() -> bool:
     with Session(engine) as session:
         has_charge = session.exec(select(Charge)).first()
         has_sensor = session.exec(select(Sensor)).first()
+        has_telemetry_value = session.exec(select(TelemetryValue)).first()
+        has_device_node = session.exec(select(DeviceNode)).first()
+        has_reactor_setpoint = session.exec(select(ReactorSetpoint)).first()
+        has_reactor_command = session.exec(select(ReactorCommand)).first()
         has_asset = session.exec(select(Asset)).first()
         has_inventory_item = session.exec(select(InventoryItem)).first()
         has_label = session.exec(select(Label)).first()
@@ -196,6 +204,116 @@ def seed_data() -> bool:
                     value=58.0,
                     source='seed',
                     recorded_at=now - timedelta(hours=2),
+                )
+            )
+            session.commit()
+            seeded_any = True
+
+        if has_telemetry_value is None:
+            telemetry_values = [
+                TelemetryValue(
+                    reactor_id=reactor.id,
+                    sensor_type='temp',
+                    value=31.2,
+                    unit='degC',
+                    source='device',
+                    timestamp=now - timedelta(minutes=14),
+                ),
+                TelemetryValue(
+                    reactor_id=reactor.id,
+                    sensor_type='ph',
+                    value=9.1,
+                    unit='pH',
+                    source='device',
+                    timestamp=now - timedelta(minutes=11),
+                ),
+                TelemetryValue(
+                    reactor_id=reactor.id,
+                    sensor_type='light',
+                    value=268.0,
+                    unit='umol',
+                    source='simulated',
+                    timestamp=now - timedelta(minutes=9),
+                ),
+                TelemetryValue(
+                    reactor_id=reactor_b.id,
+                    sensor_type='temp',
+                    value=25.8,
+                    unit='degC',
+                    source='device',
+                    timestamp=now - timedelta(minutes=18),
+                ),
+                TelemetryValue(
+                    reactor_id=reactor_b.id,
+                    sensor_type='ph',
+                    value=7.2,
+                    unit='pH',
+                    source='device',
+                    timestamp=now - timedelta(minutes=16),
+                ),
+                TelemetryValue(
+                    reactor_id=reactor_c.id,
+                    sensor_type='flow',
+                    value=0.0,
+                    unit='l/min',
+                    source='manual',
+                    timestamp=now - timedelta(hours=1, minutes=5),
+                ),
+            ]
+            session.add_all(telemetry_values)
+            session.commit()
+            seeded_any = True
+
+        if has_device_node is None:
+            device_nodes = [
+                DeviceNode(
+                    name='ESP32-A1 Sensor Bridge',
+                    node_type='sensor_bridge',
+                    status='online',
+                    last_seen_at=now - timedelta(minutes=2),
+                    firmware_version='v0.3.1',
+                    reactor_id=reactor.id,
+                ),
+                DeviceNode(
+                    name='ESP32-B1 Env Control',
+                    node_type='env_control',
+                    status='warning',
+                    last_seen_at=now - timedelta(minutes=7),
+                    firmware_version='v0.2.8',
+                    reactor_id=reactor_b.id,
+                ),
+                DeviceNode(
+                    name='ESP32-C1 Pump Driver',
+                    node_type='pump_driver',
+                    status='offline',
+                    last_seen_at=now - timedelta(hours=3),
+                    firmware_version='v0.2.4',
+                    reactor_id=reactor_c.id,
+                ),
+            ]
+            session.add_all(device_nodes)
+            session.commit()
+            seeded_any = True
+
+        if has_reactor_setpoint is None:
+            setpoints = [
+                ReactorSetpoint(reactor_id=reactor.id, parameter='temp', target_value=32.0, min_value=30.0, max_value=34.0, mode='auto'),
+                ReactorSetpoint(reactor_id=reactor.id, parameter='ph', target_value=9.2, min_value=8.8, max_value=9.6, mode='manual'),
+                ReactorSetpoint(reactor_id=reactor.id, parameter='light', target_value=280.0, min_value=220.0, max_value=320.0, mode='auto'),
+                ReactorSetpoint(reactor_id=reactor_b.id, parameter='temp', target_value=26.0, min_value=24.0, max_value=27.0, mode='manual'),
+                ReactorSetpoint(reactor_id=reactor_b.id, parameter='ph', target_value=7.1, min_value=6.8, max_value=7.4, mode='manual'),
+                ReactorSetpoint(reactor_id=reactor_c.id, parameter='flow', target_value=0.0, min_value=0.0, max_value=0.2, mode='manual'),
+            ]
+            session.add_all(setpoints)
+            session.commit()
+            seeded_any = True
+
+        if has_reactor_command is None:
+            session.add(
+                ReactorCommand(
+                    reactor_id=reactor.id,
+                    command_type='sample_capture',
+                    status='pending',
                 )
             )
             session.commit()
