@@ -146,10 +146,13 @@ export function DashboardClient() {
 
         <Card title="Hinweis">
           <p>{data.message}</p>
-          <p className="muted">Dashboard zeigt jetzt neben Labor-KPIs auch ReactorOps-Zustaende, Ereignisse und den geschuetzten Mehrnutzerbetrieb mit Rollenbasis an.</p>
+          <p className="muted">Dashboard zeigt jetzt neben Labor-KPIs auch ReactorOps-Zustaende, Reactor-Control-Telemetrie, Device-Status und den geschuetzten Mehrnutzerbetrieb mit Rollenbasis an.</p>
           <div className="buttonRow">
             <a className="button buttonSecondary" href="/reactor-ops">
               Zu ReactorOps
+            </a>
+            <a className="button buttonSecondary" href="/reactor-control">
+              Zu ReactorControl
             </a>
             <a className="button buttonSecondary" href="/abrain">
               Zu ABrain

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from collections import defaultdict
+import re
+from typing import Protocol
 
 from fastapi import HTTPException, status
 from sqlmodel import Session, select
@@ -23,15 +25,20 @@ from ..schemas import (
 )
 
 
+class CommandPublisher(Protocol):
+    def publish_reactor_command(self, *, reactor_id: int, command_id: int, command_type: str) -> bool | None:
+        ...
+
+
 def create_telemetry_value(session: Session, payload: TelemetryValueCreate) -> TelemetryValueRead:
-    reactor = get_reactor_or_404(session, payload.reactor_id)
-    telemetry = TelemetryValue(
-        reactor_id=reactor.id,
+    telemetry = create_telemetry_value_record(
+        session,
+        reactor_id=payload.reactor_id,
         sensor_type=payload.sensor_type.value,
         value=payload.value,
         unit=payload.unit,
         source=payload.source.value,
-        timestamp=payload.timestamp or _utcnow(),
+        timestamp=payload.timestamp,
     )
     session.add(telemetry)
     session.commit()
@@ -82,8 +89,11 @@ def list_devices(session: Session) -> list[DeviceNodeRead]:
 
 def create_device(session: Session, payload: DeviceNodeCreate) -> DeviceNodeRead:
     _validate_optional_reactor(session, payload.reactor_id)
+    node_id = payload.node_id or _derive_node_id(payload.name)
+    _validate_unique_node_id(session, node_id)
     device = DeviceNode(
         name=payload.name,
+        node_id=node_id,
         node_type=payload.node_type.value,
         status=payload.status.value,
         last_seen_at=payload.last_seen_at or _utcnow(),
@@ -98,6 +108,11 @@ def create_device(session: Session, payload: DeviceNodeCreate) -> DeviceNodeRead
 
 def update_device(session: Session, device_id: int, payload: DeviceNodeUpdate) -> DeviceNodeRead:
     device = get_device_or_404(session, device_id)
+    if 'node_id' in payload.model_fields_set:
+        normalized_node_id = payload.node_id or None
+        if normalized_node_id is not None:
+            _validate_unique_node_id(session, normalized_node_id, exclude_device_id=device.id)
+        device.node_id = normalized_node_id
     if 'status' in payload.model_fields_set and payload.status is not None:
         device.status = payload.status.value
     if 'last_seen_at' in payload.model_fields_set:
@@ -193,6 +208,8 @@ def create_reactor_command(
     session: Session,
     reactor_id: int,
     payload: ReactorCommandCreate,
+    *,
+    publisher: CommandPublisher | None = None,
 ) -> ReactorCommandRead:
     get_reactor_or_404(session, reactor_id)
     command = ReactorCommand(
@@ -203,6 +220,19 @@ def create_reactor_command(
     session.add(command)
     session.commit()
     session.refresh(command)
+    if publisher is not None:
+        publish_result = publisher.publish_reactor_command(
+            reactor_id=reactor_id,
+            command_id=command.id,
+            command_type=command.command_type,
+        )
+        if publish_result is True:
+            command.status = 'sent'
+        elif publish_result is False:
+            command.status = 'failed'
+        session.add(command)
+        session.commit()
+        session.refresh(command)
     return _serialize_commands(session, [command])[0]
 
 
@@ -270,6 +300,78 @@ def _validate_optional_reactor(session: Session, reactor_id: int | None) -> None
     get_reactor_or_404(session, reactor_id)
 
 
+def create_telemetry_value_record(
+    session: Session,
+    *,
+    reactor_id: int,
+    sensor_type: str,
+    value: float,
+    unit: str,
+    source: str,
+    timestamp=None,
+) -> TelemetryValue:
+    reactor = get_reactor_or_404(session, reactor_id)
+    return TelemetryValue(
+        reactor_id=reactor.id,
+        sensor_type=sensor_type,
+        value=value,
+        unit=unit,
+        source=source,
+        timestamp=timestamp or _utcnow(),
+    )
+
+
+def upsert_device_node_by_node_id(
+    session: Session,
+    *,
+    node_id: str,
+    name: str,
+    node_type: str,
+    status: str,
+    last_seen_at=None,
+    firmware_version: str | None = None,
+    reactor_id: int | None = None,
+) -> DeviceNode:
+    _validate_optional_reactor(session, reactor_id)
+    device = session.exec(select(DeviceNode).where(DeviceNode.node_id == node_id)).first()
+    if device is None:
+        device = DeviceNode(
+            name=name,
+            node_id=node_id,
+            node_type=node_type,
+            status=status,
+            last_seen_at=last_seen_at or _utcnow(),
+            firmware_version=firmware_version,
+            reactor_id=reactor_id,
+        )
+    else:
+        device.name = name or device.name
+        device.node_type = node_type
+        device.status = status
+        device.last_seen_at = last_seen_at or _utcnow()
+        if firmware_version is not None:
+            device.firmware_version = firmware_version
+        if reactor_id is not None or device.reactor_id is None:
+            device.reactor_id = reactor_id
+        device.updated_at = _utcnow()
+    session.add(device)
+    return device
+
+
+def _validate_unique_node_id(session: Session, node_id: str, *, exclude_device_id: int | None = None) -> None:
+    existing = session.exec(select(DeviceNode).where(DeviceNode.node_id == node_id)).first()
+    if existing is None:
+        return
+    if exclude_device_id is not None and existing.id == exclude_device_id:
+        return
+    raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Device node_id already exists')
+
+
+def _derive_node_id(name: str) -> str:
+    slug = re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-')
+    return slug or 'device-node'
+
+
 def _serialize_telemetry_values(session: Session, values: list[TelemetryValue]) -> list[TelemetryValueRead]:
     if not values:
         return []
@@ -306,6 +408,7 @@ def _serialize_devices(session: Session, devices: list[DeviceNode]) -> list[Devi
         DeviceNodeRead(
             id=device.id,
             name=device.name,
+            node_id=device.node_id,
             node_type=device.node_type,
             status=device.status,
             last_seen_at=device.last_seen_at,

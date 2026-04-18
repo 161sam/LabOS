@@ -89,6 +89,9 @@ class DeviceNodeType(str, Enum):
     sensor_bridge = 'sensor_bridge'
     pump_driver = 'pump_driver'
     light_controller = 'light_controller'
+    dosing = 'dosing'
+    safety = 'safety'
+    vision = 'vision'
 
 
 class DeviceNodeStatus(str, Enum):
@@ -486,15 +489,18 @@ class TelemetryValueRead(AppSchema):
 
 class DeviceNodePayload(AppSchema):
     name: str = Field(min_length=1, max_length=160)
+    node_id: str | None = Field(default=None, min_length=1, max_length=120)
     node_type: DeviceNodeType
     status: DeviceNodeStatus = DeviceNodeStatus.online
     last_seen_at: datetime | None = None
     firmware_version: str | None = Field(default=None, max_length=80)
     reactor_id: int | None = Field(default=None, ge=1)
 
-    @field_validator('name')
+    @field_validator('name', 'node_id')
     @classmethod
-    def normalize_required_name(cls, value: str) -> str:
+    def normalize_node_text(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
         return _normalize_required_text(value)
 
     @field_validator('firmware_version')
@@ -508,10 +514,16 @@ class DeviceNodeCreate(DeviceNodePayload):
 
 
 class DeviceNodeUpdate(AppSchema):
+    node_id: str | None = Field(default=None, min_length=1, max_length=120)
     status: DeviceNodeStatus | None = None
     last_seen_at: datetime | None = None
     firmware_version: str | None = Field(default=None, max_length=80)
     reactor_id: int | None = Field(default=None, ge=1)
+
+    @field_validator('node_id')
+    @classmethod
+    def normalize_optional_node_id(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
 
     @field_validator('firmware_version')
     @classmethod
@@ -522,6 +534,7 @@ class DeviceNodeUpdate(AppSchema):
 class DeviceNodeRead(AppSchema):
     id: int
     name: str
+    node_id: str | None
     node_type: DeviceNodeType
     status: DeviceNodeStatus
     last_seen_at: datetime
@@ -585,6 +598,63 @@ class ReactorCommandRead(AppSchema):
     command_type: ReactorCommandType
     status: ReactorCommandStatus
     created_at: datetime
+
+
+class MQTTTelemetryPayload(AppSchema):
+    value: float
+    unit: str = Field(min_length=1, max_length=40)
+    timestamp: datetime | None = None
+    source: TelemetrySource = TelemetrySource.device
+    node_id: str | None = Field(default=None, min_length=1, max_length=120)
+
+    @field_validator('unit')
+    @classmethod
+    def normalize_required_unit(cls, value: str) -> str:
+        return _normalize_required_text(value)
+
+    @field_validator('node_id')
+    @classmethod
+    def normalize_optional_node_id(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class MQTTNodeStatusPayload(AppSchema):
+    name: str | None = Field(default=None, max_length=160)
+    reactor_id: int | None = Field(default=None, ge=1)
+    node_type: DeviceNodeType = DeviceNodeType.env_control
+    status: DeviceNodeStatus = DeviceNodeStatus.online
+    firmware_version: str | None = Field(default=None, max_length=80)
+    last_seen_at: datetime | None = None
+
+    @field_validator('name', 'firmware_version')
+    @classmethod
+    def normalize_optional_text_fields(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class MQTTHeartbeatPayload(AppSchema):
+    reactor_id: int | None = Field(default=None, ge=1)
+    node_type: DeviceNodeType = DeviceNodeType.env_control
+    firmware_version: str | None = Field(default=None, max_length=80)
+    last_seen_at: datetime | None = None
+
+    @field_validator('firmware_version')
+    @classmethod
+    def normalize_optional_firmware(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class MQTTBridgeStatusRead(AppSchema):
+    enabled: bool
+    dependency_available: bool
+    connected: bool
+    broker_host: str
+    broker_port: int
+    client_id: str
+    topic_prefix: str
+    publish_commands: bool
+    last_message_at: datetime | None = None
+    last_error: str | None = None
 
 
 class SensorPayload(AppSchema):

@@ -7,6 +7,7 @@ from ..schemas import (
     DeviceNodeCreate,
     DeviceNodeRead,
     DeviceNodeUpdate,
+    MQTTBridgeStatusRead,
     ReactorCommandCreate,
     ReactorCommandRead,
     ReactorSetpointCreate,
@@ -16,6 +17,7 @@ from ..schemas import (
     TelemetryValueCreate,
     TelemetryValueRead,
 )
+from ..services import mqtt_bridge as mqtt_bridge_service
 from ..services import reactor_control as reactor_control_service
 
 router = APIRouter(tags=['reactor-control'], dependencies=[Depends(require_authenticated_user)])
@@ -106,9 +108,19 @@ def create_reactor_command(
     session: Session = Depends(get_session),
     current_user=Depends(require_operator_user),
 ):
-    return reactor_control_service.create_reactor_command(session, reactor_id=reactor_id, payload=payload)
+    return reactor_control_service.create_reactor_command(
+        session,
+        reactor_id=reactor_id,
+        payload=payload,
+        publisher=mqtt_bridge_service.get_mqtt_bridge(),
+    )
 
 
 @router.get('/reactors/{reactor_id}/commands', response_model=list[ReactorCommandRead])
 def list_reactor_commands(reactor_id: int, session: Session = Depends(get_session)):
     return reactor_control_service.list_reactor_commands(session, reactor_id=reactor_id)
+
+
+@router.get('/reactor-control/mqtt-status', response_model=MQTTBridgeStatusRead)
+def get_mqtt_bridge_status():
+    return mqtt_bridge_service.get_mqtt_bridge().status()

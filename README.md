@@ -13,6 +13,7 @@ LabOS ist ein Raspberry-Pi-taugliches Operating System fuer EcoSphereLab. Es ver
 - Rollen / Auth V1 mit lokalen Benutzerkonten, Login und API-Schutz
 - ReactorOps / Digital Twin V1 mit Betriebszustand, Zielbereichen und Event-Historie pro Reaktor
 - Reactor Control / Telemetry V1 mit Zeitreihen, Setpoints, Devices und Command-Stub-Queue
+- MQTT / ESP32 / Pi Architektur V1 mit lokalem Broker, Topic-Struktur und Bridge-Schicht
 - Sensorik V1 mit CRUD, Werte-Ingest und Verlauf
 - Tasks + Alerts V1 mit operativen Dashboards
 - Foto Upload + Vision Basis V1
@@ -47,6 +48,8 @@ Danach:
 - Frontend: http://localhost:3000
 - API: http://localhost:8000
 - API Docs: http://localhost:8000/docs
+- MQTT Broker: `mqtt://localhost:1883`
+- MQTT over WebSockets: `ws://localhost:9001`
 
 Beim API-Start werden zuerst Alembic-Migrationen bis `head` ausgefuehrt. Danach ergänzt der Seed-Flow nur fehlende Demo-Daten fuer Charges, Assets, Inventory, Labels, Wiki, Sensoren, Tasks, Alerts und Regeln.
 
@@ -60,6 +63,12 @@ Fuer Auth / Rollen V1 sind zusaetzlich diese `.env`-Variablen relevant:
 - `BOOTSTRAP_ADMIN_PASSWORD`
 - `BOOTSTRAP_ADMIN_DISPLAY_NAME`
 - `BOOTSTRAP_ADMIN_EMAIL`
+- `MQTT_ENABLED`
+- `MQTT_BROKER_HOST`
+- `MQTT_BROKER_PORT`
+- `MQTT_CLIENT_ID`
+- `MQTT_TOPIC_PREFIX`
+- `MQTT_PUBLISH_COMMANDS`
 
 Beim ersten Start bootstrapped LabOS genau einen lokalen Admin nur dann, wenn in `useraccount` noch kein Benutzer vorhanden ist.
 
@@ -220,6 +229,103 @@ Bewusst noch nicht enthalten:
 - externe Device-Services
 
 Reactor Control / Telemetry V1 schafft damit die erste belastbare Bruecke von ReactorOps-Sollzustand zu realen Ist-Werten und bereitet spaetere Hardwareintegration, Automation, Calibration und Safety sauber vor.
+
+## MQTT / ESP32 / Pi Architektur V1
+
+Mit MQTT V1 bekommt LabOS jetzt die erste echte lokale Messaging- und Node-Schicht zwischen API, Raspberry Pi und spaeteren ESP32-/Edge-Nodes.
+
+Unterschied zur reinen Reactor-Control-REST-Schicht:
+
+- `Reactor Control / Telemetry` definiert Datenmodelle und API fuer Telemetrie, Setpoints, Devices und Commands
+- `MQTT V1` fuehrt den lokalen Bus ein, ueber den Nodes Telemetrie und Heartbeats senden und LabOS Commands publizieren kann
+- die REST-Endpunkte bleiben erhalten und bilden weiterhin den stabilen Admin-/UI-Zugang
+
+Enthalten:
+
+- lokaler Mosquitto-Broker im Compose-Stack
+- minimale Broker-Konfiguration unter `infra/mqtt/config/mosquitto.conf`
+- Python-MQTT-Bridge im API-Service
+- MQTT-Topic-Architektur fuer Telemetrie, Control und Node-Status
+- MQTT -> `TelemetryValue` Persistierung
+- MQTT -> `DeviceNode` Status-/Heartbeat-Update
+- optionaler MQTT-Publish beim Erstellen eines `ReactorCommand`
+- kleine MQTT-Statusanzeige in `/reactor-control`
+- Referenzcode unter [examples/esp32/env_node_example.ino](/home/dev/LabOS/examples/esp32/env_node_example.ino:1)
+- lokaler Simulator unter [scripts/mqtt/simulate_env_node.py](/home/dev/LabOS/scripts/mqtt/simulate_env_node.py:1)
+
+Topic-Struktur V1:
+
+- `labos/reactor/{reactor_id}/telemetry/{sensor_type}`
+- `labos/reactor/{reactor_id}/control/{channel}`
+- `labos/node/{node_id}/status`
+- `labos/node/{node_id}/heartbeat`
+
+Beispiel-Payloads:
+
+Telemetry:
+
+```json
+{
+  "value": 29.4,
+  "unit": "degC",
+  "source": "device",
+  "node_id": "esp32-a1"
+}
+```
+
+Node-Status:
+
+```json
+{
+  "name": "ESP32 Env Node A1",
+  "reactor_id": 1,
+  "node_type": "env_control",
+  "status": "online",
+  "firmware_version": "v0.4.0"
+}
+```
+
+Command-Publish aus LabOS:
+
+- Topic: `labos/reactor/1/control/light`
+- Payload:
+
+```json
+{
+  "command_id": 11,
+  "reactor_id": 1,
+  "command_type": "light_on",
+  "channel": "light",
+  "command": "on",
+  "source": "labos"
+}
+```
+
+Lokaler Testpfad:
+
+1. `docker compose up --build`
+2. Login gegen LabOS durchfuehren
+3. MQTT-Simulator starten:
+
+```bash
+cd /home/dev/LabOS
+.venv/bin/python scripts/mqtt/simulate_env_node.py --host localhost --reactor-id 1 --node-id sim-env-a1
+```
+
+4. Reactor-Control-Seite unter `http://localhost:3000/reactor-control` beobachten
+
+Bewusst noch nicht enthalten:
+
+- MQTT-Auth, TLS oder WAN-Betrieb
+- ACK / Retry
+- WebSocket-Live-UI
+- echte Hardwareausfuehrung oder GPIO-Zugriffe
+- Scheduler
+- PID-Regelung
+- Auto-Discovery oder komplexe Device Registry
+- Vision- oder Jetson-spezifische Node-Logik
+
+Diese Schicht ist bewusst klein gehalten und bildet die lokale Grundlage fuer spaetere Calibration / Maintenance / Safety, ACK / Retry, Scheduler und weitere Edge-Nodes.
 
 ## CRUD-Stand fuer Chargen und Reaktoren
 

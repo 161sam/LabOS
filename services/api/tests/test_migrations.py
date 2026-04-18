@@ -77,6 +77,7 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
     assert {
         'id',
         'name',
+        'node_id',
         'node_type',
         'status',
         'last_seen_at',
@@ -343,6 +344,7 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
     device_node_indexes = {index['name'] for index in inspector.get_indexes('devicenode')}
     assert {
         'ix_devicenode_name',
+        'ix_devicenode_node_id',
         'ix_devicenode_node_type',
         'ix_devicenode_status',
         'ix_devicenode_reactor_id',
@@ -451,6 +453,6 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
 
     with engine.connect() as connection:
         version = connection.execute(text('SELECT version_num FROM alembic_version')).scalar_one()
-        assert version == '20260418_0011'
+        assert version == '20260418_0012'
 
     engine.dispose()

@@ -268,6 +268,7 @@ def seed_data() -> bool:
             device_nodes = [
                 DeviceNode(
                     name='ESP32-A1 Sensor Bridge',
+                    node_id='esp32-a1',
                     node_type='sensor_bridge',
                     status='online',
                     last_seen_at=now - timedelta(minutes=2),
@@ -276,6 +277,7 @@ def seed_data() -> bool:
                 ),
                 DeviceNode(
                     name='ESP32-B1 Env Control',
+                    node_id='esp32-b1',
                     node_type='env_control',
                     status='warning',
                     last_seen_at=now - timedelta(minutes=7),
@@ -284,6 +286,7 @@ def seed_data() -> bool:
                 ),
                 DeviceNode(
                     name='ESP32-C1 Pump Driver',
+                    node_id='esp32-c1',
                     node_type='pump_driver',
                     status='offline',
                     last_seen_at=now - timedelta(hours=3),

@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .db import run_migrations
+from .services import mqtt_bridge as mqtt_bridge_service
 from .routers import abrain, alerts, assets, auth, charges, dashboard, inventory, labels, photos, reactor_control, reactor_ops, reactors, rules, sensors, tasks, users, wiki
 from .seed import seed_data
 
@@ -13,7 +14,9 @@ from .seed import seed_data
 async def lifespan(app: FastAPI):
     run_migrations()
     seed_data()
+    mqtt_bridge_service.get_mqtt_bridge().start()
     yield
+    mqtt_bridge_service.get_mqtt_bridge().stop()
 
 
 app = FastAPI(title=settings.app_name, version='0.1.0', lifespan=lifespan)

@@ -25,6 +25,12 @@ class Settings(BaseSettings):
     bootstrap_admin_password: str = 'labosadmin'
     bootstrap_admin_display_name: str = 'LabOS Admin'
     bootstrap_admin_email: str | None = 'admin@local.labos'
+    mqtt_enabled: bool = False
+    mqtt_broker_host: str = 'localhost'
+    mqtt_broker_port: int = 1883
+    mqtt_client_id: str = 'labos-api'
+    mqtt_topic_prefix: str = 'labos'
+    mqtt_publish_commands: bool = True
 
 
 settings = Settings()

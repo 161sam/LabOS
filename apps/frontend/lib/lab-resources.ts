@@ -82,6 +82,9 @@ export const deviceNodeTypeOptions = [
   { value: 'sensor_bridge', label: 'Sensor Bridge' },
   { value: 'pump_driver', label: 'Pump Driver' },
   { value: 'light_controller', label: 'Light Controller' },
+  { value: 'dosing', label: 'Dosing' },
+  { value: 'safety', label: 'Safety' },
+  { value: 'vision', label: 'Vision' },
 ] as const;
 
 export const deviceNodeStatusOptions = [
@@ -367,6 +370,7 @@ export type TelemetryValue = {
 export type DeviceNode = {
   id: number;
   name: string;
+  node_id: string | null;
   node_type: DeviceNodeType;
   status: DeviceNodeStatus;
   last_seen_at: string;
@@ -396,6 +400,19 @@ export type ReactorCommand = {
   command_type: ReactorCommandType;
   status: ReactorCommandStatus;
   created_at: string;
+};
+
+export type MQTTBridgeStatus = {
+  enabled: boolean;
+  dependency_available: boolean;
+  connected: boolean;
+  broker_host: string;
+  broker_port: number;
+  client_id: string;
+  topic_prefix: string;
+  publish_commands: boolean;
+  last_message_at: string | null;
+  last_error: string | null;
 };
 
 export type ReactorTwin = {

@@ -12,6 +12,7 @@ if str(API_ROOT) not in sys.path:
 from app import db, seed
 from app.config import settings
 from app.main import app
+from app.services import mqtt_bridge
 
 
 @pytest.fixture()
@@ -27,10 +28,13 @@ def anonymous_client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(db, 'engine', test_engine)
     monkeypatch.setattr(seed, 'engine', test_engine)
     monkeypatch.setattr(settings, 'storage_path', str(storage_path))
+    monkeypatch.setattr(settings, 'mqtt_enabled', False)
+    monkeypatch.setattr(settings, 'mqtt_publish_commands', False)
 
     with TestClient(app) as test_client:
         yield test_client
 
+    mqtt_bridge.get_mqtt_bridge().stop()
     app.dependency_overrides.clear()
     test_engine.dispose()
 

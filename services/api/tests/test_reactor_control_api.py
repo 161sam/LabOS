@@ -85,6 +85,7 @@ def test_device_crud(client: TestClient):
         '/api/v1/devices',
         json={
             'name': 'ESP32 Device Test',
+            'node_id': 'esp32-device-test',
             'node_type': 'sensor_bridge',
             'status': 'online',
             'last_seen_at': '2026-04-18T08:55:00',
@@ -95,6 +96,7 @@ def test_device_crud(client: TestClient):
     assert create_response.status_code == 201
     device = create_response.json()
     assert device['reactor_id'] == reactor_id
+    assert device['node_id'] == 'esp32-device-test'
     assert device['node_type'] == 'sensor_bridge'
 
     update_response = client.patch(
@@ -168,6 +170,14 @@ def test_command_creation_and_listing(client: TestClient):
     list_response = client.get(f'/api/v1/reactors/{reactor_id}/commands')
     assert list_response.status_code == 200
     assert list_response.json()[0]['id'] == command['id']
+
+
+def test_mqtt_status_endpoint(client: TestClient):
+    response = client.get('/api/v1/reactor-control/mqtt-status')
+    assert response.status_code == 200
+    status = response.json()
+    assert status['enabled'] is False
+    assert status['connected'] is False
 
 
 def test_viewer_cannot_write_reactor_control(client: TestClient, anonymous_client: TestClient):

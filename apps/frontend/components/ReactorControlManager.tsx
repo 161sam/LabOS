@@ -5,6 +5,8 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { apiRequest } from '../lib/api';
 import {
   DeviceNode,
+  deviceNodeTypeOptions,
+  MQTTBridgeStatus,
   ReactorCommand,
   ReactorCommandType,
   reactorCommandTypeOptions,
@@ -89,6 +91,7 @@ export function ReactorControlManager() {
   const [latestTelemetry, setLatestTelemetry] = useState<TelemetryValue[]>([]);
   const [telemetryHistory, setTelemetryHistory] = useState<TelemetryValue[]>([]);
   const [devices, setDevices] = useState<DeviceNode[]>([]);
+  const [mqttStatus, setMqttStatus] = useState<MQTTBridgeStatus | null>(null);
   const [setpoints, setSetpoints] = useState<ReactorSetpoint[]>([]);
   const [commands, setCommands] = useState<ReactorCommand[]>([]);
   const [createSetpointForm, setCreateSetpointForm] = useState<CreateSetpointFormState>(createSetpointFormState);
@@ -116,12 +119,14 @@ export function ReactorControlManager() {
     setLoading(true);
     setPageError(null);
     try {
-      const [reactorData, deviceData] = await Promise.all([
+      const [reactorData, deviceData, bridgeStatus] = await Promise.all([
         apiRequest<ReactorTwin[]>('/api/v1/reactor-ops'),
         apiRequest<DeviceNode[]>('/api/v1/devices'),
+        apiRequest<MQTTBridgeStatus>('/api/v1/reactor-control/mqtt-status').catch(() => null),
       ]);
       setReactors(reactorData);
       setDevices(deviceData);
+      setMqttStatus(bridgeStatus);
       const nextSelectedId =
         preferredReactorId && reactorData.some((item) => item.reactor_id === preferredReactorId)
           ? preferredReactorId
@@ -263,11 +268,17 @@ export function ReactorControlManager() {
     setNotice(null);
     setSetpointError(null);
     try {
-      await apiRequest(`/api/v1/reactors/${selectedReactorId}/commands`, {
+      const command = await apiRequest<ReactorCommand>(`/api/v1/reactors/${selectedReactorId}/commands`, {
         method: 'POST',
         body: JSON.stringify({ command_type: commandType }),
       });
-      setNotice(`Command ${commandType} als Stub in die Queue gelegt.`);
+      if (command.status === 'sent') {
+        setNotice(`Command ${commandType} in MQTT publiziert.`);
+      } else if (command.status === 'failed') {
+        setNotice(`Command ${commandType} gespeichert, MQTT-Publish aber fehlgeschlagen.`);
+      } else {
+        setNotice(`Command ${commandType} als Stub in die Queue gelegt.`);
+      }
       await loadReactorControl(selectedReactorId);
     } catch (error) {
       setSetpointError(getErrorMessage(error));
@@ -281,7 +292,7 @@ export function ReactorControlManager() {
       <div>
         <h1>Reactor Control / Telemetry</h1>
         <p className="muted">
-          Ist-Werte, DeviceNodes, Setpoints und vorbereitete Control-Commands als Bruecke zwischen ReactorOps-Soll und spaeterer Hardwareintegration.
+          Ist-Werte, DeviceNodes, Setpoints, MQTT-Bridge und vorbereitete Control-Commands als Bruecke zwischen ReactorOps-Soll und spaeterer Hardwareintegration.
         </p>
       </div>
 
@@ -289,6 +300,26 @@ export function ReactorControlManager() {
       {notice ? <InlineMessage tone="success">{notice}</InlineMessage> : null}
 
       <div className="grid cols-2">
+        <Card title="MQTT Bridge">
+          <div className="stackCompact">
+            <div>
+              <strong>Status:</strong>{' '}
+              <span className={`badge badge-${mqttStatus?.connected ? 'online' : 'offline'}`}>
+                {mqttStatus?.enabled ? (mqttStatus.connected ? 'connected' : 'disconnected') : 'disabled'}
+              </span>
+            </div>
+            <div className="muted">
+              Broker: {mqttStatus ? `${mqttStatus.broker_host}:${mqttStatus.broker_port}` : 'n/a'} · Prefix:{' '}
+              {mqttStatus?.topic_prefix || 'n/a'}
+            </div>
+            <div className="muted">
+              Publish: {mqttStatus?.publish_commands ? 'aktiv' : 'deaktiviert'} · Letzte Nachricht:{' '}
+              {formatDateTime(mqttStatus?.last_message_at || null)}
+            </div>
+            {mqttStatus?.last_error ? <InlineMessage tone="error">{mqttStatus.last_error}</InlineMessage> : null}
+          </div>
+        </Card>
+
         <Card title="Reaktoren">
           {loading ? (
             <InlineMessage>Lade Reactor Control Daten…</InlineMessage>
@@ -379,7 +410,7 @@ export function ReactorControlManager() {
                           <td>{formatDateTime(value.timestamp)}</td>
                           <td>{getOptionLabel(telemetrySensorTypeOptions, value.sensor_type)}</td>
                           <td>{value.value} {value.unit}</td>
-                          <td>{value.source}</td>
+                          <td><span className={`badge badge-${value.source}`}>{value.source}</span></td>
                         </tr>
                       ))}
                     </tbody>
@@ -397,6 +428,7 @@ export function ReactorControlManager() {
                     <thead>
                       <tr>
                         <th>Name</th>
+                        <th>Node ID</th>
                         <th>Typ</th>
                         <th>Status</th>
                         <th>Last Seen</th>
@@ -411,7 +443,8 @@ export function ReactorControlManager() {
                               <span className="muted">{device.firmware_version || 'ohne Firmware-Info'}</span>
                             </div>
                           </td>
-                          <td>{device.node_type}</td>
+                          <td>{device.node_id || 'n/a'}</td>
+                          <td>{getOptionLabel(deviceNodeTypeOptions, device.node_type)}</td>
                           <td><span className={`badge badge-${device.status}`}>{device.status}</span></td>
                           <td>{formatDateTime(device.last_seen_at)}</td>
                         </tr>

@@ -106,6 +106,7 @@ class TelemetryValue(SQLModel, table=True):
 
 class DeviceNode(SQLModel, table=True):
     __table_args__ = (
+        Index('ix_devicenode_node_id', 'node_id', unique=True),
         Index('ix_devicenode_node_type', 'node_type'),
         Index('ix_devicenode_status', 'status'),
         Index('ix_devicenode_reactor_id', 'reactor_id'),
@@ -114,6 +115,7 @@ class DeviceNode(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(index=True)
+    node_id: Optional[str] = Field(default=None, max_length=120)
     node_type: str
     status: str = 'online'
     last_seen_at: datetime = Field(default_factory=_utcnow)
