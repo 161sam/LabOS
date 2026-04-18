@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .db import run_migrations
-from .routers import abrain, alerts, assets, charges, dashboard, photos, reactors, rules, sensors, tasks, wiki
+from .routers import abrain, alerts, assets, auth, charges, dashboard, inventory, labels, photos, reactors, rules, sensors, tasks, users, wiki
 from .seed import seed_data
 
 
@@ -20,7 +20,7 @@ app = FastAPI(title=settings.app_name, version='0.1.0', lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=['*'],
+    allow_origins=sorted({settings.public_web_base_url.rstrip('/'), 'http://localhost:3000', 'http://127.0.0.1:3000'}),
     allow_credentials=True,
     allow_methods=['*'],
     allow_headers=['*'],
@@ -38,14 +38,18 @@ def root():
 
 
 api_prefix = '/api/v1'
+app.include_router(auth.router, prefix=api_prefix)
 app.include_router(dashboard.router, prefix=api_prefix)
 app.include_router(charges.router, prefix=api_prefix)
 app.include_router(reactors.router, prefix=api_prefix)
 app.include_router(assets.router, prefix=api_prefix)
+app.include_router(inventory.router, prefix=api_prefix)
+app.include_router(labels.router, prefix=api_prefix)
 app.include_router(sensors.router, prefix=api_prefix)
 app.include_router(photos.router, prefix=api_prefix)
 app.include_router(rules.router, prefix=api_prefix)
 app.include_router(tasks.router, prefix=api_prefix)
 app.include_router(alerts.router, prefix=api_prefix)
+app.include_router(users.router, prefix=api_prefix)
 app.include_router(wiki.router, prefix=api_prefix)
 app.include_router(abrain.router, prefix=api_prefix)

@@ -1,17 +1,43 @@
 # ROADMAP
 
-LabOS entwickelt sich zu einem modularen Operating System fuer EcoSphereLab. Der Fokus bleibt auf lokalem Betrieb, Pi-Tauglichkeit, klaren operativen Datenmodellen und kleinen nachvollziehbaren Erweiterungen.
+LabOS entwickelt sich zu einem modularen Operating System für EcoSphereLab.  
+Der Fokus bleibt auf lokalem Betrieb, Raspberry-Pi-Tauglichkeit, klaren operativen Datenmodellen und kleinen nachvollziehbaren Erweiterungen. Die bestehende Ausrichtung bleibt erhalten und wird um eine stärkere Multi-Lab-, ReactorOps- und plattformorientierte Perspektive erweitert.
 
-## Produktbild
+---
 
-- BioOps: Charges, Reaktoren, Sensorik, Foto- und Prozessdokumentation
-- MakerOps: Werkbankgeraete, Fertigungs- und Elektronik-Assets, Aufgaben und Wissensverknuepfung
-- ITOps: Server, SBCs, Netzwerktechnik und spaetere Infra-Objekte
-- KnowledgeOps: Wiki, SOPs, How-tos und verlinkbares Betriebswissen
-- Automation: Regeln, Alerts, Tasks und nachvollziehbare Ausfuehrungen
-- AI Assistenz: ABrain auf echter LabOS-Datengrundlage statt losgeloester Demo-Logik
+# Produktbild
 
-## Bereits umgesetzt
+LabOS ist nicht nur eine einzelne Labor-App, sondern das zentrale Betriebssystem für ein reales, hybrides Innovationslabor.
+
+## Kernbereiche
+
+- **BioOps**  
+  Charges, Reaktoren, Kulturen, Sensorik, Fotos, Prozessdokumentation
+
+- **ReactorOps**  
+  Modulare Reaktorsysteme, Telemetrie, Setpoints, Schedules, Overrides, Kalibrierung, Safety, Digital Twin
+
+- **MakerOps**  
+  Werkbankgeräte, 3D-Druck, Elektronikgeräte, Fertigungsassets, Builds, Reparaturen
+
+- **ITOps**  
+  Server, SBCs, GPU-Nodes, Netzwerktechnik, Dienste, Storage, Backups
+
+- **KnowledgeOps**  
+  Wiki, SOPs, How-tos, Dev Docs, User Docs, verlinkbares Betriebswissen
+
+- **Automation**  
+  Regeln, Alerts, Tasks, nachvollziehbare Ausführungen, Dry-Runs
+
+- **AI Assistenz**  
+  ABrain auf echter LabOS-Datengrundlage statt losgelöster Demo-Logik
+
+- **R&D Ops**  
+  Projekte, Experimente, Hypothesen, Ergebnisse, Iterationen, Learnings
+
+---
+
+# Bereits umgesetzt
 
 - Charges CRUD
 - Reactors CRUD
@@ -22,209 +48,397 @@ LabOS entwickelt sich zu einem modularen Operating System fuer EcoSphereLab. Der
 - ABrain Integration V1 mit echtem LabOS-Kontext
 - Regelengine / Automation V1
 - AssetOps / DeviceOps V1
+- Inventory / MaterialOps V1
+- QR / Label / Traceability V1
+- Rollen / Auth V1
 - Dashboard-Basis
 - Wiki-Basis
 
-## AssetOps / DeviceOps V1
+---
 
-Der aktuelle Schritt erweitert LabOS vom Prozessfokus auf reale Geraete und Assets des gesamten Labs.
+# Aktueller Status: Rollen / Auth V1
 
-Enthalten:
+Der aktuelle Schritt macht LabOS von einem offenen Einzelplatz-Prototypen zu einer ersten kontrollierten Mehrnutzerbasis fuer reale operative Labordaten.
 
-- Asset-Modell fuer Geraete und langlebige Assets
-- CRUD fuer Assets / Devices
-- Status-, Standort- und Wartungsfelder
-- optionale Wiki-Referenz
-- Verknuepfungen mit Tasks und Photos ueber `asset_id`
-- AssetOps-Seite in der Weboberflaeche
-- Dashboard-KPIs fuer aktive Assets, Wartung, Fehler und naechste Wartungen
+## Enthalten
 
-Bewusst noch nicht enthalten:
+- lokales User-Modell mit Passwort-Hash, Rollen und Aktivstatus
+- Login-Flow fuer Frontend und API
+- Bootstrap-Admin nur bei leerer User-Tabelle
+- Schutz fast aller `/api/v1/*`-Routen per lokaler Session / Token
+- serverseitige Trennung zwischen `viewer`, `operator` und `admin`
+- Admin-only Benutzerverwaltung
+- abgesicherte kritische Schreibpfade fuer Assets, Inventory, Labels, Fotos, Tasks, Alerts, Regeln und weitere operative Module
+- vorbereitete Erweiterbarkeit fuer spaetere feinere Berechtigungen
 
-- Inventory / MaterialOps
-- Bestands- und Beschaffungslogik
-- QR- / Label-System
-- ITOps-Healthchecks und Monitoring-Collector
-- CMDB- oder ERP-Komplexitaet
-- automatische Hardwaresteuerung
+## Bewusst noch nicht enthalten
 
-## Naechste priorisierte Schritte
+- OAuth / OIDC / SSO
+- LDAP
+- 2FA
+- Passwort-Reset per Mail
+- Multi-Tenant- oder Teammodell
+- feingranulare Objektrechte
+- vollstaendiges Audit-Log-System
 
-1. Inventory / MaterialOps V1
-2. QR / Label / Traceability V1
-3. ITOps / InfraOps V1 fuer Hosts, Nodes und Netzwerkobjekte
-4. Asset-nahe Wartungslogik mit Alerts und Regeln
-5. Sensorik V2 mit Asset- und Device-Bezug
-6. Wiki-UI V2 mit tieferen Referenzen zwischen Objekten und Dokumenten
-7. Vision V2 fuer strukturierte Foto-Auswertung
-8. Rollen / Auth
+---
 
-## Architekturleitlinien fuer die naechsten Schritte
+# Strategische Ausrichtung ab jetzt
+
+LabOS wird schrittweise vom operativen Kern zu einem vollständigen EcoSphereLab OS erweitert.
+
+Das bedeutet:
+
+- reale Geräte + reale Materialien + reale Prozesse + reales Wissen
+- nicht nur Dokumentation, sondern Betriebsführung
+- nicht nur Bio-Lab, sondern Multi-Domain-Lab
+- nicht nur Dashboards, sondern Handlungssystem
+- nicht nur Daten sammeln, sondern strukturieren, steuern und verbessern
+
+---
+
+# Priorisierte nächste Schritte
+
+## Priorität A – Operativer Kern
+
+1. Inventur- / Scan-Workflow V1 vervollstaendigen
+2. Asset-nahe Wartungslogik mit Alerts und Regeln
+3. Verbrauchshistorie / Nachkauf-Vorbereitung auf Basis des Inventory- und Label-Modells
+4. Rollen / Auth V1 zu feineren Berechtigungen, Safety-Guards und spaeterem Audit-Ausbau vorbereiten
+
+---
+
+## Priorität B – ReactorOps Ausbau
+
+5. ReactorOps / Digital Twin V1
+6. Reactor Control / Telemetry V1
+7. Calibration / Maintenance / Safety V1
+
+---
+
+## Priorität C – EcoSphereLab Ausbau
+
+8. ITOps / InfraOps V1
+9. Sensorik V2 mit Asset- und Device-Bezug
+10. Wiki-UI V2 mit tieferen Referenzen zwischen Objekten und Dokumenten
+11. Experiments / R&D Ops V1
+
+---
+
+## Priorität D – Intelligence Layer
+
+12. Vision V2 für strukturierte Foto-Auswertung
+13. ABrain V2 Cross-Domain Assistenz
+14. Predictive / Recommendation Features
+
+---
+
+## Priorität E – Skalierung
+
+15. Multi-Node / Zone-Awareness V1
+16. Backup / Restore / Deployment Härtung
+17. Pilotnutzung außerhalb des eigenen Labs
+
+---
+
+# Geplante Ausbauphasen
+
+---
+
+## v0.2.x – Operativ starkes LabOS
+
+Ziel:
+
+- Geräte und Materialien integriert
+- QR-fähige reale Objekte
+- Rollenmodell und lokale Auth-Basis
+- Wartungslogik
+- erste ReactorOps-Strukturen
+
+---
+
+## v0.3.x – Smart LabOS
+
+Ziel:
+
+- Digital Twin für Reaktoren
+- modulare Telemetrie
+- Kalibrier- und Safety-Logik
+- Cross-Domain Assistenz
+- Vision-Auswertung
+
+---
+
+## v0.4.x – EcoSphereLab OS
+
+Ziel:
+
+- BioOps + ReactorOps + MakerOps + ITOps + KnowledgeOps in einem System
+- mehrere Zonen / mehrere Nodes
+- strukturierte Automation
+- Assistenz auf Systemebene
+- echtes Betriebs- und Wissenssystem
+
+---
+
+# ReactorOps Roadmap (neu integriert)
+
+ALG-1-artige Systeme dienen als Inspirationsquelle für Funktionsklassen – nicht als Kopiervorlage.
+
+LabOS übernimmt diese Fähigkeiten als Plattformmodule.
+
+---
+
+## ReactorOps / Digital Twin V1
+
+Ein Reaktor wird nicht nur Stammdatensatz, sondern Prozessobjekt.
+
+### Enthalten:
+
+- Kulturtyp / Strain
+- Volumen
+- Medium / Rezept
+- Inokulationsdatum
+- Zielbereiche für pH / Temperatur / Licht / Flow
+- Wachstumsphase
+- Erntefenster
+- letzte Eingriffe
+- Kontaminationsereignisse
+- Prozesshistorie
+
+---
+
+## Reactor Control / Telemetry V1
+
+### Enthalten:
+
+- Telemetriekanäle:
+  - pH
+  - Temperatur
+  - Licht
+  - Flow
+- Setpoints
+- Scheduler
+- Manual Override
+- Modul-/Node-Struktur
+- ACK-/Command-Vorbereitung
+- Export / API
+
+---
+
+## Calibration / Maintenance / Safety V1
+
+### Enthalten:
+
+- Kalibrierstatus
+- Kalibrierintervalle
+- Wartung fällig
+- Incident-Typen:
+  - clogging suspicion
+  - dry run risk
+  - overheat
+  - module fault
+- Safe-State Konzepte
+- automatische Wartungs-Tasks
+
+---
+
+# Inventory / MaterialOps Roadmap
+
+## Bereits in V1 umgesetzt
+
+- Materialien
+- Verbrauchsgüter
+- Mengen / Einheiten
+- Lagerorte
+- Mindestbestände
+- kritische Bestände
+- Asset-Zuordnung optional
+
+## Als nächste Ausbaustufen
+
+- Verbrauchshistorie
+- Einkaufslisten
+- Lieferanten
+- Batch-/Lot-Tracking
+
+---
+
+# QR / Label / Traceability Roadmap
+
+## Bereits in V1 umgesetzt
+
+- Label-Codes für reale Objekte
+- QR-Ziele für Assets und Inventory
+- scan-fähige Browser-Zielseite
+- Aktiv/Inaktiv-Status für Labels
+- kleine Dashboard- und Objekt-Integration
+
+## Als nächste Ausbaustufen
+
+- mobile Scan-optimierte Flows
+- Inventur-Unterstützung
+- Zone- / Shelf- / Box-Labels
+- Reactor-, Charge- und Experiment-Ziele
+- Reprints / Label-Historie
+
+---
+
+# ITOps Roadmap
+
+## ITOps / InfraOps V1
+
+- Hosts
+- Nodes
+- Dienste
+- Storage
+- Backupstatus
+- Rollen
+- operative IT-Aufgaben
+
+## Später:
+
+- Container Health
+- GPU Jobs
+- Netzwerkdiagramme
+- Auto Discovery
+
+---
+
+# KnowledgeOps Roadmap
+
+## Wiki V2
+
+- tiefe Objektverknüpfungen
+- Asset ↔ SOP
+- Reactor ↔ Rezept
+- Task ↔ Anleitung
+- Experiment ↔ Ergebnis
+- Suchbarkeit verbessern
+
+---
+
+# ABrain Roadmap
+
+## ABrain V2
+
+- Cross-Domain Kontext
+- Geräte + Inventory + Reaktoren + IT + Experimente
+- strukturierte Empfehlungen
+- Explainability
+- Rule Suggestions
+
+## Später:
+
+- aktive Assistenz
+- Voice Layer
+- Multi-Agent Flows
+
+---
+
+# Architekturleitlinien
 
 - modularer Monolith vor Service-Aufspaltung
 - lokale Datenhaltung vor Cloud-Annahmen
 - wenige klare Modelle statt generischer Meta-Systeme
 - Erweiterungen entlang realer Betriebsobjekte
-- Cross-Domain-Verknuepfungen explizit und nachvollziehbar halten
+- Cross-Domain-Verknüpfungen explizit und nachvollziehbar halten
+- Pi-Tauglichkeit bleibt Pflicht
+- Safety vor Spielerei
+- echte Nutzung vor theoretischer Architektur
 
-## Wichtige Abgrenzungen
+---
+
+# Wichtige Abgrenzungen
 
 - Assets / Devices sind nicht dasselbe wie Inventory
-- ABrain bleibt eine angebundene Assistenzschicht, nicht das Primaersystem
+- Reaktoren sind nicht nur Assets, sondern Prozesssysteme
+- ABrain bleibt Assistenzschicht, nicht Primärsystem
 - Automatisierung muss sichtbar, protokolliert und deaktivierbar bleiben
-- jede Erweiterung muss fuer Raspberry Pi 4/5 praktikabel bleiben
-- charge_id/reactor_id optional wenn sauber ableitbar
-
-Wichtig:
-- keine Duplikats-Explosion erzeugen
-- wenn sinnvoll kleine Schutzlogik gegen identische Wiederholungen einbauen
-- aber V1 pragmatisch halten
-
----
-
-## 7. Frontend
-
-Baue neue Seite:
-
-### /automation
-oder
-### /rules
-
-Mit:
-- Regelliste
-- Regel anlegen
-- Regel bearbeiten
-- aktiv/inaktiv schalten
-- dry-run / evaluate button
-- Anzeige letzter Ausführungen
-- Ergebnis sichtbar:
-  - matched / not matched
-  - action executed
-  - error
-
-UX:
-- funktional
-- erklärbar
-- keine unnötige Design-Spielerei
-- Regelkonfiguration lieber klar als hyper-generisch
-
----
-
-## 8. Dashboard klein ergänzen
-
-Wenn sinnvoll klein umsetzbar:
-- Anzahl aktiver Regeln
-- letzte Regelereignisse oder letzte Ausführungen
-
-Dashboard nicht aufblasen.
-
----
-
-## 9. Seed / Demo
-
-Ergänze einige sinnvolle Demo-Regeln, z. B.:
-- Temperatur zu hoch -> Alert
-- pH zu niedrig -> Task
-- Sensor ohne Werte 24h -> Alert
-- überfällige Tasks -> Alert
-
-Wichtig:
-- Seed klein und nachvollziehbar
-- keine riesige Demo-Magie
-
----
-
-## 10. Tests
-
-Ergänze sinnvolle Backend-Tests für:
-- Regel anlegen
-- Regel validieren
-- dry-run evaluation
-- echte execution
-- create_alert action
-- create_task action
-- stale sensor case
-- overdue tasks case
-- execution log retrieval
-- Migration darf nicht brechen
-
-Bitte robust, aber pragmatisch.
-
----
-
-## 11. Doku
-
-Aktualisiere mindestens:
-- README.md
-- ROADMAP.md
-
-Dokumentiere:
-- welche Regeltypen unterstützt werden
-- welche Actions unterstützt werden
-- was dry_run bedeutet
-- wie Regeln getestet werden
-- wie die Engine bewusst begrenzt ist
-- wie dieser Schritt als Grundlage für spätere Multi-Domain-Erweiterungen dient
-
----
-
-# Wichtige Abgrenzung
-
-NICHT in diesem Schritt:
-- GPIO / Relais / Pumpensteuerung
-- Hardware Actions
-- Mail / SMS / Push Notifications
-- Cron-/Scheduler-Cluster
-- komplexe DSL
-- Multi-Step Workflows
-- autonome ABrain-Ausführung
-- Vision-Regeln
-- Wiki-RAG oder Wissensregeln
-- Rollen/Auth
-- AssetOps / InventoryOps / ITOps bereits implementieren
-
-Nur:
-
-eine nachvollziehbare, kontrollierte Regelengine V1 mit Task/Alert-Aktionen.
+- Vision ersetzt keine saubere Sensorik
+- jede Erweiterung muss für Raspberry Pi 4/5 praktikabel bleiben
 
 ---
 
 # Technische Leitlinien
 
-- Pi-freundlich
-- keine schweren neuen Libraries
-- kleine Service-Schicht
-- klare API-Struktur
-- lieber wenige gute Regeltypen als halbfertige Universal-Engine
-- nachvollziehbare Logs
-- keine stille Automatik
-- spätere Erweiterung auf weitere Domänen ermöglichen, aber in diesem Schritt nicht vorwegnehmen
+## Frontend
+
+- einfache nutzbare Operator-UIs
+- klare Dashboards
+- mobile / Touchscreen brauchbar
+- keine unnötig schwere UI-Komplexität
+
+## Backend
+
+- Services statt fette Router
+- klare Schemas
+- Alembic-first
+- nachvollziehbare APIs
+- Rule Engine ausbaubar halten
+
+## Datenbank
+
+- saubere Kernobjekte
+- Indizes
+- Historisierung
+- Zustände explizit modellieren
+- keine chaotischen Freitext-Silos
 
 ---
 
-# Arbeitsweise
+# Risiken
 
-1. Analyse aktueller Module und vorhandener Datenquellen/Zielobjekte.
-2. Minimal sauberes Rule-Modell definieren.
-3. Migration bauen.
-4. Backend-Engine + API implementieren.
-5. UI für Regeln und Dry-Run bauen.
-6. Tests ergänzen.
-7. Doku aktualisieren.
+## Produkt-Risiken
+
+- zu viele Domänen parallel
+- Feature-Wildwuchs
+- zu wenig echter täglicher Nutzen
+- LabOS bleibt zu abstrakt
+
+## Technische Risiken
+
+- zu schwere Stacks für Pi
+- Datenmodell driftet
+- UI inkonsistent
+- zu frühe Komplexität
+
+## Gegenmaßnahmen
+
+- kleine reale Inkremente
+- jede Woche nutzbarer Fortschritt
+- echte Nutzung priorisieren
+- konsequentes Scope-Management
 
 ---
 
-# Abschlussausgabe
+# Definition of Done
 
-Bitte liefern:
+Ein Feature gilt als fertig, wenn:
 
-1. Welcher Schritt wurde umgesetzt?
-2. Warum war das der richtige nächste Schritt?
-3. Welche Dateien wurden geändert?
-4. Was wurde konkret gebaut?
-5. Welche Entscheidungen wurden getroffen?
-6. Welche offenen Punkte bleiben?
-7. Exakte lokale Test-/Start-/Migrationsbefehle
-8. Passender Commit-Message-Vorschlag
+1. Code implementiert ist
+2. UI oder API sinnvoll nutzbar ist
+3. Fehlerfälle berücksichtigt sind
+4. Tests ergänzt wurden
+5. Doku aktualisiert wurde
+6. Docker/dev Setup funktioniert
+7. Raspberry-Pi-Tauglichkeit mitgedacht wurde
+8. Das Feature ins Gesamtmodell passt
 
-Falls sinnvoll kleine Konsistenzverbesserungen im Scope durchführen.
+---
+
+# Langfristige Vision
+
+LabOS wird das zentrale Operating System eines unabhängigen Innovationslabors.
+
+Später möglich:
+
+- mehrere Standorte
+- mehrere Pis / Nodes
+- modulare Reaktorfamilien
+- Asset + Inventory + Produktion
+- Vision + Assistenz + Analytics
+- SOP-gesteuerte Prozesse
+- digitale Laborzwillinge
+- reale Pilotnutzung durch Dritte
+- Produktisierung als Plattform

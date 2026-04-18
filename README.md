@@ -8,6 +8,9 @@ LabOS ist ein Raspberry-Pi-taugliches Operating System fuer EcoSphereLab. Es ver
 - Chargenverwaltung mit Create/Edit/Statuswechsel
 - Reaktorverwaltung mit Create/Edit/Statuswechsel
 - AssetOps / DeviceOps V1 mit CRUD, Wartungsfeldern und operativen Verknuepfungen
+- Inventory / MaterialOps V1 mit Bestandsfeldern, Lagerorten und Mindestbestaenden
+- QR / Label / Traceability V1 mit scan-faehigen Objekt-Links
+- Rollen / Auth V1 mit lokalen Benutzerkonten, Login und API-Schutz
 - Sensorik V1 mit CRUD, Werte-Ingest und Verlauf
 - Tasks + Alerts V1 mit operativen Dashboards
 - Foto Upload + Vision Basis V1
@@ -43,7 +46,73 @@ Danach:
 - API: http://localhost:8000
 - API Docs: http://localhost:8000/docs
 
-Beim API-Start werden zuerst Alembic-Migrationen bis `head` ausgefuehrt. Danach ergänzt der Seed-Flow nur fehlende Demo-Daten fuer Charges, Assets, Wiki, Sensoren, Tasks, Alerts und Regeln.
+Beim API-Start werden zuerst Alembic-Migrationen bis `head` ausgefuehrt. Danach ergänzt der Seed-Flow nur fehlende Demo-Daten fuer Charges, Assets, Inventory, Labels, Wiki, Sensoren, Tasks, Alerts und Regeln.
+
+Fuer Auth / Rollen V1 sind zusaetzlich diese `.env`-Variablen relevant:
+
+- `AUTH_SECRET_KEY`
+- `AUTH_COOKIE_NAME`
+- `AUTH_COOKIE_SECURE`
+- `AUTH_TOKEN_TTL_HOURS`
+- `BOOTSTRAP_ADMIN_USERNAME`
+- `BOOTSTRAP_ADMIN_PASSWORD`
+- `BOOTSTRAP_ADMIN_DISPLAY_NAME`
+- `BOOTSTRAP_ADMIN_EMAIL`
+
+Beim ersten Start bootstrapped LabOS genau einen lokalen Admin nur dann, wenn in `useraccount` noch kein Benutzer vorhanden ist.
+
+## Rollen / Auth V1
+
+LabOS bringt jetzt eine lokale Mehrnutzerbasis ohne externe Identity-Abhaengigkeit mit.
+
+Enthalten:
+
+- lokales `UserAccount`-Modell mit Passwort-Hash, Rolle, Aktivstatus und letztem Login
+- Login ueber `POST /api/v1/auth/login`
+- Session-Cookie plus API-Token fuer Browser und Skriptzugriffe
+- `GET /api/v1/auth/me` fuer Session-Aufloesung im Frontend
+- `POST /api/v1/auth/logout` zum lokalen Session-Clear
+- Admin-verwaltete User-API unter `/api/v1/users`
+- serverseitige Rollenpruefung auf kritischen Schreibpfaden
+
+Rollen:
+
+- `viewer`: Lesezugriff auf geschuetzte LabOS-Bereiche, keine kritischen Schreibaktionen
+- `operator`: operative Schreibaktionen fuer Chargen, Reaktoren, Assets, Inventory, Labels, Fotos, Sensorwerte, Tasks und Alerts
+- `admin`: volle Kontrolle inklusive Benutzerverwaltung, Regeln und systemnahen ABrain-/Admin-Pfaden
+
+Geschuetzte API-Logik:
+
+- nahezu alle `/api/v1/*`-Routen verlangen Anmeldung
+- bewusst offen bleiben nur `/`, `/healthz` und `POST /api/v1/auth/login`
+- Sensorwert-Ingest ist in V1 nicht anonym offen, sondern mindestens `operator`-geschuetzt
+- Userverwaltung unter `/api/v1/users` ist ausschliesslich `admin`
+
+Bewusst noch nicht enthalten:
+
+- OAuth / OIDC / SSO
+- LDAP
+- Passwort-Reset per Mail
+- 2FA
+- Multi-Tenant- oder Teammodell
+- feingranulare Objektberechtigungen
+- serverseitige Token-Revocation-Liste
+
+Bootstrap-Login fuer lokale Dev-Umgebungen:
+
+```bash
+curl -c .labos-cookie.txt -X POST http://localhost:8000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"labosadmin"}'
+```
+
+Session pruefen:
+
+```bash
+curl -b .labos-cookie.txt http://localhost:8000/api/v1/auth/me
+```
+
+Die folgenden API-Beispiele in dieser README setzen eine aktive Session voraus. Fuer `curl` sollte deshalb dieselbe Cookie-Datei mit `-b .labos-cookie.txt` weiterverwendet werden.
 
 ## CRUD-Stand fuer Chargen und Reaktoren
 
@@ -455,7 +524,7 @@ Die Weboberflaeche unter `/rules` bietet Regelliste, Bearbeitung, Enable-Toggle,
 
 ## AssetOps / DeviceOps V1
 
-LabOS bildet jetzt reale Geraete und Assets als operative Objekte ab, ohne bereits ein Inventory-, ERP- oder CMDB-System einzufuehren.
+LabOS bildet jetzt reale Geraete und Assets als operative Objekte ab, ohne daraus bereits ein ERP-, Einkaufs- oder CMDB-System zu machen.
 
 Dieses V1 umfasst:
 
@@ -508,7 +577,7 @@ Unterstuetzte Asset-Status:
 Abgrenzung zu spaeteren Modulen:
 
 - AssetOps / DeviceOps beschreibt langlebige Geraete und Assets
-- Inventory / MaterialOps folgt spaeter separat fuer Verbrauchsmaterialien, Bestaende und Beschaffung
+- Inventory / MaterialOps beschreibt Materialien, Verbrauch und Lagerorte als eigene operative Ebene
 - QR / Label, ITOps-Healthchecks und automatische Monitoring-Anbindung sind bewusst noch nicht Teil dieses Schritts
 
 Warum dieser Schritt wichtig ist:
@@ -534,6 +603,168 @@ curl -X PATCH http://localhost:8000/api/v1/assets/1/status \
   -H "Content-Type: application/json" \
   -d '{"status":"error"}'
 ```
+
+## Inventory / MaterialOps V1
+
+LabOS bildet jetzt auch Materialien, Verbrauchsgueter und einfache Lagerlogik des Labs ab. Der Fokus bleibt bewusst pragmatisch: sichtbar machen, was vorhanden ist, wo es liegt und was knapp wird.
+
+Dieses V1 umfasst:
+
+- Inventory-Modell mit `name`, `category`, `status`, `quantity`, `unit`, `location`
+- optionalen Mindestbestand ueber `min_quantity`
+- optionale Lagerfeinheiten ueber `zone`
+- optionale Felder wie `supplier`, `sku`, `notes`, `wiki_ref`, `last_restocked_at`, `expiry_date`
+- optionale Asset-Verknuepfung ueber `asset_id`
+- automatische Ableitung von `low_stock` und `out_of_stock` aus `quantity` und `min_quantity`
+- eigene Inventory-Seite unter `/inventory`
+- Dashboard-KPIs fuer Gesamtbestand, knappe Positionen, leere Positionen und kritische Materialien
+
+Backend-Endpunkte:
+
+- `GET /api/v1/inventory`
+- `GET /api/v1/inventory/overview`
+- `GET /api/v1/inventory/{id}`
+- `POST /api/v1/inventory`
+- `PUT /api/v1/inventory/{id}`
+- `PATCH /api/v1/inventory/{id}/status`
+
+Optionale Filter fuer `GET /api/v1/inventory`:
+
+- `status`
+- `category`
+- `location`
+- `zone`
+- `search`
+- `low_stock=true`
+
+Unterstuetzte Kategorien:
+
+- `filament`
+- `electronic_component`
+- `cable`
+- `screw`
+- `tubing`
+- `chemical`
+- `nutrient`
+- `cleaning_supply`
+- `spare_part`
+- `consumable`
+- `storage_box_content`
+
+Unterstuetzte Inventory-Status:
+
+- `available`
+- `low_stock`
+- `out_of_stock`
+- `reserved`
+- `expired`
+- `archived`
+
+Abgrenzung:
+
+- AssetOps / DeviceOps beschreibt langlebige Geraete und Infrastruktur
+- Inventory / MaterialOps beschreibt Materialien, Verbrauchsgueter, Ersatzteile und Lagerorte
+- Beschaffung, Einkaufslisten, Batch-/Lot-Tracking und QR-Scanning sind bewusst noch nicht Teil von V1
+
+Warum dieser Schritt wichtig ist:
+
+- bildet die reale Materialebene von BioOps, MakerOps, KnowledgeOps und Automation endlich mit ab
+- schafft eine saubere Grundlage fuer QR, Traceability, spaetere Nachkauf- und Verbrauchslogik
+- verknuepft Materialien bei Bedarf bereits mit Assets, ohne eine komplexe Warenwirtschaft einzufuehren
+
+Beispiele:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/inventory \
+  -H "Content-Type: application/json" \
+  -d '{"name":"PLA Filament schwarz","category":"filament","status":"available","quantity":0.75,"unit":"kg","min_quantity":1.0,"location":"Werkbank 1","zone":"Maker Corner","asset_id":1}'
+```
+
+```bash
+curl "http://localhost:8000/api/v1/inventory?low_stock=true&location=Werkbank"
+```
+
+```bash
+curl -X PATCH http://localhost:8000/api/v1/inventory/1/status \
+  -H "Content-Type: application/json" \
+  -d '{"status":"reserved"}'
+```
+
+## QR / Label / Traceability V1
+
+LabOS verbindet jetzt reale Objekte direkt mit ihren digitalen Eintraegen. Assets und Inventory-Items koennen ueber Label-Codes und QR-Ziele eindeutig adressiert werden, ohne dass dafuer bereits Scanner-Hardware, Lagerbuchungen oder mobile Sonderlogik noetig sind.
+
+Dieses V1 umfasst:
+
+- separates `Label`-Modell mit `label_code`, `label_type`, `target_type`, `target_id`
+- aktuell unterstuetzte Zielobjekte:
+  - `asset`
+  - `inventory_item`
+- optionale `display_name`, `location_snapshot` und `note`
+- Aktiv/Inaktiv-Status fuer Labels
+- browserfaehige Zielseite unter `/scan/{labelCode}`
+- QR-SVG-Ausgabe pro Label ueber die API
+- eigene Label-/Traceability-Seite unter `/labels`
+- Dashboard-KPIs fuer gelabelte Assets, gelabeltes Inventory und letzte Labels
+
+Backend-Endpunkte:
+
+- `GET /api/v1/labels`
+- `GET /api/v1/labels/overview`
+- `GET /api/v1/labels/{label_code}`
+- `GET /api/v1/labels/{label_code}/target`
+- `GET /api/v1/labels/{label_code}/qr`
+- `POST /api/v1/labels`
+- `PUT /api/v1/labels/{id}`
+- `PATCH /api/v1/labels/{id}/active`
+
+Unterstuetzte Label-Typen:
+
+- `qr`
+- `printed_label`
+
+Wichtige Nutzung:
+
+- QR auf Asset oder Material zeigt auf eine scanfaehige Browser-Seite
+- Objektseiten in `/assets` und `/inventory` machen zugehoerige Labels sichtbar
+- die Label-Verwaltung erlaubt Reaktivierung, Stilllegung und Re-Targeting einzelner Labels
+
+Bewusst noch nicht enthalten:
+
+- Barcode-Scanner-Integration
+- mobile native App
+- Inventur-Workflow
+- Lagerbuchung
+- Batch-/Lot-Tracking
+- physische Etikettendrucker-Integration
+
+Warum dieser Schritt wichtig ist:
+
+- reale Objekte im Raum werden direkt mit LabOS verknuepfbar
+- Boxen, Geraete und Materialien lassen sich schneller identifizieren
+- spaetere Inventur-, Wartungs-, Verbrauchs- und Traceability-Flows bauen auf einer sauberen Referenzschicht auf
+
+Beispiele:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/labels \
+  -H "Content-Type: application/json" \
+  -d '{"target_type":"asset","target_id":1,"label_type":"qr","display_name":"Prusa MK4 QR"}'
+```
+
+```bash
+curl http://localhost:8000/api/v1/labels/LBL-AST-PRUSA-MK4/target
+```
+
+```bash
+curl http://localhost:8000/api/v1/labels/LBL-AST-PRUSA-MK4/qr
+```
+
+Hinweis fuer QR-Ziele:
+
+- `PUBLIC_WEB_BASE_URL` steuert die Browser-Zieladresse fuer `/scan/{labelCode}`
+- `PUBLIC_API_BASE_URL` steuert die ausgelieferten QR-/API-Links
+- Standardwerte sind lokal `http://localhost:3000` und `http://localhost:8000`
 
 ## Migrationen
 
@@ -610,6 +841,18 @@ Nur AssetOps pruefen:
 .venv/bin/pytest services/api/tests/test_assets_api.py -q
 ```
 
+Nur Inventory / MaterialOps pruefen:
+
+```bash
+.venv/bin/pytest services/api/tests/test_inventory_api.py -q
+```
+
+Nur QR / Label / Traceability pruefen:
+
+```bash
+.venv/bin/pytest services/api/tests/test_labels_api.py -q
+```
+
 Nur ABrain-API pruefen:
 
 ```bash
@@ -646,11 +889,12 @@ Persistenz-Hinweis:
 - kontrollierte Scheduler-Anbindung fuer Regelevaluationen
 - Relationen und fachliche Constraints fuer weitere Module gezielt erweitern
 - Automationslogik kontrolliert auf Sensordaten und Aufgaben aufbauen
+- Inventur-, Verbrauchs- und Nachkauf-Flows auf Label- und Inventory-Daten aufbauen
 
 ## Nächste Schritte
 
-1. Regelengine kontrolliert um geplante Evaluationen und weitere sichere Trigger erweitern
-2. Externe ABrain-Anbindung stabilisieren und spaeter kontrolliert erweitern
-3. Vision-Analyse kontrolliert an gespeicherte Fotos anbinden
-4. Tasks enger mit Chargen, Reaktoren und Wiki verknuepfen
+1. Inventur- und Traceability-Workflows auf dem Label-Fundament aufsetzen
+2. Regelengine kontrolliert um geplante Evaluationen und weitere sichere Trigger erweitern
+3. Externe ABrain-Anbindung stabilisieren und spaeter kontrolliert erweitern
+4. Vision-Analyse kontrolliert an gespeicherte Fotos anbinden
 5. Delete-/Archivierungsstrategie sauber festziehen

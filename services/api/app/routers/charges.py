@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, status
 from sqlmodel import Session
 
+from ..auth import require_authenticated_user, require_operator_user
 from ..db import get_session
 from ..schemas import ChargeCreate, ChargeRead, ChargeStatusUpdate, ChargeUpdate
 from ..services import charges as charge_service
 
-router = APIRouter(prefix='/charges', tags=['charges'])
+router = APIRouter(prefix='/charges', tags=['charges'], dependencies=[Depends(require_authenticated_user)])
 
 
 @router.get('', response_model=list[ChargeRead])
@@ -19,12 +20,21 @@ def get_charge(charge_id: int, session: Session = Depends(get_session)):
 
 
 @router.post('', response_model=ChargeRead, status_code=status.HTTP_201_CREATED)
-def create_charge(payload: ChargeCreate, session: Session = Depends(get_session)):
+def create_charge(
+    payload: ChargeCreate,
+    session: Session = Depends(get_session),
+    current_user=Depends(require_operator_user),
+):
     return charge_service.create_charge(session, payload)
 
 
 @router.put('/{charge_id}', response_model=ChargeRead)
-def update_charge(charge_id: int, payload: ChargeUpdate, session: Session = Depends(get_session)):
+def update_charge(
+    charge_id: int,
+    payload: ChargeUpdate,
+    session: Session = Depends(get_session),
+    current_user=Depends(require_operator_user),
+):
     charge = charge_service.get_charge_or_404(session, charge_id)
     return charge_service.update_charge(session, charge, payload)
 
@@ -34,6 +44,7 @@ def update_charge_status(
     charge_id: int,
     payload: ChargeStatusUpdate,
     session: Session = Depends(get_session),
+    current_user=Depends(require_operator_user),
 ):
     charge = charge_service.get_charge_or_404(session, charge_id)
     return charge_service.update_charge_status(session, charge, payload)

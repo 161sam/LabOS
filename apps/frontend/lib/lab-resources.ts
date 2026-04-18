@@ -35,6 +35,45 @@ export const assetStatusOptions = [
   { value: 'retired', label: 'Ausgemustert' },
 ] as const;
 
+export const inventoryCategoryOptions = [
+  { value: 'filament', label: 'Filament' },
+  { value: 'electronic_component', label: 'Elektronikteil' },
+  { value: 'cable', label: 'Kabel' },
+  { value: 'screw', label: 'Schrauben' },
+  { value: 'tubing', label: 'Schlauch / Tubing' },
+  { value: 'chemical', label: 'Chemikalie' },
+  { value: 'nutrient', label: 'Naehrmedium' },
+  { value: 'cleaning_supply', label: 'Reinigungsmittel' },
+  { value: 'spare_part', label: 'Ersatzteil' },
+  { value: 'consumable', label: 'Verbrauchsmaterial' },
+  { value: 'storage_box_content', label: 'Boxinhalt' },
+] as const;
+
+export const inventoryStatusOptions = [
+  { value: 'available', label: 'Verfuegbar' },
+  { value: 'low_stock', label: 'Knapp' },
+  { value: 'out_of_stock', label: 'Leer' },
+  { value: 'reserved', label: 'Reserviert' },
+  { value: 'expired', label: 'Abgelaufen' },
+  { value: 'archived', label: 'Archiviert' },
+] as const;
+
+export const labelTypeOptions = [
+  { value: 'qr', label: 'QR' },
+  { value: 'printed_label', label: 'Gedrucktes Label' },
+] as const;
+
+export const labelTargetTypeOptions = [
+  { value: 'asset', label: 'Asset' },
+  { value: 'inventory_item', label: 'Inventory' },
+] as const;
+
+export const userRoleOptions = [
+  { value: 'admin', label: 'Admin' },
+  { value: 'operator', label: 'Operator' },
+  { value: 'viewer', label: 'Viewer' },
+] as const;
+
 export const sensorTypeOptions = [
   { value: 'temperature', label: 'Temperatur' },
   { value: 'humidity', label: 'Luftfeuchte' },
@@ -136,6 +175,11 @@ export type ChargeStatus = (typeof chargeStatusOptions)[number]['value'];
 export type ReactorStatus = (typeof reactorStatusOptions)[number]['value'];
 export type AssetType = (typeof assetTypeOptions)[number]['value'];
 export type AssetStatus = (typeof assetStatusOptions)[number]['value'];
+export type InventoryCategory = (typeof inventoryCategoryOptions)[number]['value'];
+export type InventoryStatus = (typeof inventoryStatusOptions)[number]['value'];
+export type LabelType = (typeof labelTypeOptions)[number]['value'];
+export type LabelTargetType = (typeof labelTargetTypeOptions)[number]['value'];
+export type UserRole = (typeof userRoleOptions)[number]['value'];
 export type SensorType = (typeof sensorTypeOptions)[number]['value'];
 export type SensorStatus = (typeof sensorStatusOptions)[number]['value'];
 export type TaskStatus = (typeof taskStatusOptions)[number]['value'];
@@ -192,6 +236,31 @@ export type Asset = {
   updated_at: string;
   open_task_count: number;
   photo_count: number;
+};
+
+export type InventoryItem = {
+  id: number;
+  name: string;
+  category: string;
+  status: InventoryStatus;
+  quantity: number;
+  unit: string;
+  min_quantity: number | null;
+  location: string;
+  zone: string | null;
+  supplier: string | null;
+  sku: string | null;
+  notes: string | null;
+  asset_id: number | null;
+  asset_name: string | null;
+  wiki_ref: string | null;
+  last_restocked_at: string | null;
+  expiry_date: string | null;
+  created_at: string;
+  updated_at: string;
+  is_low_stock: boolean;
+  is_out_of_stock: boolean;
+  needs_restock: boolean;
 };
 
 export type Sensor = {
@@ -281,6 +350,67 @@ export type AssetOverview = {
   assets_in_maintenance: number;
   assets_in_error: number;
   upcoming_maintenance_assets: Asset[];
+};
+
+export type InventoryOverview = {
+  total_items: number;
+  low_stock_items: number;
+  out_of_stock_items: number;
+  critical_items: InventoryItem[];
+};
+
+export type Label = {
+  id: number;
+  label_code: string;
+  label_type: LabelType;
+  target_type: LabelTargetType;
+  target_id: number;
+  display_name: string | null;
+  location_snapshot: string | null;
+  note: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  target_name: string | null;
+  target_location: string | null;
+  target_status: string | null;
+  scan_path: string;
+  scan_url: string;
+  target_manager_path: string;
+  target_manager_url: string;
+  qr_path: string;
+  qr_url: string;
+};
+
+export type LabelTarget = {
+  label: Label;
+  asset: Asset | null;
+  inventory_item: InventoryItem | null;
+};
+
+export type LabelOverview = {
+  labeled_assets: number;
+  labeled_inventory_items: number;
+  recent_labels: Label[];
+};
+
+export type User = {
+  id: number;
+  username: string;
+  display_name: string | null;
+  email: string | null;
+  role: UserRole;
+  is_active: boolean;
+  auth_source: string;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+  last_login_at: string | null;
+};
+
+export type AuthLoginResponse = {
+  access_token: string;
+  user: User;
 };
 
 export type PhotoAnalysisStatus = {
@@ -440,6 +570,11 @@ export type DashboardSummary = {
   active_assets: number;
   assets_in_maintenance: number;
   assets_in_error: number;
+  labeled_assets: number;
+  inventory_items: number;
+  inventory_low_stock: number;
+  inventory_out_of_stock: number;
+  labeled_inventory_items: number;
   open_tasks: number;
   due_today_tasks: number;
   critical_alerts: number;
@@ -452,5 +587,7 @@ export type DashboardSummary = {
   recent_photos: Photo[];
   recent_rule_executions: RuleExecution[];
   upcoming_maintenance_assets: Asset[];
+  critical_inventory_items: InventoryItem[];
+  recent_labels: Label[];
   message: string;
 };

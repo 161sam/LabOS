@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
+from decimal import Decimal
 from typing import Any, Optional
 
-from sqlalchemy import Column, Index, JSON
+from sqlalchemy import Column, Index, JSON, Numeric
 from sqlmodel import Field, SQLModel
 
 
@@ -163,6 +164,81 @@ class Asset(SQLModel, table=True):
     wiki_ref: Optional[str] = None
     created_at: datetime = Field(default_factory=_utcnow)
     updated_at: datetime = Field(default_factory=_utcnow)
+
+
+class InventoryItem(SQLModel, table=True):
+    __table_args__ = (
+        Index('ix_inventoryitem_name', 'name'),
+        Index('ix_inventoryitem_category', 'category'),
+        Index('ix_inventoryitem_status', 'status'),
+        Index('ix_inventoryitem_location', 'location'),
+        Index('ix_inventoryitem_zone', 'zone'),
+        Index('ix_inventoryitem_asset_id', 'asset_id'),
+        Index('ix_inventoryitem_sku', 'sku'),
+        Index('ix_inventoryitem_expiry_date', 'expiry_date'),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str
+    category: str
+    status: str = 'available'
+    quantity: Decimal = Field(sa_column=Column(Numeric(12, 3), nullable=False, default=Decimal('0')))
+    unit: str
+    min_quantity: Optional[Decimal] = Field(default=None, sa_column=Column(Numeric(12, 3), nullable=True))
+    location: str
+    zone: Optional[str] = None
+    supplier: Optional[str] = None
+    sku: Optional[str] = None
+    notes: Optional[str] = None
+    asset_id: Optional[int] = Field(default=None)
+    wiki_ref: Optional[str] = None
+    last_restocked_at: Optional[datetime] = None
+    expiry_date: Optional[date] = None
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
+
+
+class Label(SQLModel, table=True):
+    __table_args__ = (
+        Index('ix_label_label_type', 'label_type'),
+        Index('ix_label_target_type', 'target_type'),
+        Index('ix_label_target_type_target_id', 'target_type', 'target_id'),
+        Index('ix_label_is_active', 'is_active'),
+        Index('ix_label_created_at', 'created_at'),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    label_code: str = Field(index=True, unique=True)
+    label_type: str = 'qr'
+    target_type: str
+    target_id: int = Field(index=True)
+    display_name: Optional[str] = None
+    location_snapshot: Optional[str] = None
+    note: Optional[str] = None
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
+
+
+class UserAccount(SQLModel, table=True):
+    __table_args__ = (
+        Index('ix_useraccount_role', 'role'),
+        Index('ix_useraccount_is_active', 'is_active'),
+        Index('ix_useraccount_email', 'email'),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    username: str = Field(index=True, unique=True)
+    display_name: Optional[str] = None
+    email: Optional[str] = None
+    password_hash: str
+    role: str = 'admin'
+    is_active: bool = True
+    auth_source: str = 'local'
+    note: Optional[str] = None
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
+    last_login_at: Optional[datetime] = None
 
 
 class Rule(SQLModel, table=True):

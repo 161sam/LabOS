@@ -50,12 +50,16 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
     ...init,
     headers,
     cache: 'no-store',
+    credentials: 'include',
   });
 
   const rawBody = await response.text();
   const payload = parseResponseBody(rawBody);
 
   if (!response.ok) {
+    if (response.status === 401 && typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('labos-auth-required'));
+    }
     throw new Error(getErrorMessage(payload, `API request failed (${response.status})`));
   }
 

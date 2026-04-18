@@ -42,6 +42,31 @@ class AssetStatus(str, Enum):
     retired = 'retired'
 
 
+class InventoryStatus(str, Enum):
+    available = 'available'
+    low_stock = 'low_stock'
+    out_of_stock = 'out_of_stock'
+    reserved = 'reserved'
+    expired = 'expired'
+    archived = 'archived'
+
+
+class LabelType(str, Enum):
+    qr = 'qr'
+    printed_label = 'printed_label'
+
+
+class LabelTargetType(str, Enum):
+    asset = 'asset'
+    inventory_item = 'inventory_item'
+
+
+class UserRole(str, Enum):
+    admin = 'admin'
+    operator = 'operator'
+    viewer = 'viewer'
+
+
 class SensorType(str, Enum):
     temperature = 'temperature'
     humidity = 'humidity'
@@ -354,6 +379,138 @@ class AssetStatusUpdate(AppSchema):
     status: AssetStatus
 
 
+class InventoryPayload(AppSchema):
+    name: str = Field(min_length=1, max_length=160)
+    category: str = Field(min_length=1, max_length=80)
+    status: InventoryStatus = InventoryStatus.available
+    quantity: float = Field(ge=0, le=999999999.999)
+    unit: str = Field(min_length=1, max_length=40)
+    min_quantity: float | None = Field(default=None, ge=0, le=999999999.999)
+    location: str = Field(min_length=1, max_length=160)
+    zone: str | None = Field(default=None, max_length=120)
+    supplier: str | None = Field(default=None, max_length=160)
+    sku: str | None = Field(default=None, max_length=120)
+    notes: str | None = Field(default=None, max_length=4000)
+    asset_id: int | None = Field(default=None, ge=1)
+    wiki_ref: str | None = Field(default=None, max_length=255)
+    last_restocked_at: datetime | None = None
+    expiry_date: date | None = None
+
+    @field_validator('name', 'category', 'unit', 'location')
+    @classmethod
+    def normalize_required_text(cls, value: str) -> str:
+        return _normalize_required_text(value)
+
+    @field_validator('zone', 'supplier', 'sku', 'notes', 'wiki_ref')
+    @classmethod
+    def normalize_optional_text(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+    @model_validator(mode='after')
+    def validate_min_quantity(self) -> 'InventoryPayload':
+        if self.min_quantity is not None and self.min_quantity < 0:
+            raise ValueError('min_quantity must be greater than or equal to 0')
+        return self
+
+
+class InventoryCreate(InventoryPayload):
+    pass
+
+
+class InventoryUpdate(InventoryPayload):
+    pass
+
+
+class InventoryStatusUpdate(AppSchema):
+    status: InventoryStatus
+
+
+class LabelPayload(AppSchema):
+    label_code: str | None = Field(default=None, min_length=3, max_length=80)
+    label_type: LabelType = LabelType.qr
+    target_type: LabelTargetType
+    target_id: int = Field(ge=1)
+    display_name: str | None = Field(default=None, max_length=160)
+    location_snapshot: str | None = Field(default=None, max_length=255)
+    note: str | None = Field(default=None, max_length=4000)
+    is_active: bool = True
+
+    @field_validator('label_code')
+    @classmethod
+    def normalize_label_code(cls, value: str | None) -> str | None:
+        normalized = _normalize_optional_text(value)
+        return normalized.upper() if normalized else None
+
+    @field_validator('display_name', 'location_snapshot', 'note')
+    @classmethod
+    def normalize_optional_text(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class LabelCreate(LabelPayload):
+    pass
+
+
+class LabelUpdate(LabelPayload):
+    pass
+
+
+class LabelActiveUpdate(AppSchema):
+    is_active: bool
+
+
+class UserPayload(AppSchema):
+    username: str = Field(min_length=3, max_length=80)
+    display_name: str | None = Field(default=None, max_length=160)
+    email: str | None = Field(default=None, max_length=160)
+    role: UserRole = UserRole.viewer
+    is_active: bool = True
+    note: str | None = Field(default=None, max_length=4000)
+
+    @field_validator('username')
+    @classmethod
+    def normalize_username(cls, value: str) -> str:
+        return _normalize_required_text(value).lower()
+
+    @field_validator('display_name', 'email', 'note')
+    @classmethod
+    def normalize_optional_text(cls, value: str | None) -> str | None:
+        normalized = _normalize_optional_text(value)
+        if normalized and '@' in normalized:
+            return normalized.lower()
+        return normalized
+
+
+class UserCreate(UserPayload):
+    password: str = Field(min_length=8, max_length=256)
+
+
+class UserUpdate(UserPayload):
+    pass
+
+
+class UserRoleUpdate(AppSchema):
+    role: UserRole
+
+
+class UserActiveUpdate(AppSchema):
+    is_active: bool
+
+
+class UserPasswordUpdate(AppSchema):
+    password: str = Field(min_length=8, max_length=256)
+
+
+class AuthLoginRequest(AppSchema):
+    username: str = Field(min_length=1, max_length=80)
+    password: str = Field(min_length=1, max_length=256)
+
+    @field_validator('username')
+    @classmethod
+    def normalize_username(cls, value: str) -> str:
+        return _normalize_required_text(value).lower()
+
+
 class TaskPayload(AppSchema):
     title: str = Field(min_length=1, max_length=160)
     description: str | None = Field(default=None, max_length=4000)
@@ -508,6 +665,93 @@ class AssetOverviewRead(AppSchema):
     assets_in_maintenance: int
     assets_in_error: int
     upcoming_maintenance_assets: list[AssetRead]
+
+
+class InventoryRead(AppSchema):
+    id: int
+    name: str
+    category: str
+    status: InventoryStatus
+    quantity: float
+    unit: str
+    min_quantity: float | None
+    location: str
+    zone: str | None
+    supplier: str | None
+    sku: str | None
+    notes: str | None
+    asset_id: int | None
+    asset_name: str | None = None
+    wiki_ref: str | None
+    last_restocked_at: datetime | None
+    expiry_date: date | None
+    created_at: datetime
+    updated_at: datetime
+    is_low_stock: bool
+    is_out_of_stock: bool
+    needs_restock: bool
+
+
+class InventoryOverviewRead(AppSchema):
+    total_items: int
+    low_stock_items: int
+    out_of_stock_items: int
+    critical_items: list[InventoryRead]
+
+
+class LabelRead(AppSchema):
+    id: int
+    label_code: str
+    label_type: LabelType
+    target_type: LabelTargetType
+    target_id: int
+    display_name: str | None
+    location_snapshot: str | None
+    note: str | None
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+    target_name: str | None = None
+    target_location: str | None = None
+    target_status: str | None = None
+    scan_path: str
+    scan_url: str
+    target_manager_path: str
+    target_manager_url: str
+    qr_path: str
+    qr_url: str
+
+
+class LabelTargetRead(AppSchema):
+    label: LabelRead
+    asset: AssetRead | None = None
+    inventory_item: InventoryRead | None = None
+
+
+class LabelOverviewRead(AppSchema):
+    labeled_assets: int
+    labeled_inventory_items: int
+    recent_labels: list[LabelRead]
+
+
+class UserRead(AppSchema):
+    id: int
+    username: str
+    display_name: str | None
+    email: str | None
+    role: UserRole
+    is_active: bool
+    auth_source: str
+    note: str | None
+    created_at: datetime
+    updated_at: datetime
+    last_login_at: datetime | None
+
+
+class AuthLoginResponse(AppSchema):
+    access_token: str
+    token_type: str = 'bearer'
+    user: UserRead
 
 
 class PhotoAnalysisStatusRead(AppSchema):
@@ -726,6 +970,11 @@ class DashboardSummaryRead(AppSchema):
     active_assets: int
     assets_in_maintenance: int
     assets_in_error: int
+    labeled_assets: int
+    inventory_items: int
+    inventory_low_stock: int
+    inventory_out_of_stock: int
+    labeled_inventory_items: int
     open_tasks: int
     due_today_tasks: int
     critical_alerts: int
@@ -738,6 +987,8 @@ class DashboardSummaryRead(AppSchema):
     recent_photos: list[PhotoRead]
     recent_rule_executions: list[RuleExecutionRead]
     upcoming_maintenance_assets: list[AssetRead]
+    critical_inventory_items: list[InventoryRead]
+    recent_labels: list[LabelRead]
     message: str
 
 

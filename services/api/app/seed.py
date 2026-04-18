@@ -2,8 +2,10 @@ from datetime import timedelta
 
 from sqlmodel import Session, select
 
+from .config import settings
 from .db import engine
-from .models import Asset, Alert, Charge, Reactor, Rule, Sensor, SensorValue, Task, WikiPage, _utcnow
+from .models import Asset, Alert, Charge, InventoryItem, Label, Reactor, Rule, Sensor, SensorValue, Task, UserAccount, WikiPage, _utcnow
+from .security import hash_password
 
 
 def seed_data() -> bool:
@@ -11,6 +13,9 @@ def seed_data() -> bool:
         has_charge = session.exec(select(Charge)).first()
         has_sensor = session.exec(select(Sensor)).first()
         has_asset = session.exec(select(Asset)).first()
+        has_inventory_item = session.exec(select(InventoryItem)).first()
+        has_label = session.exec(select(Label)).first()
+        has_user = session.exec(select(UserAccount)).first()
         reactor = session.exec(select(Reactor)).first()
         charge = session.exec(select(Charge)).first()
         seeded_any = False
@@ -37,6 +42,22 @@ def seed_data() -> bool:
             session.commit()
             seeded_any = True
             charge = session.exec(select(Charge)).first()
+
+        if has_user is None:
+            session.add(
+                UserAccount(
+                    username=settings.bootstrap_admin_username.strip().lower(),
+                    display_name=settings.bootstrap_admin_display_name,
+                    email=settings.bootstrap_admin_email,
+                    password_hash=hash_password(settings.bootstrap_admin_password),
+                    role='admin',
+                    is_active=True,
+                    auth_source='local',
+                    note='Bootstrap admin user generated for local LabOS access.',
+                )
+            )
+            session.commit()
+            seeded_any = True
 
         if has_sensor is None:
             temp_sensor = Sensor(
@@ -222,6 +243,192 @@ def seed_data() -> bool:
 
         printer_asset = session.exec(select(Asset).where(Asset.name == 'Prusa MK4')).first()
         microscope_asset = session.exec(select(Asset).where(Asset.name == 'Mikroskop Nordbank')).first()
+        pump_asset = session.exec(select(Asset).where(Asset.name == 'Pumpe A')).first()
+
+        if has_inventory_item is None:
+            inventory_items = [
+                InventoryItem(
+                    name='PLA Filament schwarz',
+                    category='filament',
+                    status='available',
+                    quantity=2.5,
+                    unit='kg',
+                    min_quantity=1.0,
+                    location='Werkbank 1',
+                    zone='Maker Corner',
+                    supplier='Prusa',
+                    sku='FIL-PLA-BLK',
+                    notes='Standardmaterial fuer Gehaeuse und Halterungen.',
+                    asset_id=printer_asset.id if printer_asset else None,
+                    last_restocked_at=now - timedelta(days=14),
+                ),
+                InventoryItem(
+                    name='Isopropanol',
+                    category='cleaning_supply',
+                    status='low_stock',
+                    quantity=0.7,
+                    unit='l',
+                    min_quantity=1.0,
+                    location='Chemikalienschrank',
+                    zone='Wet Lab',
+                    supplier='Carl Roth',
+                    sku='IPA-99',
+                    expiry_date=(now + timedelta(days=300)).date(),
+                ),
+                InventoryItem(
+                    name='pH Teststreifen',
+                    category='consumable',
+                    status='available',
+                    quantity=60,
+                    unit='pcs',
+                    min_quantity=20,
+                    location='Analytikschublade',
+                    zone='Wet Lab',
+                ),
+                InventoryItem(
+                    name='Silikonschlauch 6 mm',
+                    category='tubing',
+                    status='available',
+                    quantity=8,
+                    unit='m',
+                    min_quantity=3,
+                    location='Fluidik Rack',
+                    zone='Wet Lab',
+                    asset_id=pump_asset.id if pump_asset else None,
+                ),
+                InventoryItem(
+                    name='JST Kabelsatz',
+                    category='cable',
+                    status='available',
+                    quantity=12,
+                    unit='sets',
+                    min_quantity=4,
+                    location='Elektronikplatz',
+                    zone='Maker Corner',
+                ),
+                InventoryItem(
+                    name='M3 Schrauben',
+                    category='screw',
+                    status='available',
+                    quantity=240,
+                    unit='pcs',
+                    min_quantity=80,
+                    location='Kleinteilewand',
+                    zone='Maker Corner',
+                ),
+                InventoryItem(
+                    name='Reinigungstuecher',
+                    category='cleaning_supply',
+                    status='low_stock',
+                    quantity=1,
+                    unit='pack',
+                    min_quantity=2,
+                    location='Putzschrank',
+                    zone='Wet Lab',
+                ),
+                InventoryItem(
+                    name='Ersatzduese MK4',
+                    category='spare_part',
+                    status='available',
+                    quantity=3,
+                    unit='pcs',
+                    min_quantity=1,
+                    location='Werkbank 1',
+                    zone='Maker Corner',
+                    asset_id=printer_asset.id if printer_asset else None,
+                    notes='0.4 mm Messingduesen fuer den Prusa MK4.',
+                ),
+                InventoryItem(
+                    name='Naehrmedium A',
+                    category='nutrient',
+                    status='low_stock',
+                    quantity=0.4,
+                    unit='l',
+                    min_quantity=0.5,
+                    location='Kuehlschrank Nord',
+                    zone='Wet Lab',
+                    expiry_date=(now + timedelta(days=12)).date(),
+                ),
+                InventoryItem(
+                    name='Schrumpfschlauch Set',
+                    category='electronic_component',
+                    status='out_of_stock',
+                    quantity=0,
+                    unit='sets',
+                    min_quantity=1,
+                    location='Elektronikplatz',
+                    zone='Maker Corner',
+                ),
+            ]
+            session.add_all(inventory_items)
+            session.commit()
+            seeded_any = True
+
+        server_asset = session.exec(select(Asset).where(Asset.name == 'Server1')).first()
+        pla_filament = session.exec(select(InventoryItem).where(InventoryItem.name == 'PLA Filament schwarz')).first()
+        isopropanol = session.exec(select(InventoryItem).where(InventoryItem.name == 'Isopropanol')).first()
+        nozzle = session.exec(select(InventoryItem).where(InventoryItem.name == 'Ersatzduese MK4')).first()
+
+        if has_label is None:
+            labels = [
+                Label(
+                    label_code='LBL-AST-PRUSA-MK4',
+                    label_type='qr',
+                    target_type='asset',
+                    target_id=printer_asset.id if printer_asset else 0,
+                    display_name='Prusa MK4 QR',
+                    location_snapshot='Werkbank 1 / Maker Corner',
+                    is_active=printer_asset is not None,
+                ),
+                Label(
+                    label_code='LBL-AST-SERVER1',
+                    label_type='qr',
+                    target_type='asset',
+                    target_id=server_asset.id if server_asset else 0,
+                    display_name='Server1 Rack Label',
+                    location_snapshot='Rack A / Infra',
+                    is_active=server_asset is not None,
+                ),
+                Label(
+                    label_code='LBL-AST-MICRO-NORD',
+                    label_type='qr',
+                    target_type='asset',
+                    target_id=microscope_asset.id if microscope_asset else 0,
+                    display_name='Mikroskop Nordbank Label',
+                    location_snapshot='Laborbank Nord / Wet Lab',
+                    is_active=microscope_asset is not None,
+                ),
+                Label(
+                    label_code='LBL-INV-PLA-BLACK',
+                    label_type='qr',
+                    target_type='inventory_item',
+                    target_id=pla_filament.id if pla_filament else 0,
+                    display_name='PLA Filament schwarz',
+                    location_snapshot='Werkbank 1 / Maker Corner',
+                    is_active=pla_filament is not None,
+                ),
+                Label(
+                    label_code='LBL-INV-IPA-99',
+                    label_type='qr',
+                    target_type='inventory_item',
+                    target_id=isopropanol.id if isopropanol else 0,
+                    display_name='Isopropanol',
+                    location_snapshot='Chemikalienschrank / Wet Lab',
+                    is_active=isopropanol is not None,
+                ),
+                Label(
+                    label_code='LBL-INV-MK4-NOZZLE',
+                    label_type='qr',
+                    target_type='inventory_item',
+                    target_id=nozzle.id if nozzle else 0,
+                    display_name='Ersatzduese MK4',
+                    location_snapshot='Werkbank 1 / Maker Corner',
+                    is_active=nozzle is not None,
+                ),
+            ]
+            session.add_all([label for label in labels if label.target_id > 0])
+            session.commit()
+            seeded_any = True
 
         if charge is None:
             charge = session.exec(select(Charge)).first()

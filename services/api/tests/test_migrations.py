@@ -15,7 +15,22 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
     inspector = inspect(engine)
 
     table_names = set(inspector.get_table_names())
-    assert {'charge', 'reactor', 'sensor', 'sensorvalue', 'task', 'alert', 'photo', 'asset', 'rule', 'ruleexecution', 'wikipage'} <= table_names
+    assert {
+        'charge',
+        'reactor',
+        'sensor',
+        'sensorvalue',
+        'task',
+        'alert',
+        'photo',
+        'asset',
+        'inventoryitem',
+        'label',
+        'rule',
+        'ruleexecution',
+        'useraccount',
+        'wikipage',
+    } <= table_names
 
     charge_columns = {column['name'] for column in inspector.get_columns('charge')}
     assert {'id', 'name', 'species', 'status', 'volume_l', 'reactor_id', 'start_date', 'notes'} <= charge_columns
@@ -109,6 +124,43 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
         'updated_at',
     } <= asset_columns
 
+    inventory_columns = {column['name'] for column in inspector.get_columns('inventoryitem')}
+    assert {
+        'id',
+        'name',
+        'category',
+        'status',
+        'quantity',
+        'unit',
+        'min_quantity',
+        'location',
+        'zone',
+        'supplier',
+        'sku',
+        'notes',
+        'asset_id',
+        'wiki_ref',
+        'last_restocked_at',
+        'expiry_date',
+        'created_at',
+        'updated_at',
+    } <= inventory_columns
+
+    label_columns = {column['name'] for column in inspector.get_columns('label')}
+    assert {
+        'id',
+        'label_code',
+        'label_type',
+        'target_type',
+        'target_id',
+        'display_name',
+        'location_snapshot',
+        'note',
+        'is_active',
+        'created_at',
+        'updated_at',
+    } <= label_columns
+
     rule_columns = {column['name'] for column in inspector.get_columns('rule')}
     assert {
         'id',
@@ -135,6 +187,22 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
         'action_result',
         'created_at',
     } <= rule_execution_columns
+
+    user_columns = {column['name'] for column in inspector.get_columns('useraccount')}
+    assert {
+        'id',
+        'username',
+        'display_name',
+        'email',
+        'password_hash',
+        'role',
+        'is_active',
+        'auth_source',
+        'note',
+        'created_at',
+        'updated_at',
+        'last_login_at',
+    } <= user_columns
 
     charge_indexes = {index['name'] for index in inspector.get_indexes('charge')}
     assert {'ix_charge_name', 'ix_charge_status', 'ix_charge_reactor_id', 'ix_charge_start_date'} <= charge_indexes
@@ -190,6 +258,29 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
         'ix_asset_next_maintenance_at',
     } <= asset_indexes
 
+    inventory_indexes = {index['name'] for index in inspector.get_indexes('inventoryitem')}
+    assert {
+        'ix_inventoryitem_name',
+        'ix_inventoryitem_category',
+        'ix_inventoryitem_status',
+        'ix_inventoryitem_location',
+        'ix_inventoryitem_zone',
+        'ix_inventoryitem_asset_id',
+        'ix_inventoryitem_sku',
+        'ix_inventoryitem_expiry_date',
+    } <= inventory_indexes
+
+    label_indexes = {index['name'] for index in inspector.get_indexes('label')}
+    assert {
+        'ix_label_label_code',
+        'ix_label_target_id',
+        'ix_label_label_type',
+        'ix_label_target_type',
+        'ix_label_target_type_target_id',
+        'ix_label_is_active',
+        'ix_label_created_at',
+    } <= label_indexes
+
     rule_indexes = {index['name'] for index in inspector.get_indexes('rule')}
     assert {
         'ix_rule_is_enabled',
@@ -205,8 +296,16 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
         'ix_ruleexecution_created_at',
     } <= rule_execution_indexes
 
+    user_indexes = {index['name'] for index in inspector.get_indexes('useraccount')}
+    assert {
+        'ix_useraccount_username',
+        'ix_useraccount_role',
+        'ix_useraccount_is_active',
+        'ix_useraccount_email',
+    } <= user_indexes
+
     with engine.connect() as connection:
         version = connection.execute(text('SELECT version_num FROM alembic_version')).scalar_one()
-        assert version == '20260417_0006'
+        assert version == '20260418_0009'
 
     engine.dispose()

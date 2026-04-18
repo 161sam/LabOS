@@ -15,7 +15,7 @@ from app.main import app
 
 
 @pytest.fixture()
-def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def anonymous_client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     db_path = tmp_path / 'labos-test.db'
     storage_path = tmp_path / 'storage'
     storage_path.mkdir(parents=True, exist_ok=True)
@@ -33,3 +33,16 @@ def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
     app.dependency_overrides.clear()
     test_engine.dispose()
+
+
+@pytest.fixture()
+def client(anonymous_client: TestClient):
+    response = anonymous_client.post(
+        '/api/v1/auth/login',
+        json={
+            'username': settings.bootstrap_admin_username,
+            'password': settings.bootstrap_admin_password,
+        },
+    )
+    assert response.status_code == 200
+    return anonymous_client

@@ -15,6 +15,16 @@ class Settings(BaseSettings):
     abrain_timeout_seconds: float = 8.0
     storage_path: str = 'storage'
     photo_max_upload_bytes: int = 8 * 1024 * 1024
+    public_web_base_url: str = 'http://localhost:3000'
+    public_api_base_url: str = 'http://localhost:8000'
+    auth_secret_key: str = 'change-me-for-production'
+    auth_cookie_name: str = 'labos_session'
+    auth_cookie_secure: bool = False
+    auth_token_ttl_hours: int = 12
+    bootstrap_admin_username: str = 'admin'
+    bootstrap_admin_password: str = 'labosadmin'
+    bootstrap_admin_display_name: str = 'LabOS Admin'
+    bootstrap_admin_email: str | None = 'admin@local.labos'
 
 
 settings = Settings()

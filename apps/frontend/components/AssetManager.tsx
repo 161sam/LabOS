@@ -9,6 +9,7 @@ import {
   AssetOverview,
   AssetStatus,
   AssetType,
+  Label,
   assetStatusOptions,
   assetTypeOptions,
 } from '../lib/lab-resources';
@@ -120,6 +121,7 @@ export function AssetManager() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [overview, setOverview] = useState<AssetOverview | null>(null);
   const [selectedAsset, setSelectedAsset] = useState<AssetDetail | null>(null);
+  const [selectedAssetLabels, setSelectedAssetLabels] = useState<Label[]>([]);
   const [filters, setFilters] = useState<AssetFilters>(createEmptyFilters);
   const [form, setForm] = useState<AssetFormState>(createEmptyAssetForm);
   const [statusDrafts, setStatusDrafts] = useState<Record<number, AssetStatus>>({});
@@ -135,8 +137,12 @@ export function AssetManager() {
   const [editingId, setEditingId] = useState<number | null>(null);
 
   async function fetchAssetDetail(assetId: number) {
-    const detail = await apiRequest<AssetDetail>(`/api/v1/assets/${assetId}`);
+    const [detail, labels] = await Promise.all([
+      apiRequest<AssetDetail>(`/api/v1/assets/${assetId}`),
+      apiRequest<Label[]>(`/api/v1/labels?target_type=asset&target_id=${assetId}`),
+    ]);
     setSelectedAsset(detail);
+    setSelectedAssetLabels(labels);
     return detail;
   }
 
@@ -164,6 +170,7 @@ export function AssetManager() {
 
       if (assetData.length === 0) {
         setSelectedAsset(null);
+        setSelectedAssetLabels([]);
         if (mode !== 'edit') {
           setForm(createEmptyAssetForm());
         }
@@ -554,6 +561,7 @@ export function AssetManager() {
               <div className="detailRow"><strong>Naechste Wartung</strong><span>{formatDateTime(selectedAsset.next_maintenance_at)}</span></div>
               <div className="detailRow"><strong>Offene Tasks</strong><span>{selectedAsset.open_task_count}</span></div>
               <div className="detailRow"><strong>Fotos</strong><span>{selectedAsset.photo_count}</span></div>
+              <div className="detailRow"><strong>Labels</strong><span>{selectedAssetLabels.length}</span></div>
               <div className="detailRow"><strong>Wiki</strong><span>{selectedAsset.wiki_ref || 'Nicht gesetzt'}</span></div>
               {selectedAsset.notes ? <InlineMessage>{selectedAsset.notes}</InlineMessage> : null}
               {selectedAsset.maintenance_notes ? <InlineMessage>{selectedAsset.maintenance_notes}</InlineMessage> : null}
@@ -601,6 +609,40 @@ export function AssetManager() {
                     </table>
                   </div>
                 )}
+              </div>
+
+              <div>
+                <h3>Labels / QR</h3>
+                {selectedAssetLabels.length === 0 ? (
+                  <p className="muted">Noch keine Labels fuer dieses Asset vorhanden.</p>
+                ) : (
+                  <div className="tableWrap">
+                    <table className="table">
+                      <thead>
+                        <tr>
+                          <th>Code</th>
+                          <th>Aktiv</th>
+                          <th>Scan</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedAssetLabels.map((label) => (
+                          <tr key={label.id}>
+                            <td>{label.label_code}</td>
+                            <td>{label.is_active ? 'Ja' : 'Nein'}</td>
+                            <td><a href={label.scan_path} target="_blank" rel="noreferrer">Oeffnen</a></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                <div className="buttonRow">
+                  <a className="button buttonSecondary buttonCompact" href="/labels">
+                    In Traceability verwalten
+                  </a>
+                </div>
               </div>
 
               <div>
