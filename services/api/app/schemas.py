@@ -20,6 +20,53 @@ class ReactorStatus(str, Enum):
     maintenance = 'maintenance'
 
 
+class ReactorPhase(str, Enum):
+    inoculation = 'inoculation'
+    growth = 'growth'
+    stabilization = 'stabilization'
+    harvest_ready = 'harvest_ready'
+    maintenance = 'maintenance'
+    paused = 'paused'
+    incident = 'incident'
+
+
+class ReactorTechnicalState(str, Enum):
+    nominal = 'nominal'
+    warning = 'warning'
+    maintenance = 'maintenance'
+    degraded = 'degraded'
+    error = 'error'
+
+
+class ReactorBiologicalState(str, Enum):
+    stable = 'stable'
+    adapting = 'adapting'
+    growing = 'growing'
+    stressed = 'stressed'
+    contaminated = 'contaminated'
+    unknown = 'unknown'
+
+
+class ReactorContaminationState(str, Enum):
+    suspected = 'suspected'
+    confirmed = 'confirmed'
+    recovering = 'recovering'
+    cleared = 'cleared'
+
+
+class ReactorEventType(str, Enum):
+    inoculation = 'inoculation'
+    medium_change = 'medium_change'
+    calibration = 'calibration'
+    contamination_suspected = 'contamination_suspected'
+    contamination_confirmed = 'contamination_confirmed'
+    maintenance = 'maintenance'
+    manual_adjustment = 'manual_adjustment'
+    observation = 'observation'
+    harvest = 'harvest'
+    incident = 'incident'
+
+
 class AssetType(str, Enum):
     printer_3d = 'printer_3d'
     microscope = 'microscope'
@@ -266,6 +313,87 @@ class ReactorRead(AppSchema):
     location: str | None
     last_cleaned_at: datetime | None
     notes: str | None
+
+
+class ReactorTwinPayload(AppSchema):
+    culture_type: str | None = Field(default=None, max_length=160)
+    strain: str | None = Field(default=None, max_length=160)
+    medium_recipe: str | None = Field(default=None, max_length=255)
+    inoculated_at: datetime | None = None
+    current_phase: ReactorPhase = ReactorPhase.growth
+    target_ph_min: float | None = Field(default=None, ge=0, le=14)
+    target_ph_max: float | None = Field(default=None, ge=0, le=14)
+    target_temp_min: float | None = Field(default=None, ge=-20, le=150)
+    target_temp_max: float | None = Field(default=None, ge=-20, le=150)
+    target_light_min: float | None = Field(default=None, ge=0, le=100000)
+    target_light_max: float | None = Field(default=None, ge=0, le=100000)
+    target_flow_min: float | None = Field(default=None, ge=0, le=100000)
+    target_flow_max: float | None = Field(default=None, ge=0, le=100000)
+    expected_harvest_window_start: datetime | None = None
+    expected_harvest_window_end: datetime | None = None
+    contamination_state: ReactorContaminationState | None = None
+    technical_state: ReactorTechnicalState = ReactorTechnicalState.nominal
+    biological_state: ReactorBiologicalState = ReactorBiologicalState.unknown
+    notes: str | None = Field(default=None, max_length=4000)
+
+    @field_validator('culture_type', 'strain', 'medium_recipe', 'notes')
+    @classmethod
+    def normalize_optional_text(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+    @model_validator(mode='after')
+    def validate_reactor_ranges(self) -> 'ReactorTwinPayload':
+        _validate_optional_range(self.target_ph_min, self.target_ph_max, 'target_ph')
+        _validate_optional_range(self.target_temp_min, self.target_temp_max, 'target_temp')
+        _validate_optional_range(self.target_light_min, self.target_light_max, 'target_light')
+        _validate_optional_range(self.target_flow_min, self.target_flow_max, 'target_flow')
+        if (
+            self.expected_harvest_window_start is not None
+            and self.expected_harvest_window_end is not None
+            and self.expected_harvest_window_start > self.expected_harvest_window_end
+        ):
+            raise ValueError('expected_harvest_window_start must be before expected_harvest_window_end')
+        return self
+
+
+class ReactorTwinCreate(ReactorTwinPayload):
+    reactor_id: int = Field(ge=1)
+
+
+class ReactorTwinUpdate(ReactorTwinPayload):
+    pass
+
+
+class ReactorTwinPhaseUpdate(AppSchema):
+    current_phase: ReactorPhase
+
+
+class ReactorTwinStateUpdate(AppSchema):
+    technical_state: ReactorTechnicalState
+    biological_state: ReactorBiologicalState
+    contamination_state: ReactorContaminationState | None = None
+
+
+class ReactorEventPayload(AppSchema):
+    event_type: ReactorEventType
+    title: str = Field(min_length=1, max_length=160)
+    description: str | None = Field(default=None, max_length=4000)
+    severity: AlertSeverity | None = None
+    phase_snapshot: ReactorPhase | None = None
+
+    @field_validator('title')
+    @classmethod
+    def normalize_required_title(cls, value: str) -> str:
+        return _normalize_required_text(value)
+
+    @field_validator('description')
+    @classmethod
+    def normalize_optional_description(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class ReactorEventCreate(ReactorEventPayload):
+    pass
 
 
 class SensorPayload(AppSchema):
@@ -633,6 +761,66 @@ class PhotoRead(AppSchema):
     file_url: str
 
 
+class ReactorEventRead(AppSchema):
+    id: int
+    reactor_id: int
+    reactor_name: str | None = None
+    event_type: ReactorEventType
+    title: str
+    description: str | None
+    severity: AlertSeverity | None
+    phase_snapshot: ReactorPhase | None
+    created_at: datetime
+    created_by_user_id: int | None
+    created_by_username: str | None = None
+
+
+class ReactorTwinRead(AppSchema):
+    id: int | None
+    is_configured: bool = True
+    reactor_id: int
+    reactor_name: str
+    reactor_type: str
+    reactor_status: ReactorStatus
+    reactor_volume_l: float
+    reactor_location: str | None
+    culture_type: str | None
+    strain: str | None
+    medium_recipe: str | None
+    inoculated_at: datetime | None
+    current_phase: ReactorPhase
+    target_ph_min: float | None
+    target_ph_max: float | None
+    target_temp_min: float | None
+    target_temp_max: float | None
+    target_light_min: float | None
+    target_light_max: float | None
+    target_flow_min: float | None
+    target_flow_max: float | None
+    expected_harvest_window_start: datetime | None
+    expected_harvest_window_end: datetime | None
+    contamination_state: ReactorContaminationState | None
+    technical_state: ReactorTechnicalState
+    biological_state: ReactorBiologicalState
+    notes: str | None
+    created_at: datetime
+    updated_at: datetime
+    current_charge: ChargeRead | None = None
+    sensor_count: int = 0
+    open_task_count: int = 0
+    open_alert_count: int = 0
+    photo_count: int = 0
+    latest_event: ReactorEventRead | None = None
+
+
+class ReactorTwinDetailRead(ReactorTwinRead):
+    recent_events: list[ReactorEventRead]
+    open_tasks: list[TaskRead]
+    recent_alerts: list[AlertRead]
+    recent_photos: list[PhotoRead]
+    recent_sensors: list[SensorRead]
+
+
 class AssetRead(AppSchema):
     id: int
     name: str
@@ -965,6 +1153,9 @@ class EvaluateAllRulesResponse(AppSchema):
 class DashboardSummaryRead(AppSchema):
     active_charges: int
     reactors_online: int
+    reactors_attention: int
+    reactors_harvest_ready: int
+    reactors_incident_or_contamination: int
     active_sensors: int
     error_sensors: int
     active_assets: int
@@ -985,11 +1176,19 @@ class DashboardSummaryRead(AppSchema):
     sensor_overview: list[SensorOverviewRead]
     recent_alerts: list[AlertRead]
     recent_photos: list[PhotoRead]
+    recent_reactor_events: list[ReactorEventRead]
     recent_rule_executions: list[RuleExecutionRead]
     upcoming_maintenance_assets: list[AssetRead]
     critical_inventory_items: list[InventoryRead]
     recent_labels: list[LabelRead]
     message: str
+
+
+def _validate_optional_range(min_value: float | None, max_value: float | None, field_name: str) -> None:
+    if min_value is None or max_value is None:
+        return
+    if min_value > max_value:
+        raise ValueError(f'{field_name}_min must be less than or equal to {field_name}_max')
 
 
 def _require_config_keys(config: dict[str, Any], keys: set[str], scope: str) -> None:

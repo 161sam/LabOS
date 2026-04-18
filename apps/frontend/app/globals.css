@@ -33,10 +33,10 @@ a { color: inherit; text-decoration: none; }
 .table th, .table td { border-bottom: 1px solid var(--border); padding: 10px 8px; text-align: left; }
 .badge { display: inline-block; padding: 4px 8px; background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.4); border-radius: 999px; font-size: 0.8rem; }
 .badge-low, .badge-info, .badge-open, .badge-normal { background: rgba(59, 130, 246, 0.12); border-color: rgba(59, 130, 246, 0.35); }
-.badge-low_stock, .badge-maintenance, .badge-warning, .badge-doing, .badge-high, .badge-acknowledged, .badge-matched, .badge-reserved { background: rgba(245, 158, 11, 0.14); border-color: rgba(245, 158, 11, 0.35); }
-.badge-critical, .badge-error, .badge-blocked, .badge-failed, .badge-out_of_stock, .badge-expired { background: rgba(239, 68, 68, 0.14); border-color: rgba(239, 68, 68, 0.35); }
-.badge-done, .badge-resolved, .badge-executed, .badge-available, .badge-active { background: rgba(34, 197, 94, 0.14); border-color: rgba(34, 197, 94, 0.35); }
-.badge-not_matched, .badge-archived, .badge-inactive, .badge-retired { background: rgba(148, 163, 184, 0.16); border-color: rgba(148, 163, 184, 0.35); }
+.badge-low_stock, .badge-maintenance, .badge-warning, .badge-doing, .badge-high, .badge-acknowledged, .badge-matched, .badge-reserved, .badge-stabilization, .badge-adapting, .badge-degraded, .badge-suspected { background: rgba(245, 158, 11, 0.14); border-color: rgba(245, 158, 11, 0.35); }
+.badge-critical, .badge-error, .badge-blocked, .badge-failed, .badge-out_of_stock, .badge-expired, .badge-incident, .badge-stressed, .badge-contaminated, .badge-confirmed { background: rgba(239, 68, 68, 0.14); border-color: rgba(239, 68, 68, 0.35); }
+.badge-done, .badge-resolved, .badge-executed, .badge-available, .badge-active, .badge-harvest_ready, .badge-growth, .badge-growing, .badge-stable, .badge-nominal, .badge-cleared, .badge-recovering { background: rgba(34, 197, 94, 0.14); border-color: rgba(34, 197, 94, 0.35); }
+.badge-not_matched, .badge-archived, .badge-inactive, .badge-retired, .badge-paused, .badge-unknown, .badge-inoculation { background: rgba(148, 163, 184, 0.16); border-color: rgba(148, 163, 184, 0.35); }
 .tableWrap { overflow-x: auto; }
 .entityForm { display: grid; gap: 16px; }
 .formGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }

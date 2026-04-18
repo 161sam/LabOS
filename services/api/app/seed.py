@@ -4,7 +4,23 @@ from sqlmodel import Session, select
 
 from .config import settings
 from .db import engine
-from .models import Asset, Alert, Charge, InventoryItem, Label, Reactor, Rule, Sensor, SensorValue, Task, UserAccount, WikiPage, _utcnow
+from .models import (
+    Asset,
+    Alert,
+    Charge,
+    InventoryItem,
+    Label,
+    Reactor,
+    ReactorEvent,
+    ReactorTwin,
+    Rule,
+    Sensor,
+    SensorValue,
+    Task,
+    UserAccount,
+    WikiPage,
+    _utcnow,
+)
 from .security import hash_password
 
 
@@ -16,23 +32,72 @@ def seed_data() -> bool:
         has_inventory_item = session.exec(select(InventoryItem)).first()
         has_label = session.exec(select(Label)).first()
         has_user = session.exec(select(UserAccount)).first()
-        reactor = session.exec(select(Reactor)).first()
+        reactor = session.exec(select(Reactor).where(Reactor.name == 'Reaktor-A1')).first()
         charge = session.exec(select(Charge)).first()
         seeded_any = False
         now = _utcnow()
 
         if reactor is None:
-            reactor = Reactor(
-                name='Reaktor-A1',
-                reactor_type='mobil',
-                status='online',
-                volume_l=1.6,
-                location='Regal A',
-                notes='Seed-Reaktor fuer lokale Entwicklung',
-            )
-            session.add(reactor)
+            reactors = [
+                Reactor(
+                    name='Reaktor-A1',
+                    reactor_type='mobil',
+                    status='online',
+                    volume_l=1.6,
+                    location='Regal A',
+                    notes='Seed-Reaktor fuer lokale Entwicklung und Spirulina-Wachstum.',
+                ),
+                Reactor(
+                    name='Reaktor-B1',
+                    reactor_type='tower',
+                    status='online',
+                    volume_l=3.2,
+                    location='Nordbank',
+                    notes='Testreaktor fuer Stabilisierung und Mediumwechsel.',
+                ),
+                Reactor(
+                    name='Reaktor-C1',
+                    reactor_type='panel',
+                    status='maintenance',
+                    volume_l=2.4,
+                    location='Service Bay',
+                    notes='Reaktor mit technischem Warning-/Maintenance-Szenario fuer ReactorOps V1.',
+                ),
+            ]
+            session.add_all(reactors)
             session.commit()
-            session.refresh(reactor)
+            seeded_any = True
+
+        reactor = session.exec(select(Reactor).where(Reactor.name == 'Reaktor-A1')).first()
+        reactor_b = session.exec(select(Reactor).where(Reactor.name == 'Reaktor-B1')).first()
+        reactor_c = session.exec(select(Reactor).where(Reactor.name == 'Reaktor-C1')).first()
+
+        if reactor_b is None:
+            reactor_b = Reactor(
+                name='Reaktor-B1',
+                reactor_type='tower',
+                status='online',
+                volume_l=3.2,
+                location='Nordbank',
+                notes='Testreaktor fuer Stabilisierung und Mediumwechsel.',
+            )
+            session.add(reactor_b)
+            session.commit()
+            session.refresh(reactor_b)
+            seeded_any = True
+
+        if reactor_c is None:
+            reactor_c = Reactor(
+                name='Reaktor-C1',
+                reactor_type='panel',
+                status='maintenance',
+                volume_l=2.4,
+                location='Service Bay',
+                notes='Reaktor mit technischem Warning-/Maintenance-Szenario fuer ReactorOps V1.',
+            )
+            session.add(reactor_c)
+            session.commit()
+            session.refresh(reactor_c)
             seeded_any = True
 
         if has_charge is None:
@@ -133,6 +198,131 @@ def seed_data() -> bool:
                     recorded_at=now - timedelta(hours=2),
                 )
             )
+            session.commit()
+            seeded_any = True
+
+        reactor_twin_payloads = [
+            (
+                reactor.id,
+                ReactorTwin(
+                    reactor_id=reactor.id,
+                    culture_type='Spirulina platensis',
+                    strain='SP-Blue-01',
+                    medium_recipe='Medium A / alkalisch',
+                    inoculated_at=now - timedelta(days=6),
+                    current_phase='growth',
+                    target_ph_min=8.8,
+                    target_ph_max=9.6,
+                    target_temp_min=30.0,
+                    target_temp_max=34.0,
+                    target_light_min=220.0,
+                    target_light_max=320.0,
+                    target_flow_min=0.8,
+                    target_flow_max=1.4,
+                    expected_harvest_window_start=now + timedelta(days=2),
+                    expected_harvest_window_end=now + timedelta(days=4),
+                    technical_state='nominal',
+                    biological_state='growing',
+                    notes='Primärer Spirulina-Lauf mit stabilen Wachstumswerten.',
+                ),
+            ),
+            (
+                reactor_b.id,
+                ReactorTwin(
+                    reactor_id=reactor_b.id,
+                    culture_type='Testkultur',
+                    strain='TS-042',
+                    medium_recipe='Medium B / low nitrogen',
+                    inoculated_at=now - timedelta(days=3),
+                    current_phase='stabilization',
+                    target_ph_min=6.8,
+                    target_ph_max=7.4,
+                    target_temp_min=24.0,
+                    target_temp_max=27.0,
+                    target_light_min=120.0,
+                    target_light_max=180.0,
+                    target_flow_min=0.5,
+                    target_flow_max=0.9,
+                    expected_harvest_window_start=now + timedelta(days=5),
+                    expected_harvest_window_end=now + timedelta(days=7),
+                    technical_state='warning',
+                    biological_state='adapting',
+                    notes='Stabilisierungsphase nach Mediumwechsel und Prozessbeobachtung.',
+                ),
+            ),
+            (
+                reactor_c.id,
+                ReactorTwin(
+                    reactor_id=reactor_c.id,
+                    culture_type='Reinigungszyklus',
+                    strain=None,
+                    medium_recipe='n/a',
+                    inoculated_at=None,
+                    current_phase='maintenance',
+                    target_temp_min=20.0,
+                    target_temp_max=25.0,
+                    technical_state='maintenance',
+                    biological_state='unknown',
+                    contamination_state='suspected',
+                    notes='Reaktor aktuell nicht produktiv, Wartung und Kontaminationspruefung laufen.',
+                ),
+            ),
+        ]
+        missing_twins = [
+            twin
+            for reactor_id, twin in reactor_twin_payloads
+            if session.exec(select(ReactorTwin).where(ReactorTwin.reactor_id == reactor_id)).first() is None
+        ]
+        if missing_twins:
+            session.add_all(missing_twins)
+            session.commit()
+            seeded_any = True
+
+        reactor_event_payloads = [
+            ReactorEvent(
+                reactor_id=reactor.id,
+                event_type='inoculation',
+                title='Spirulina inokuliert',
+                description='Frische Spirulina-Kultur mit Medium A angesetzt und Luftfluss geprueft.',
+                severity='info',
+                phase_snapshot='inoculation',
+                created_at=now - timedelta(days=6),
+            ),
+            ReactorEvent(
+                reactor_id=reactor_b.id,
+                event_type='medium_change',
+                title='Mediumwechsel B1',
+                description='Teilweiser Mediumwechsel auf Medium B, danach Stabilisierung gestartet.',
+                severity='warning',
+                phase_snapshot='stabilization',
+                created_at=now - timedelta(days=1, hours=3),
+            ),
+            ReactorEvent(
+                reactor_id=reactor.id,
+                event_type='observation',
+                title='Wachstum homogen',
+                description='Biomasseverteilung gleichmaessig, Schaumbildung unkritisch.',
+                severity='info',
+                phase_snapshot='growth',
+                created_at=now - timedelta(hours=8),
+            ),
+            ReactorEvent(
+                reactor_id=reactor_c.id,
+                event_type='contamination_suspected',
+                title='Kontaminationsverdacht C1',
+                description='Auffaellige Truebung und Geruch festgestellt, Reaktor in Wartungsmodus belassen.',
+                severity='high',
+                phase_snapshot='incident',
+                created_at=now - timedelta(hours=5),
+            ),
+        ]
+        missing_events = [
+            event
+            for event in reactor_event_payloads
+            if session.exec(select(ReactorEvent).where(ReactorEvent.title == event.title)).first() is None
+        ]
+        if missing_events:
+            session.add_all(missing_events)
             session.commit()
             seeded_any = True
 
@@ -486,6 +676,19 @@ def seed_data() -> bool:
             )
             seeded_any = True
 
+        if session.exec(select(Task).where(Task.title == 'Reaktor C1 Laborcheck')).first() is None:
+            session.add(
+                Task(
+                    title='Reaktor C1 Laborcheck',
+                    description='Kontaminationsverdacht pruefen, Probe nehmen und ReactorOps-Status bestaetigen.',
+                    status='open',
+                    priority='critical',
+                    due_at=now + timedelta(hours=4),
+                    reactor_id=reactor_c.id if reactor_c else None,
+                )
+            )
+            seeded_any = True
+
         if session.exec(select(Alert).where(Alert.title == 'Sensor ohne Werte Warnung')).first() is None:
             sensor_without_recent_value = session.exec(
                 select(Sensor).where(Sensor.name == 'Raumfeuchte Nordregal')
@@ -512,6 +715,19 @@ def seed_data() -> bool:
                     status='open',
                     source_type='sensor',
                     source_id=temp_sensor.id if temp_sensor else None,
+                )
+            )
+            seeded_any = True
+
+        if session.exec(select(Alert).where(Alert.title == 'Reaktor C1 Kontaminationsverdacht')).first() is None:
+            session.add(
+                Alert(
+                    title='Reaktor C1 Kontaminationsverdacht',
+                    message='Reaktor-C1 bleibt bis zum Laborcheck in Maintenance; ReactorOps-V1 markiert den Twin als suspected.',
+                    severity='high',
+                    status='open',
+                    source_type='reactor',
+                    source_id=reactor_c.id if reactor_c else None,
                 )
             )
             seeded_any = True

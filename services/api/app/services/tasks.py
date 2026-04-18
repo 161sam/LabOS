@@ -18,6 +18,7 @@ def list_tasks(
     session: Session,
     status_filter: TaskStatus | None = None,
     priority_filter: TaskPriority | None = None,
+    reactor_id: int | None = None,
     asset_id: int | None = None,
 ) -> list[TaskRead]:
     statement = select(Task)
@@ -25,6 +26,8 @@ def list_tasks(
         statement = statement.where(Task.status == status_filter.value)
     if priority_filter is not None:
         statement = statement.where(Task.priority == priority_filter.value)
+    if reactor_id is not None:
+        statement = statement.where(Task.reactor_id == reactor_id)
     if asset_id is not None:
         statement = statement.where(Task.asset_id == asset_id)
 

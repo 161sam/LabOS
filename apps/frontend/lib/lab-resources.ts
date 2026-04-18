@@ -13,6 +13,53 @@ export const reactorStatusOptions = [
   { value: 'maintenance', label: 'Wartung' },
 ] as const;
 
+export const reactorPhaseOptions = [
+  { value: 'inoculation', label: 'Inokulation' },
+  { value: 'growth', label: 'Wachstum' },
+  { value: 'stabilization', label: 'Stabilisierung' },
+  { value: 'harvest_ready', label: 'Harvest Ready' },
+  { value: 'maintenance', label: 'Wartung' },
+  { value: 'paused', label: 'Pausiert' },
+  { value: 'incident', label: 'Incident' },
+] as const;
+
+export const reactorTechnicalStateOptions = [
+  { value: 'nominal', label: 'Nominal' },
+  { value: 'warning', label: 'Warning' },
+  { value: 'maintenance', label: 'Maintenance' },
+  { value: 'degraded', label: 'Degraded' },
+  { value: 'error', label: 'Error' },
+] as const;
+
+export const reactorBiologicalStateOptions = [
+  { value: 'stable', label: 'Stabil' },
+  { value: 'adapting', label: 'Adapting' },
+  { value: 'growing', label: 'Growing' },
+  { value: 'stressed', label: 'Stressed' },
+  { value: 'contaminated', label: 'Contaminated' },
+  { value: 'unknown', label: 'Unknown' },
+] as const;
+
+export const reactorContaminationStateOptions = [
+  { value: 'suspected', label: 'Suspected' },
+  { value: 'confirmed', label: 'Confirmed' },
+  { value: 'recovering', label: 'Recovering' },
+  { value: 'cleared', label: 'Cleared' },
+] as const;
+
+export const reactorEventTypeOptions = [
+  { value: 'inoculation', label: 'Inokulation' },
+  { value: 'medium_change', label: 'Mediumwechsel' },
+  { value: 'calibration', label: 'Kalibrierung' },
+  { value: 'contamination_suspected', label: 'Kontaminationsverdacht' },
+  { value: 'contamination_confirmed', label: 'Kontamination bestaetigt' },
+  { value: 'maintenance', label: 'Wartung' },
+  { value: 'manual_adjustment', label: 'Manuelle Anpassung' },
+  { value: 'observation', label: 'Beobachtung' },
+  { value: 'harvest', label: 'Ernte' },
+  { value: 'incident', label: 'Incident' },
+] as const;
+
 export const assetTypeOptions = [
   { value: 'printer_3d', label: '3D-Drucker' },
   { value: 'microscope', label: 'Mikroskop' },
@@ -173,6 +220,11 @@ export const ruleExecutionStatusOptions = [
 
 export type ChargeStatus = (typeof chargeStatusOptions)[number]['value'];
 export type ReactorStatus = (typeof reactorStatusOptions)[number]['value'];
+export type ReactorPhase = (typeof reactorPhaseOptions)[number]['value'];
+export type ReactorTechnicalState = (typeof reactorTechnicalStateOptions)[number]['value'];
+export type ReactorBiologicalState = (typeof reactorBiologicalStateOptions)[number]['value'];
+export type ReactorContaminationState = (typeof reactorContaminationStateOptions)[number]['value'];
+export type ReactorEventType = (typeof reactorEventTypeOptions)[number]['value'];
 export type AssetType = (typeof assetTypeOptions)[number]['value'];
 export type AssetStatus = (typeof assetStatusOptions)[number]['value'];
 export type InventoryCategory = (typeof inventoryCategoryOptions)[number]['value'];
@@ -214,6 +266,66 @@ export type Reactor = {
   location: string | null;
   last_cleaned_at: string | null;
   notes: string | null;
+};
+
+export type ReactorEvent = {
+  id: number;
+  reactor_id: number;
+  reactor_name: string | null;
+  event_type: ReactorEventType;
+  title: string;
+  description: string | null;
+  severity: AlertSeverity | null;
+  phase_snapshot: ReactorPhase | null;
+  created_at: string;
+  created_by_user_id: number | null;
+  created_by_username: string | null;
+};
+
+export type ReactorTwin = {
+  id: number | null;
+  is_configured: boolean;
+  reactor_id: number;
+  reactor_name: string;
+  reactor_type: string;
+  reactor_status: ReactorStatus;
+  reactor_volume_l: number;
+  reactor_location: string | null;
+  culture_type: string | null;
+  strain: string | null;
+  medium_recipe: string | null;
+  inoculated_at: string | null;
+  current_phase: ReactorPhase;
+  target_ph_min: number | null;
+  target_ph_max: number | null;
+  target_temp_min: number | null;
+  target_temp_max: number | null;
+  target_light_min: number | null;
+  target_light_max: number | null;
+  target_flow_min: number | null;
+  target_flow_max: number | null;
+  expected_harvest_window_start: string | null;
+  expected_harvest_window_end: string | null;
+  contamination_state: ReactorContaminationState | null;
+  technical_state: ReactorTechnicalState;
+  biological_state: ReactorBiologicalState;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  current_charge: Charge | null;
+  sensor_count: number;
+  open_task_count: number;
+  open_alert_count: number;
+  photo_count: number;
+  latest_event: ReactorEvent | null;
+};
+
+export type ReactorTwinDetail = ReactorTwin & {
+  recent_events: ReactorEvent[];
+  open_tasks: Task[];
+  recent_alerts: Alert[];
+  recent_photos: Photo[];
+  recent_sensors: Sensor[];
 };
 
 export type Asset = {
@@ -565,6 +677,9 @@ export type RuleEvaluationResponse = {
 export type DashboardSummary = {
   active_charges: number;
   reactors_online: number;
+  reactors_attention: number;
+  reactors_harvest_ready: number;
+  reactors_incident_or_contamination: number;
   active_sensors: number;
   error_sensors: number;
   active_assets: number;
@@ -585,6 +700,7 @@ export type DashboardSummary = {
   sensor_overview: Sensor[];
   recent_alerts: Alert[];
   recent_photos: Photo[];
+  recent_reactor_events: ReactorEvent[];
   recent_rule_executions: RuleExecution[];
   upcoming_maintenance_assets: Asset[];
   critical_inventory_items: InventoryItem[];

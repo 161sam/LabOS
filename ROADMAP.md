@@ -51,35 +51,35 @@ LabOS ist nicht nur eine einzelne Labor-App, sondern das zentrale Betriebssystem
 - Inventory / MaterialOps V1
 - QR / Label / Traceability V1
 - Rollen / Auth V1
+- ReactorOps / Digital Twin V1
 - Dashboard-Basis
 - Wiki-Basis
 
 ---
 
-# Aktueller Status: Rollen / Auth V1
+# Aktueller Status: ReactorOps / Digital Twin V1
 
-Der aktuelle Schritt macht LabOS von einem offenen Einzelplatz-Prototypen zu einer ersten kontrollierten Mehrnutzerbasis fuer reale operative Labordaten.
+Der aktuelle Schritt macht Reaktoren in LabOS von reinen Stammdatensaetzen zu gefuehrten biologischen und technischen Prozessobjekten.
 
 ## Enthalten
 
-- lokales User-Modell mit Passwort-Hash, Rollen und Aktivstatus
-- Login-Flow fuer Frontend und API
-- Bootstrap-Admin nur bei leerer User-Tabelle
-- Schutz fast aller `/api/v1/*`-Routen per lokaler Session / Token
-- serverseitige Trennung zwischen `viewer`, `operator` und `admin`
-- Admin-only Benutzerverwaltung
-- abgesicherte kritische Schreibpfade fuer Assets, Inventory, Labels, Fotos, Tasks, Alerts, Regeln und weitere operative Module
-- vorbereitete Erweiterbarkeit fuer spaetere feinere Berechtigungen
+- `ReactorTwin` pro Reaktor fuer Phase, biologische Lage, technische Lage und Sollbereiche
+- `ReactorEvent` als kleine Prozesshistorie fuer Inokulation, Beobachtung, Mediumwechsel, Wartung und Incident-Kontext
+- aggregierte ReactorOps-Sicht mit offenen Tasks, letzten Alerts, Photos und Sensoren pro Reaktor
+- Dashboard-KPIs fuer ReactorOps Attention, Harvest Ready und Incident-/Kontaminationslagen
+- Seed-Datensaetze fuer Growth, Stabilization und Maintenance/Warning
+- Grundlage fuer spaetere Reactor Control / Telemetry / Calibration / Safety ohne schon Steuerungslogik einzubauen
 
 ## Bewusst noch nicht enthalten
 
-- OAuth / OIDC / SSO
-- LDAP
-- 2FA
-- Passwort-Reset per Mail
-- Multi-Tenant- oder Teammodell
-- feingranulare Objektrechte
-- vollstaendiges Audit-Log-System
+- Hardware-Kommandos
+- Licht-/Temperatur-Scheduler
+- Dosing- und PID-Logik
+- Kalibrier-Workflows als eigenes Modul
+- Safety-/Interlock-Systeme
+- Incident-Automation
+- Multi-Reactor-Orchestrierung
+- komplexe Rezept- oder Medien-Engine
 
 ---
 
@@ -105,6 +105,7 @@ Das bedeutet:
 2. Asset-nahe Wartungslogik mit Alerts und Regeln
 3. Verbrauchshistorie / Nachkauf-Vorbereitung auf Basis des Inventory- und Label-Modells
 4. Rollen / Auth V1 zu feineren Berechtigungen, Safety-Guards und spaeterem Audit-Ausbau vorbereiten
+5. ReactorOps V1 an Telemetry-, Calibration- und Safety-Module anschlussfaehig vertiefen
 
 ---
 
@@ -152,6 +153,7 @@ Ziel:
 - Geräte und Materialien integriert
 - QR-fähige reale Objekte
 - Rollenmodell und lokale Auth-Basis
+- ReactorOps-Grundlage mit Digital Twin
 - Wartungslogik
 - erste ReactorOps-Strukturen
 

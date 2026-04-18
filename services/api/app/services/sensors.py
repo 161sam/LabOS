@@ -27,6 +27,14 @@ def list_sensor_overview(session: Session, limit: int = 6) -> list[SensorOvervie
     return [SensorOverviewRead(**sensor.model_dump()) for sensor in _serialize_sensors(session, sensors)]
 
 
+def list_reactor_sensors(session: Session, reactor_id: int, limit: int | None = None) -> list[SensorRead]:
+    statement = select(Sensor).where(Sensor.reactor_id == reactor_id).order_by(Sensor.name.asc(), Sensor.id.asc())
+    if limit is not None:
+        statement = statement.limit(limit)
+    sensors = list(session.exec(statement).all())
+    return _serialize_sensors(session, sensors)
+
+
 def get_sensor_or_404(session: Session, sensor_id: int) -> Sensor:
     sensor = session.get(Sensor, sensor_id)
     if sensor is None:

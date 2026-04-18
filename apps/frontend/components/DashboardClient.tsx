@@ -65,7 +65,7 @@ export function DashboardClient() {
     <div className="grid" style={{ gap: 24 }}>
       <div>
         <h1>Dashboard</h1>
-        <p className="muted">Zentrale Übersicht für Laborbetrieb, Chargen, Sensoren, Inventory, Labels und Mehrnutzerbetrieb.</p>
+        <p className="muted">Zentrale Übersicht für Laborbetrieb, ReactorOps, Sensoren, Inventory, Labels und Mehrnutzerbetrieb.</p>
       </div>
 
       {pageError ? <InlineMessage tone="error">{pageError}</InlineMessage> : null}
@@ -74,6 +74,12 @@ export function DashboardClient() {
         <Card title="Aktive Chargen"><div className="kpi">{data.active_charges}</div></Card>
         <Card title="Reaktoren online"><div className="kpi">{data.reactors_online}</div></Card>
         <Card title="Aktive Sensoren"><div className="kpi">{data.active_sensors}</div></Card>
+      </div>
+
+      <div className="grid cols-3">
+        <Card title="ReactorOps Attention"><div className="kpi">{data.reactors_attention}</div></Card>
+        <Card title="Harvest Ready"><div className="kpi">{data.reactors_harvest_ready}</div></Card>
+        <Card title="Incident / Contamination"><div className="kpi">{data.reactors_incident_or_contamination}</div></Card>
       </div>
 
       <div className="grid cols-3">
@@ -134,8 +140,11 @@ export function DashboardClient() {
 
         <Card title="Hinweis">
           <p>{data.message}</p>
-          <p className="muted">Dashboard zeigt jetzt neben Labor-KPIs auch den geschuetzten Mehrnutzerbetrieb mit Rollenbasis an.</p>
+          <p className="muted">Dashboard zeigt jetzt neben Labor-KPIs auch ReactorOps-Zustaende, Ereignisse und den geschuetzten Mehrnutzerbetrieb mit Rollenbasis an.</p>
           <div className="buttonRow">
+            <a className="button buttonSecondary" href="/reactor-ops">
+              Zu ReactorOps
+            </a>
             <a className="button buttonSecondary" href="/abrain">
               Zu ABrain
             </a>
@@ -219,6 +228,35 @@ export function DashboardClient() {
                       <td><span className={`badge badge-${execution.status}`}>{execution.status}</span></td>
                       <td>{execution.dry_run ? 'Ja' : 'Nein'}</td>
                       <td>{new Date(execution.created_at).toLocaleString('de-DE')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+
+        <Card title="Letzte Reactor Events">
+          {data.recent_reactor_events.length === 0 ? (
+            <p className="muted">Noch keine ReactorOps-Ereignisse vorhanden.</p>
+          ) : (
+            <div className="tableWrap">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Reaktor</th>
+                    <th>Typ</th>
+                    <th>Titel</th>
+                    <th>Zeitpunkt</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.recent_reactor_events.map((event) => (
+                    <tr key={event.id}>
+                      <td>{event.reactor_name || `Reaktor #${event.reactor_id}`}</td>
+                      <td><span className={`badge badge-${event.severity || 'info'}`}>{event.event_type}</span></td>
+                      <td>{event.title}</td>
+                      <td>{new Date(event.created_at).toLocaleString('de-DE')}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -34,6 +34,59 @@ class Reactor(SQLModel, table=True):
     notes: Optional[str] = None
 
 
+class ReactorTwin(SQLModel, table=True):
+    __table_args__ = (
+        Index('ix_reactortwin_current_phase', 'current_phase'),
+        Index('ix_reactortwin_technical_state', 'technical_state'),
+        Index('ix_reactortwin_biological_state', 'biological_state'),
+        Index('ix_reactortwin_contamination_state', 'contamination_state'),
+        Index('ix_reactortwin_expected_harvest_window_start', 'expected_harvest_window_start'),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    reactor_id: int = Field(foreign_key='reactor.id', unique=True, index=True)
+    culture_type: Optional[str] = None
+    strain: Optional[str] = None
+    medium_recipe: Optional[str] = None
+    inoculated_at: Optional[datetime] = None
+    current_phase: str = Field(default='growth')
+    target_ph_min: Optional[float] = None
+    target_ph_max: Optional[float] = None
+    target_temp_min: Optional[float] = None
+    target_temp_max: Optional[float] = None
+    target_light_min: Optional[float] = None
+    target_light_max: Optional[float] = None
+    target_flow_min: Optional[float] = None
+    target_flow_max: Optional[float] = None
+    expected_harvest_window_start: Optional[datetime] = None
+    expected_harvest_window_end: Optional[datetime] = None
+    contamination_state: Optional[str] = None
+    technical_state: str = Field(default='nominal')
+    biological_state: str = Field(default='unknown')
+    notes: Optional[str] = None
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
+
+
+class ReactorEvent(SQLModel, table=True):
+    __table_args__ = (
+        Index('ix_reactorevent_reactor_id_created_at', 'reactor_id', 'created_at'),
+        Index('ix_reactorevent_event_type', 'event_type'),
+        Index('ix_reactorevent_severity', 'severity'),
+        Index('ix_reactorevent_phase_snapshot', 'phase_snapshot'),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    reactor_id: int = Field(foreign_key='reactor.id', index=True)
+    event_type: str
+    title: str
+    description: Optional[str] = None
+    severity: Optional[str] = None
+    phase_snapshot: Optional[str] = None
+    created_at: datetime = Field(default_factory=_utcnow)
+    created_by_user_id: Optional[int] = Field(default=None, foreign_key='useraccount.id', index=True)
+
+
 class Sensor(SQLModel, table=True):
     __table_args__ = (
         Index('ix_sensor_name', 'name'),

@@ -28,6 +28,8 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
         'label',
         'rule',
         'ruleexecution',
+        'reactorevent',
+        'reactortwin',
         'useraccount',
         'wikipage',
     } <= table_names
@@ -204,11 +206,71 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
         'last_login_at',
     } <= user_columns
 
+    reactor_twin_columns = {column['name'] for column in inspector.get_columns('reactortwin')}
+    assert {
+        'id',
+        'reactor_id',
+        'culture_type',
+        'strain',
+        'medium_recipe',
+        'inoculated_at',
+        'current_phase',
+        'target_ph_min',
+        'target_ph_max',
+        'target_temp_min',
+        'target_temp_max',
+        'target_light_min',
+        'target_light_max',
+        'target_flow_min',
+        'target_flow_max',
+        'expected_harvest_window_start',
+        'expected_harvest_window_end',
+        'contamination_state',
+        'technical_state',
+        'biological_state',
+        'notes',
+        'created_at',
+        'updated_at',
+    } <= reactor_twin_columns
+
+    reactor_event_columns = {column['name'] for column in inspector.get_columns('reactorevent')}
+    assert {
+        'id',
+        'reactor_id',
+        'event_type',
+        'title',
+        'description',
+        'severity',
+        'phase_snapshot',
+        'created_at',
+        'created_by_user_id',
+    } <= reactor_event_columns
+
     charge_indexes = {index['name'] for index in inspector.get_indexes('charge')}
     assert {'ix_charge_name', 'ix_charge_status', 'ix_charge_reactor_id', 'ix_charge_start_date'} <= charge_indexes
 
     reactor_indexes = {index['name'] for index in inspector.get_indexes('reactor')}
     assert {'ix_reactor_name', 'ix_reactor_status'} <= reactor_indexes
+
+    reactor_twin_indexes = {index['name'] for index in inspector.get_indexes('reactortwin')}
+    assert {
+        'ix_reactortwin_reactor_id',
+        'ix_reactortwin_current_phase',
+        'ix_reactortwin_technical_state',
+        'ix_reactortwin_biological_state',
+        'ix_reactortwin_contamination_state',
+        'ix_reactortwin_expected_harvest_window_start',
+    } <= reactor_twin_indexes
+
+    reactor_event_indexes = {index['name'] for index in inspector.get_indexes('reactorevent')}
+    assert {
+        'ix_reactorevent_reactor_id',
+        'ix_reactorevent_created_by_user_id',
+        'ix_reactorevent_reactor_id_created_at',
+        'ix_reactorevent_event_type',
+        'ix_reactorevent_severity',
+        'ix_reactorevent_phase_snapshot',
+    } <= reactor_event_indexes
 
     sensor_indexes = {index['name'] for index in inspector.get_indexes('sensor')}
     assert {'ix_sensor_name', 'ix_sensor_status', 'ix_sensor_sensor_type', 'ix_sensor_reactor_id'} <= sensor_indexes
@@ -306,6 +368,6 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
 
     with engine.connect() as connection:
         version = connection.execute(text('SELECT version_num FROM alembic_version')).scalar_one()
-        assert version == '20260418_0009'
+        assert version == '20260418_0010'
 
     engine.dispose()

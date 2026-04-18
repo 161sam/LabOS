@@ -11,6 +11,7 @@ LabOS ist ein Raspberry-Pi-taugliches Operating System fuer EcoSphereLab. Es ver
 - Inventory / MaterialOps V1 mit Bestandsfeldern, Lagerorten und Mindestbestaenden
 - QR / Label / Traceability V1 mit scan-faehigen Objekt-Links
 - Rollen / Auth V1 mit lokalen Benutzerkonten, Login und API-Schutz
+- ReactorOps / Digital Twin V1 mit Betriebszustand, Zielbereichen und Event-Historie pro Reaktor
 - Sensorik V1 mit CRUD, Werte-Ingest und Verlauf
 - Tasks + Alerts V1 mit operativen Dashboards
 - Foto Upload + Vision Basis V1
@@ -113,6 +114,51 @@ curl -b .labos-cookie.txt http://localhost:8000/api/v1/auth/me
 ```
 
 Die folgenden API-Beispiele in dieser README setzen eine aktive Session voraus. Fuer `curl` sollte deshalb dieselbe Cookie-Datei mit `-b .labos-cookie.txt` weiterverwendet werden.
+
+## ReactorOps / Digital Twin V1
+
+ReactorOps erweitert LabOS von einfachem Reactor-CRUD hin zu gefuehrten biologischen und technischen Prozessobjekten.
+
+Unterschied zu reinem Reactor-CRUD:
+
+- `Reactor` bleibt der Stammdatensatz fuer Typ, Volumen, Standort und Grundstatus
+- `ReactorTwin` bildet den laufenden Betriebszwilling mit Phase, biologischem Zustand, technischem Zustand und Zielbereichen
+- `ReactorEvent` dokumentiert Inokulationen, Beobachtungen, Mediumwechsel, Wartung und Vorfaelle als kleine Prozesshistorie
+
+Enthalten:
+
+- pro Reaktor ein Reactor-Twin mit Phase, Sollbereichen und Kontextfeldern
+- biologische Zustandsbasis: `stable`, `adapting`, `growing`, `stressed`, `contaminated`, `unknown`
+- technische Zustandsbasis: `nominal`, `warning`, `maintenance`, `degraded`, `error`
+- Prozessphasen: `inoculation`, `growth`, `stabilization`, `harvest_ready`, `maintenance`, `paused`, `incident`
+- optionale Kontaminationskennzeichnung: `suspected`, `confirmed`, `recovering`, `cleared`
+- Event-Historie fuer Eingriffe und Beobachtungen
+- aggregierte Einbindung von Tasks, Alerts, Photos und Sensoren pro Reaktor
+- ReactorOps-Seite unter `/reactor-ops` und kleine Dashboard-KPIs
+
+Backend-Endpunkte:
+
+- `GET /api/v1/reactor-ops`
+- `GET /api/v1/reactor-ops/{reactor_id}`
+- `POST /api/v1/reactor-ops`
+- `PUT /api/v1/reactor-ops/{reactor_id}`
+- `PATCH /api/v1/reactor-ops/{reactor_id}/phase`
+- `PATCH /api/v1/reactor-ops/{reactor_id}/state`
+- `GET /api/v1/reactors/{reactor_id}/events`
+- `POST /api/v1/reactors/{reactor_id}/events`
+
+Bewusst noch nicht enthalten:
+
+- echte Hardware- oder Firmware-Ansteuerung
+- Scheduler fuer Licht-/Temperaturzyklen
+- Dosing-Logik
+- PID-Regelung
+- Kalibrier-Workflows als eigenes Modul
+- Safety-/Interlock-Systeme
+- Multi-Reactor-Orchestrierung
+- komplexe Medien-/Rezept-Engine
+
+ReactorOps V1 schafft damit die Bruecke zwischen Reactor-Stammdaten, Sensorik, Fotos, Alerts und spaeterer Reactor Control / Telemetry / Calibration / Safety.
 
 ## CRUD-Stand fuer Chargen und Reaktoren
 

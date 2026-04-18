@@ -16,6 +16,7 @@ const navItems: Array<{
   { label: 'Dashboard', href: '/' },
   { label: 'Chargen', href: '/charges' },
   { label: 'Reaktoren', href: '/reactors' },
+  { label: 'ReactorOps', href: '/reactor-ops' },
   { label: 'Assets', href: '/assets' },
   { label: 'Inventory', href: '/inventory' },
   { label: 'Labels', href: '/labels' },
