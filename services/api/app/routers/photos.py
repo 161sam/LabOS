@@ -8,6 +8,7 @@ from ..auth import require_authenticated_user, require_operator_user
 from ..db import get_session
 from ..schemas import PhotoAnalysisStatusRead, PhotoRead, PhotoUpdate, PhotoUploadData
 from ..services import photos as photo_service
+from ..services import vision as vision_service
 
 router = APIRouter(
     prefix='/photos',
@@ -74,11 +75,20 @@ def get_photo_file(photo_id: int, session: Session = Depends(get_session)):
 @router.get('/{photo_id}/analysis-status', response_model=PhotoAnalysisStatusRead)
 def get_photo_analysis_status(photo_id: int, session: Session = Depends(get_session)):
     photo_service.get_photo_or_404(session, photo_id)
-    return {
-        'photo_id': photo_id,
-        'status': 'pending',
-        'detail': 'Vision analysis is not active yet for Photo Upload + Vision Basis V1.',
-    }
+    analysis = vision_service.get_latest_for_photo(session, photo_id)
+    if analysis is None:
+        return PhotoAnalysisStatusRead(
+            photo_id=photo_id,
+            status='pending',
+            detail='Noch keine Vision-Auswertung vorhanden.',
+            latest_vision=None,
+        )
+    return PhotoAnalysisStatusRead(
+        photo_id=photo_id,
+        status=analysis.status,
+        detail=analysis.error or f'Vision-Analyse vom Typ {analysis.analysis_type} liegt vor.',
+        latest_vision=vision_service.to_read(analysis),
+    )
 
 
 @router.get('/{photo_id}', response_model=PhotoRead)

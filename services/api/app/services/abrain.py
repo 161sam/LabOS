@@ -28,8 +28,10 @@ from ..schemas import (
 )
 from . import alerts as alert_service
 from . import photos as photo_service
+from . import reactor_health as reactor_health_service
 from . import sensors as sensor_service
 from . import tasks as task_service
+from . import vision as vision_service
 
 _ALL_SECTIONS = [
     ABrainContextSection.tasks,
@@ -200,7 +202,12 @@ def build_lab_context(
         alerts=_build_alert_section(included_sections, critical_alerts, open_alerts),
         sensors=_build_sensor_section(included_sections, sensor_attention),
         charges=_build_charge_section(included_sections, active_charges),
-        reactors=_build_reactor_section(included_sections, reactors, reactor_open_task_count),
+        reactors=_build_reactor_section(
+            included_sections,
+            reactors,
+            reactor_open_task_count,
+            reactor_health_service.get_latest_for_reactors(session, [reactor.id for reactor in reactors]),
+        ),
         photos=_build_photo_section(included_sections, recent_photos),
     )
 
@@ -433,8 +440,14 @@ def _append_recent_activity(
     if context.photos:
         photo = context.photos[0]
         label = photo.title or f'Foto #{photo.id}'
+        vision_note = (
+            f" Vision-Einschaetzung: {photo.vision_health_label}"
+            if photo.vision_health_label
+            else ''
+        )
         highlights.append(
-            f"Zuletzt wurde '{label}' als Foto-Dokumentation erfasst ({photo.charge_name or photo.reactor_name or 'ohne Zuordnung'})."
+            f"Zuletzt wurde '{label}' als Foto-Dokumentation erfasst "
+            f"({photo.charge_name or photo.reactor_name or 'ohne Zuordnung'}).{vision_note}"
         )
         actions.append('Aktuelle Bilddokumentation fuer Verlauf und Nachweis in der Fotoansicht pruefen.')
         references.append(ABrainReferenceRead(entity_type='photo', entity_id=photo.id, label=label))
@@ -516,16 +529,32 @@ def _build_charge_section(
     ]
 
 
+_HEALTH_PRIORITY = {
+    'incident': 0,
+    'warning': 1,
+    'attention': 2,
+    'unknown': 3,
+    'nominal': 4,
+}
+
+
 def _build_reactor_section(
     included_sections: list[ABrainContextSection],
     reactors: list[Reactor],
     reactor_open_task_count: dict[int, int],
+    health_map: dict[int, Any] | None = None,
 ) -> list[ABrainReactorContextItemRead] | None:
     if ABrainContextSection.reactors not in included_sections:
         return None
+    health_map = health_map or {}
     sorted_reactors = sorted(
         reactors,
-        key=lambda reactor: (0 if reactor.status != 'online' else 1, -reactor_open_task_count.get(reactor.id, 0), reactor.name),
+        key=lambda reactor: (
+            _HEALTH_PRIORITY.get(health_map[reactor.id].status, 4) if reactor.id in health_map else 3,
+            0 if reactor.status != 'online' else 1,
+            -reactor_open_task_count.get(reactor.id, 0),
+            reactor.name,
+        ),
     )
     return [
         ABrainReactorContextItemRead(
@@ -533,6 +562,9 @@ def _build_reactor_section(
             name=reactor.name,
             status=reactor.status,
             open_task_count=reactor_open_task_count.get(reactor.id, 0),
+            health_status=health_map[reactor.id].status if reactor.id in health_map else None,
+            health_summary=health_map[reactor.id].summary if reactor.id in health_map else None,
+            health_assessed_at=health_map[reactor.id].assessed_at if reactor.id in health_map else None,
         )
         for reactor in sorted_reactors[:5]
     ]
@@ -544,17 +576,25 @@ def _build_photo_section(
 ) -> list[ABrainPhotoContextItemRead] | None:
     if ABrainContextSection.photos not in included_sections:
         return None
-    return [
-        ABrainPhotoContextItemRead(
-            id=photo.id,
-            title=photo.title,
-            created_at=photo.created_at,
-            captured_at=photo.captured_at,
-            charge_name=photo.charge_name,
-            reactor_name=photo.reactor_name,
+    items: list[ABrainPhotoContextItemRead] = []
+    for photo in recent_photos[:5]:
+        vision = photo.latest_vision if getattr(photo, 'latest_vision', None) is not None else None
+        vision_result = vision.result if vision is not None else {}
+        items.append(
+            ABrainPhotoContextItemRead(
+                id=photo.id,
+                title=photo.title,
+                created_at=photo.created_at,
+                captured_at=photo.captured_at,
+                charge_name=photo.charge_name,
+                reactor_name=photo.reactor_name,
+                vision_health_label=vision_result.get('health_label') if vision_result else None,
+                vision_green_ratio=vision_result.get('green_ratio') if vision_result else None,
+                vision_brown_ratio=vision_result.get('brown_ratio') if vision_result else None,
+                vision_confidence=vision.confidence if vision is not None else None,
+            )
         )
-        for photo in recent_photos[:5]
-    ]
+    return items
 
 
 def _collect_sensor_attention(sensor_items: list[Any], now) -> list[ABrainSensorAttentionItemRead]:

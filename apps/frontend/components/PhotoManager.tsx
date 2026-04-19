@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 
 import { apiRequest } from '../lib/api';
-import { Asset, Charge, Photo, PhotoAnalysisStatus, Reactor } from '../lib/lab-resources';
+import { Asset, Charge, Photo, PhotoAnalysisStatus, Reactor, VisionAnalysis, visionHealthLabels } from '../lib/lab-resources';
 import { Card } from './Card';
 import { FormField } from './FormField';
 import { InlineMessage } from './InlineMessage';
@@ -86,6 +86,27 @@ function formatSize(sizeBytes: number) {
   return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function formatPercent(value: number | null | undefined, digits = 1) {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return '–';
+  }
+  return `${(value * 100).toFixed(digits)} %`;
+}
+
+function rgbToCss(rgb: [number, number, number] | undefined) {
+  if (!rgb || rgb.length !== 3) {
+    return 'transparent';
+  }
+  return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+}
+
+function formatVisionLabel(label: string | null | undefined) {
+  if (!label) {
+    return 'Unbekannt';
+  }
+  return visionHealthLabels[label] ?? label;
+}
+
 export function PhotoManager() {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -100,6 +121,7 @@ export function PhotoManager() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [reanalyzing, setReanalyzing] = useState(false);
   const [pageError, setPageError] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
@@ -217,6 +239,26 @@ export function PhotoManager() {
       setUploadError(getErrorMessage(error));
     } finally {
       setUploading(false);
+    }
+  }
+
+  async function handleReanalyze() {
+    if (!selectedPhoto) {
+      return;
+    }
+    setReanalyzing(true);
+    setDetailError(null);
+    setNotice(null);
+    try {
+      await apiRequest<VisionAnalysis>(`/api/v1/vision/analyze/${selectedPhoto.id}`, {
+        method: 'POST',
+      });
+      setNotice('Vision-Analyse erneut ausgefuehrt.');
+      await loadData(filters, selectedPhoto.id);
+    } catch (error) {
+      setDetailError(getErrorMessage(error));
+    } finally {
+      setReanalyzing(false);
     }
   }
 
@@ -394,6 +436,13 @@ export function PhotoManager() {
                     <strong>{photo.title || photo.original_filename}</strong>
                     <span className="muted">{formatDateTime(photo.captured_at || photo.created_at)}</span>
                     <span className="muted">{photo.asset_name || photo.charge_name || photo.reactor_name || 'Nicht zugeordnet'}</span>
+                    {photo.latest_vision?.status === 'ok' ? (
+                      <span className="badge" style={{ marginTop: 4 }}>
+                        {formatVisionLabel(photo.latest_vision.result.health_label)}
+                      </span>
+                    ) : photo.latest_vision?.status === 'failed' ? (
+                      <span className="muted">Vision: fehlgeschlagen</span>
+                    ) : null}
                   </div>
                 </button>
               ))}
@@ -419,7 +468,102 @@ export function PhotoManager() {
                 <div className="detailRow"><strong>Erstellt</strong><span>{formatDateTime(selectedPhoto.created_at)}</span></div>
                 <div className="detailRow"><strong>Vision-Status</strong><span>{analysisStatus?.status ?? 'pending'}</span></div>
               </div>
-              <InlineMessage>{analysisStatus?.detail ?? 'Vision-Auswertung wird spaeter angebunden.'}</InlineMessage>
+
+              {(() => {
+                const vision = selectedPhoto.latest_vision ?? analysisStatus?.latest_vision ?? null;
+                if (!vision) {
+                  return <InlineMessage>{analysisStatus?.detail ?? 'Noch keine Vision-Analyse vorhanden.'}</InlineMessage>;
+                }
+                if (vision.status !== 'ok') {
+                  return (
+                    <InlineMessage tone="error">
+                      Vision-Analyse fehlgeschlagen: {vision.error ?? 'Unbekannter Fehler'}
+                    </InlineMessage>
+                  );
+                }
+                const r = vision.result;
+                return (
+                  <div className="detailList">
+                    <div className="detailRow">
+                      <strong>Klassifikation</strong>
+                      <span>{formatVisionLabel(r.health_label)}</span>
+                    </div>
+                    <div className="detailRow">
+                      <strong>Konfidenz</strong>
+                      <span>{formatPercent(vision.confidence ?? r.confidence)}</span>
+                    </div>
+                    <div className="detailRow">
+                      <strong>Aufloesung</strong>
+                      <span>{r.width} × {r.height} px</span>
+                    </div>
+                    <div className="detailRow">
+                      <strong>Helligkeit</strong>
+                      <span>{formatPercent(r.brightness)}</span>
+                    </div>
+                    <div className="detailRow">
+                      <strong>Schaerfe</strong>
+                      <span>{formatPercent(r.sharpness)}</span>
+                    </div>
+                    <div className="detailRow">
+                      <strong>Gruen-Anteil</strong>
+                      <span>{formatPercent(r.green_ratio)}</span>
+                    </div>
+                    <div className="detailRow">
+                      <strong>Braun-Anteil</strong>
+                      <span>{formatPercent(r.brown_ratio)}</span>
+                    </div>
+                    <div className="detailRow">
+                      <strong>Ø Farbe</strong>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                        <span
+                          aria-hidden
+                          style={{
+                            display: 'inline-block',
+                            width: 18,
+                            height: 18,
+                            borderRadius: 4,
+                            background: rgbToCss(r.avg_rgb),
+                            border: '1px solid rgba(0,0,0,0.2)',
+                          }}
+                        />
+                        {r.avg_rgb ? r.avg_rgb.map((v) => Math.round(v)).join(', ') : '–'}
+                      </span>
+                    </div>
+                    <div className="detailRow">
+                      <strong>Dominante Farbe</strong>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                        <span
+                          aria-hidden
+                          style={{
+                            display: 'inline-block',
+                            width: 18,
+                            height: 18,
+                            borderRadius: 4,
+                            background: rgbToCss(r.dominant_rgb),
+                            border: '1px solid rgba(0,0,0,0.2)',
+                          }}
+                        />
+                        {r.dominant_rgb ? r.dominant_rgb.join(', ') : '–'} ({formatPercent(r.dominant_ratio)})
+                      </span>
+                    </div>
+                    <div className="detailRow">
+                      <strong>Analysiert</strong>
+                      <span>{formatDateTime(vision.created_at)}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div className="buttonRow">
+                <button
+                  type="button"
+                  className="button buttonSecondary"
+                  onClick={() => void handleReanalyze()}
+                  disabled={reanalyzing}
+                >
+                  {reanalyzing ? 'Analysiert…' : 'Neu analysieren'}
+                </button>
+              </div>
             </div>
 
             <form className="entityForm" onSubmit={handleMetadataSave}>

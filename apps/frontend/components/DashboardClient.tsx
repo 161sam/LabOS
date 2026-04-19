@@ -83,6 +83,20 @@ export function DashboardClient() {
       </div>
 
       <div className="grid cols-3">
+        <Card title="Reactor Health Nominal"><div className="kpi" style={{ color: '#38a169' }}>{data.reactors_health_nominal}</div></Card>
+        <Card title="Reactor Health Auffaellig / Warnung">
+          <div className="kpi" style={{ color: (data.reactors_health_attention + data.reactors_health_warning) > 0 ? '#dd6b20' : undefined }}>
+            {data.reactors_health_attention + data.reactors_health_warning}
+          </div>
+          <p className="muted">Auffaellig: {data.reactors_health_attention} · Warnung: {data.reactors_health_warning}</p>
+        </Card>
+        <Card title="Reactor Health Incident">
+          <div className="kpi" style={{ color: data.reactors_health_incident > 0 ? '#e53e3e' : undefined }}>{data.reactors_health_incident}</div>
+          <p className="muted">Unbekannt: {data.reactors_health_unknown}</p>
+        </Card>
+      </div>
+
+      <div className="grid cols-3">
         <Card title="Offline Devices"><div className="kpi">{data.offline_devices}</div></Card>
         <Card title="Reactor Control Layer"><div className="kpi">{data.reactor_telemetry_overview.length}</div></Card>
         <Card title="Offene Alerts"><div className="kpi">{data.open_alerts}</div></Card>

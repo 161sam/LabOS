@@ -270,6 +270,43 @@ Nicht vorschnell:
 
 ABrain ist Integrationspartner, nicht das Primärsystem für Datenspeicherung oder UI-Steuerung.
 
+LabOS ist im Zielbild **nicht selbst das Brain**. Die Zielarchitektur ist:
+
+```
+Smolit-AI-Assistant  →  ABrain  →  LabOS MCP / Tool Adapter  →  LabOS API / DB
+```
+
+Rollenverteilung:
+
+- **LabOS** = Domain-, Realitäts- und Tool-/State-System
+  (ReactorOps, Telemetrie, Commands, Safety, Assets, Inventory, Vision, Scheduler, Operator-UI, lokale fachliche Guards)
+- **ABrain** = Brain, Governance, Planning, Execution Control, Trace, Audit, agentische Orchestrierung
+- **Smolit-AI-Assistant** = User-Interaktion, Sprache, UX, Chat
+
+Entscheidungsregel:
+
+- LabOS beschreibt und kontrolliert die Laborrealität.
+- ABrain entscheidet, plant und regiert die Ausführung.
+- Der Smolit-AI-Assistant spricht mit dem Menschen.
+
+Der aktuelle `/api/v1/abrain/*`-Stub in LabOS ist eine **Übergangs-/Dev-Fallback-Schicht**, nicht der Endzustand. Der Zielendpunkt für LabOS ist ein sauber andockbarer MCP-Server / Tool-Adapter, nicht ein interner Assistent.
+
+### LabOS SOLL NICHT
+
+- eigene Planungs- oder Reasoning-Logik als Hauptpfad bauen
+- agentische Orchestrierung als zweites Brain aufbauen
+- ABrain-Governance oder Approval-Flows duplizieren
+- den lokalen ABrain-Stub als Zielarchitektur weiter ausbauen
+- UI-/Chat-Ebene vor die Brain-Ebene stellen
+
+### LabOS SOLL
+
+- Domain-State und Kontext sauber modellieren (Reaktoren, Safety, Telemetrie, Vision, Tasks, Alerts, Inventory, Assets)
+- Actions/Tools klar definieren, stabil halten und über einen Action-Katalog beschreiben
+- die MCP-/Tool-Adapter-Schicht sauber vorbereiten (Context Builder, Action Catalog, Governance Boundary, Response/Trace Mapping)
+- Safety- und Domain-Guards lokal behalten (Kalibrierung, Safety-Incidents, Command-Guard)
+- ABrain sauber andocken statt ersetzen
+
 ## 6.3 Vision separat andockbar
 
 Vision-Funktionen so bauen, dass sie:

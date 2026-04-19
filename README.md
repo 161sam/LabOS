@@ -22,8 +22,42 @@ LabOS ist ein Raspberry-Pi-taugliches Operating System fuer EcoSphereLab. Es ver
 - **Calibration / Maintenance / Safety V1** mit Kalibrierstatus, Wartungserfassung, Incident-Tracking und Command-Guards
 - **Command ACK / Retry V1** mit Command-UID, MQTT-ACK-Topics, Zustell-/Timeout-Tracking und manuellem Retry
 - **Scheduler / Automation Runtime V1** mit interval/cron/manual-Schedules, Hintergrund-Runner und Ausfuehrungslog
+- **Vision Node / AI Integration V1** mit Pillow-basiertem Bild-Analyser, Auto-Analyse beim Foto-Upload und Integration in Photo-UI, ReactorOps und ABrain
+- **Sensor + Vision Fusion / Reactor Health V1** mit deterministischer Fusion aus Telemetrie, Vision und Safety zu einem Reactor-Health-Status pro Reaktor
 - integriertes Wiki auf Markdown-Basis
 - Docker-Compose-Setup für lokale Entwicklung
+
+## Zielarchitektur
+
+LabOS ist im Zielbild **nicht** selbst das Brain. Der geplante Aufbau ist:
+
+```text
+Smolit-AI-Assistant  →  ABrain  →  LabOS MCP Server / Tool Adapter  →  LabOS API / DB
+```
+
+### Rollenverteilung
+
+- **LabOS** = Domain-, Realitaets- und Tool-/State-System
+  - ReactorOps, Telemetrie, Commands, Safety, Assets, Inventory, Vision, Scheduler
+  - Operator-UI fuer den Menschen am Lab
+  - lokale fachliche Guards: Kalibrierung, Safety-Incidents, Command-Guard
+- **ABrain** = Brain, Governance, Planning, Execution Control, Trace, Audit, agentische Orchestrierung
+- **Smolit-AI-Assistant** = User-Interaktion, Sprache, UX, Chat mit dem Menschen
+
+### Entscheidungsregel
+
+- LabOS beschreibt und kontrolliert die Laborrealitaet.
+- ABrain entscheidet, plant und regiert die Ausfuehrung.
+- Der Smolit-AI-Assistant spricht mit dem Menschen.
+
+### Konsequenz fuer die LabOS-Roadmap
+
+- Der bestehende `/api/v1/abrain/*`-Stub ist eine **Uebergangs-/Bridge-/Dev-Fallback-Schicht**, nicht der Endzustand.
+- Die nächste Ausbaustufe ist kein „intelligenterer interner Assistent", sondern das saubere Andocken des externen ABrain via MCP-Server / Tool-Adapter.
+- LabOS baut **kein** eigenes Planungs- oder Agenten-System und **dupliziert keine** ABrain-Governance.
+- LabOS konzentriert sich auf sauberes Domain-Modell, klare Aktionen/Tools und die Adapter-Schicht nach ABrain.
+
+Die naechsten konkreten Arbeiten in dieser Richtung sind in [ROADMAP.md](ROADMAP.md) unter **ABrain Adapter Alignment V1** und **ABrain V2 Domain Reasoning** beschrieben.
 
 ## Calibration / Maintenance / Safety V1
 
@@ -163,6 +197,90 @@ Diese Schicht macht zeitbasierte Automation moeglich, ohne einen externen Schedu
 - vollstaendige Cron-Syntax (Nicknames, L/W/#, Sekunden)
 - DAG-/Workflow-Orchestrierung
 - Uebergeordneter Retry-Controller fuer fehlgeschlagene Schedule-Runs
+
+## Vision Node / AI Integration V1
+
+Diese Schicht macht aus hochgeladenen Fotos direkt verwertbare Kennzahlen fuer Charges, Reaktoren und ABrain. Sie bleibt bewusst lokal und kommt ohne schwere ML-Stacks aus.
+
+### Was enthalten ist
+
+**VisionAnalysis-Modell**
+- Felder: `photo_id`, `reactor_id`, `analysis_type` (Default `basic`), `status` (`ok`|`failed`), `result` (JSON), `confidence`, `error`, `created_at`
+- Indizes ueber `photo_id`, `reactor_id`, `analysis_type`, `status`, `created_at`
+- Migration `20260419_0016_vision_ai_integration_v1`
+
+**Vision-Service (`services/api/app/services/vision.py`)**
+- Pillow-basierter `analyze_image` mit Aufloesung, Durchschnitts-/Streuungs-RGB, Helligkeit, Schaerfe, dominanter Farbe, Gruen-/Braun-Anteil
+- Regelbasierte Klassifikation in `health_label`: `healthy_green`, `growing`, `low_biomass`, `no_growth_visible`, `contamination_suspected`, `too_dark`, `overexposed`
+- Konfidenz kombiniert Kontrast, Schaerfe und Signal-Anteil
+- Fehlerfaelle (Datei fehlt, Bild defekt) werden als `status='failed'` persistiert
+
+**Auto-Analyse**
+- Nach jedem `POST /api/v1/photos/upload` wird automatisch eine VisionAnalysis erzeugt
+- Fehler der Analyse blockieren den Upload nicht, werden aber in der DB protokolliert
+
+**API**
+- `GET /api/v1/vision/photos/{photo_id}` – neueste Analyse eines Fotos
+- `GET /api/v1/vision/photos/{photo_id}/history` – komplette Historie
+- `POST /api/v1/vision/analyze/{photo_id}` – manuelle Neu-Analyse (Operator)
+
+**Integrationen**
+- `PhotoRead` und `PhotoAnalysisStatusRead` liefern `latest_vision`
+- `ReactorTwinRead` zeigt `latest_vision` je Reaktor
+- ABrain-Kontext (`/api/v1/abrain/context`, Section `photos`) enthaelt `vision_health_label`, `vision_green_ratio`, `vision_brown_ratio`, `vision_confidence`
+
+**Frontend**
+- `/photos`: Galerie-Kacheln zeigen den `health_label`-Badge, Detailansicht zeigt Klassifikation, Konfidenz, Helligkeit, Schaerfe, Gruen-/Braun-Anteil, Ø- und dominante Farbe (mit Farb-Swatches)
+- Button "Neu analysieren" triggert `POST /api/v1/vision/analyze/{id}`
+
+### Was bewusst noch nicht enthalten ist
+
+- neuronale Modelle (torch, tensorflow, opencv-dnn)
+- Segmentation oder Objekterkennung
+- GPU-/Jetson-spezifische Beschleunigung
+- mehrstufige Analyse-Pipelines oder Vergleichsmetriken ueber Zeit
+
+## Sensor + Vision Fusion / Reactor Health V1
+
+Diese Schicht fusioniert numerische Telemetrie, Vision-Analysen und offene Safety-Incidents zu einer strukturierten Reactor-Health-Bewertung pro Reaktor. Sie bleibt bewusst regelbasiert und verzichtet auf ML.
+
+### Was enthalten ist
+
+**ReactorHealthAssessment-Modell**
+- Felder: `reactor_id`, `status`, `summary`, `signals` (JSON-Array), `source_telemetry_at`, `source_vision_analysis_id`, `source_incident_count`, `assessed_at`, `created_at`
+- Statuswerte: `nominal`, `attention`, `warning`, `incident`, `unknown`
+- Migration `20260419_0017_sensor_vision_fusion_v1`
+
+**Fusion-Service (`services/api/app/services/reactor_health.py`)**
+- Liest je Reaktor neueste Telemetrie pro Sensor-Typ, letzte erfolgreiche `VisionAnalysis`, offene `SafetyIncident`s und `ReactorTwin`/`ReactorSetpoint`-Zielbereiche
+- Deterministische Regeln (keine Gewichte, keine Statistik)
+- Telemetrie-Signale: fehlend, veraltet (> 6h), unter/ueber Zielbereich, nominal
+- Vision-Signale: Kontaminationsverdacht, zu dunkel/hell, Gruenanteil niedrig, low_sharpness, low_confidence
+- Safety-Signale: kritischer/hoher/allgemeiner offener Incident
+- Statusableitung: `incident > warning > attention > nominal`, `unknown` nur wenn gar keine Daten vorliegen
+
+**API**
+- `GET /api/v1/reactor-health` – neueste Bewertung pro Reaktor
+- `GET /api/v1/reactor-health/{reactor_id}` – aktuelle Bewertung eines Reaktors
+- `GET /api/v1/reactor-health/{reactor_id}/history` – Historie (default 20)
+- `POST /api/v1/reactor-health/{reactor_id}/assess` – neue Bewertung erzeugen (Operator)
+
+**Integrationen**
+- `ReactorTwinRead` liefert `latest_health` mit Summary und Signalen
+- ABrain-Kontext (`reactors`-Section) enthaelt `health_status`, `health_summary`, `health_assessed_at`; Sortierung priorisiert `incident > warning > attention > unknown > nominal`
+- Dashboard zeigt Health-Counts (`reactors_health_nominal/attention/warning/incident/unknown`)
+- Auto-Trigger: nach erfolgreichem Photo-Upload mit Reaktorzuordnung wird automatisch eine Neu-Bewertung ausgefuehrt
+
+**Frontend**
+- `/reactor-ops`: Health-Badge in der Uebersichtstabelle, Detail-Card mit Summary + Signal-Liste, Button "Neu bewerten" fuer Operator/Admin
+- Dashboard: Reactor-Health-KPI-Reihe (Nominal, Auffaellig/Warnung, Incident)
+
+### Was bewusst noch nicht enthalten ist
+
+- ML-Modelle, Gewichtungen, Zeitreihen-Analyse
+- Vorhersage oder Trendanalyse
+- automatische Steuerungs-Eingriffe basierend auf Health-Status
+- Aggregation ueber mehrere Reaktoren / Zonen
 
 ## Struktur
 
@@ -740,9 +858,13 @@ Vision-Stub pruefen:
 curl http://localhost:8000/api/v1/photos/1/analysis-status
 ```
 
-## ABrain Integration V1
+## ABrain Integration V1 (Uebergangsschicht)
 
-LabOS stellt jetzt einen ersten datenbasierten Assistenz-Layer bereit, der echte Systemdaten zusammenfasst und fuer feste Laborfragen nutzbar macht.
+> Dieser Layer ist bewusst als **Bridge / Dev-Fallback** eingestuft.
+> Ziel-Endpunkt fuer LabOS ist nicht ein interner Assistent, sondern ein sauber andockbarer MCP-Server / Tool-Adapter, ueber den das externe ABrain Planung und Governance uebernimmt (siehe [Zielarchitektur](#zielarchitektur)).
+> ABrain Integration V1 bleibt erhalten, damit LabOS auch offline und waehrend der Migration auf MCP fachlich nutzbare Antworten zurueckgeben kann.
+
+LabOS stellt einen datenbasierten Assistenz-Layer bereit, der echte Systemdaten zusammenfasst und fuer feste Laborfragen nutzbar macht.
 
 Kontextquellen:
 

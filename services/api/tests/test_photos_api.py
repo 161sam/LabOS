@@ -1,12 +1,15 @@
-PNG_BYTES = (
-    b'\x89PNG\r\n\x1a\n'
-    b'\x00\x00\x00\rIHDR'
-    b'\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00'
-    b'\x90wS\xde'
-    b'\x00\x00\x00\x0cIDAT\x08\xd7c\xf8\x0f\x00\x01\x01\x01\x00'
-    b'\x18\xdd\x8d\xb1'
-    b'\x00\x00\x00\x00IEND\xaeB`\x82'
-)
+import io
+
+from PIL import Image
+
+
+def _build_png(size=(1, 1), color=(90, 180, 60)) -> bytes:
+    buffer = io.BytesIO()
+    Image.new('RGB', size, color=color).save(buffer, format='PNG')
+    return buffer.getvalue()
+
+
+PNG_BYTES = _build_png()
 
 
 def _seed_charge_id(client) -> int:
@@ -161,15 +164,19 @@ def test_update_photo_metadata(client):
     assert updated['asset_id'] == asset_id
 
 
-def test_photo_analysis_status_stub(client):
+def test_photo_analysis_status_returns_vision_result(client):
     upload = client.post(
         '/api/v1/photos/upload',
         files={'file': ('analysis.png', PNG_BYTES, 'image/png')},
     )
     photo_id = upload.json()['id']
+    assert upload.json()['latest_vision'] is not None
 
     response = client.get(f'/api/v1/photos/{photo_id}/analysis-status')
     assert response.status_code == 200
     payload = response.json()
     assert payload['photo_id'] == photo_id
-    assert payload['status'] == 'pending'
+    assert payload['status'] == 'ok'
+    assert payload['latest_vision'] is not None
+    assert payload['latest_vision']['result']['width'] == 1
+    assert payload['latest_vision']['result']['health_label']

@@ -16,6 +16,7 @@ from .models import (
     Reactor,
     ReactorCommand,
     ReactorEvent,
+    ReactorHealthAssessment,
     ReactorSetpoint,
     ReactorTwin,
     Rule,
@@ -26,6 +27,7 @@ from .models import (
     Task,
     TelemetryValue,
     UserAccount,
+    VisionAnalysis,
     WikiPage,
     _utcnow,
 )
@@ -1150,6 +1152,90 @@ def seed_data() -> bool:
                 is_enabled=False,
                 next_run_at=None,
             ))
+            seeded_any = True
+
+        if session.exec(select(ReactorHealthAssessment)).first() is None:
+            reactor_a = session.exec(select(Reactor).where(Reactor.name == 'Reaktor-A1')).first()
+            reactor_b = session.exec(select(Reactor).where(Reactor.name == 'Reaktor-B1')).first()
+            reactor_c = session.exec(select(Reactor).where(Reactor.name == 'Reaktor-C1')).first()
+            reactor_d = session.exec(select(Reactor).where(Reactor.name == 'Reaktor-D1')).first()
+
+            vision_for = {
+                row.reactor_id: row
+                for row in session.exec(select(VisionAnalysis).where(VisionAnalysis.status == 'ok')).all()
+                if row.reactor_id is not None
+            }
+
+            if reactor_a is not None:
+                session.add(ReactorHealthAssessment(
+                    reactor_id=reactor_a.id,
+                    status='nominal',
+                    summary=f'{reactor_a.name} laeuft nominal. Telemetrie innerhalb Zielbereich: Temperatur, pH.',
+                    signals=[
+                        {'code': 'telemetry_nominal', 'severity': 'info', 'source': 'telemetry',
+                         'message': 'Telemetrie innerhalb Zielbereich: Temperatur, pH'},
+                        {'code': 'vision_nominal', 'severity': 'info', 'source': 'vision',
+                         'message': 'Vision-Klassifikation: healthy_green.'},
+                    ],
+                    source_telemetry_at=now - timedelta(minutes=5),
+                    source_vision_analysis_id=vision_for.get(reactor_a.id).id if vision_for.get(reactor_a.id) else None,
+                    source_incident_count=0,
+                    assessed_at=now - timedelta(minutes=5),
+                    created_at=now - timedelta(minutes=5),
+                ))
+
+            if reactor_b is not None:
+                session.add(ReactorHealthAssessment(
+                    reactor_id=reactor_b.id,
+                    status='attention',
+                    summary=f'{reactor_b.name} zeigt Auffaelligkeiten. Vision-Klassifikation: low_biomass.',
+                    signals=[
+                        {'code': 'vision_green_ratio_drop', 'severity': 'attention', 'source': 'vision',
+                         'message': 'Vision-Klassifikation: low_biomass (wenig gruene Biomasse sichtbar).'},
+                    ],
+                    source_telemetry_at=now - timedelta(minutes=20),
+                    source_vision_analysis_id=vision_for.get(reactor_b.id).id if vision_for.get(reactor_b.id) else None,
+                    source_incident_count=0,
+                    assessed_at=now - timedelta(minutes=20),
+                    created_at=now - timedelta(minutes=20),
+                ))
+
+            if reactor_c is not None:
+                session.add(ReactorHealthAssessment(
+                    reactor_id=reactor_c.id,
+                    status='warning',
+                    summary=f'{reactor_c.name} hat Warnsignale. Temperatur-Wert ueber Zielbereich. Vision-Analyse meldet Kontaminationsverdacht.',
+                    signals=[
+                        {'code': 'telemetry_temp_above_range', 'severity': 'warning', 'source': 'telemetry',
+                         'message': 'Temperatur-Wert 32.4 C ueber Zielbereich (max 28.0).'},
+                        {'code': 'vision_contamination_suspected', 'severity': 'warning', 'source': 'vision',
+                         'message': 'Vision-Analyse meldet Kontaminationsverdacht.'},
+                        {'code': 'safety_incident_open', 'severity': 'attention', 'source': 'safety',
+                         'message': 'Offener Incident: Sensor-Node offline.'},
+                    ],
+                    source_telemetry_at=now - timedelta(minutes=3),
+                    source_vision_analysis_id=vision_for.get(reactor_c.id).id if vision_for.get(reactor_c.id) else None,
+                    source_incident_count=1,
+                    assessed_at=now - timedelta(minutes=3),
+                    created_at=now - timedelta(minutes=3),
+                ))
+
+            if reactor_d is not None:
+                session.add(ReactorHealthAssessment(
+                    reactor_id=reactor_d.id,
+                    status='incident',
+                    summary=f'{reactor_d.name} hat einen offenen Incident. Kritischer Safety-Incident blockiert Betrieb.',
+                    signals=[
+                        {'code': 'safety_critical_incident_open', 'severity': 'incident', 'source': 'safety',
+                         'message': 'Offener Incident: Ueberhitzungsrisiko, Steuerung gesperrt.'},
+                    ],
+                    source_telemetry_at=None,
+                    source_vision_analysis_id=None,
+                    source_incident_count=1,
+                    assessed_at=now - timedelta(minutes=1),
+                    created_at=now - timedelta(minutes=1),
+                ))
+
             seeded_any = True
 
         if seeded_any:

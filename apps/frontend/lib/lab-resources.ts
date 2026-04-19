@@ -343,6 +343,21 @@ export const ruleActionTypeOptions = [
   { value: 'create_task', label: 'Task erzeugen' },
 ] as const;
 
+export const reactorHealthStatusOptions = [
+  { value: 'nominal', label: 'Nominal' },
+  { value: 'attention', label: 'Auffaellig' },
+  { value: 'warning', label: 'Warnung' },
+  { value: 'incident', label: 'Incident' },
+  { value: 'unknown', label: 'Unbekannt' },
+] as const;
+
+export const reactorHealthSignalSeverityOptions = [
+  { value: 'info', label: 'Info' },
+  { value: 'attention', label: 'Auffaellig' },
+  { value: 'warning', label: 'Warnung' },
+  { value: 'incident', label: 'Incident' },
+] as const;
+
 export const ruleExecutionStatusOptions = [
   { value: 'matched', label: 'Matched' },
   { value: 'not_matched', label: 'Not Matched' },
@@ -393,6 +408,8 @@ export type RuleTriggerType = (typeof ruleTriggerTypeOptions)[number]['value'];
 export type RuleConditionType = (typeof ruleConditionTypeOptions)[number]['value'];
 export type RuleActionType = (typeof ruleActionTypeOptions)[number]['value'];
 export type RuleExecutionStatus = (typeof ruleExecutionStatusOptions)[number]['value'];
+export type ReactorHealthStatus = (typeof reactorHealthStatusOptions)[number]['value'];
+export type ReactorHealthSignalSeverity = (typeof reactorHealthSignalSeverityOptions)[number]['value'];
 
 export type Charge = {
   id: number;
@@ -580,6 +597,35 @@ export type MQTTBridgeStatus = {
   last_error: string | null;
 };
 
+export type ReactorHealthSignal = {
+  code: string;
+  severity: ReactorHealthSignalSeverity;
+  source: string;
+  message: string;
+};
+
+export type ReactorHealthAssessment = {
+  id: number;
+  reactor_id: number;
+  reactor_name: string | null;
+  status: ReactorHealthStatus;
+  summary: string;
+  signals: ReactorHealthSignal[];
+  source_telemetry_at: string | null;
+  source_vision_analysis_id: number | null;
+  source_incident_count: number;
+  assessed_at: string;
+  created_at: string;
+};
+
+export const reactorHealthStatusLabels: Record<ReactorHealthStatus, string> = {
+  nominal: 'Nominal',
+  attention: 'Auffaellig',
+  warning: 'Warnung',
+  incident: 'Incident',
+  unknown: 'Unbekannt',
+};
+
 export type ReactorTwin = {
   id: number | null;
   is_configured: boolean;
@@ -616,6 +662,7 @@ export type ReactorTwin = {
   open_alert_count: number;
   photo_count: number;
   latest_event: ReactorEvent | null;
+  latest_health: ReactorHealthAssessment | null;
 };
 
 export type ReactorTwinDetail = ReactorTwin & {
@@ -739,6 +786,43 @@ export type Alert = {
   resolved_at: string | null;
 };
 
+export type VisionAnalysisResult = {
+  width?: number;
+  height?: number;
+  avg_rgb?: [number, number, number];
+  rgb_stddev?: [number, number, number];
+  brightness?: number;
+  sharpness?: number;
+  dominant_rgb?: [number, number, number];
+  dominant_ratio?: number;
+  green_ratio?: number;
+  brown_ratio?: number;
+  health_label?: string;
+  confidence?: number;
+};
+
+export type VisionAnalysis = {
+  id: number;
+  photo_id: number;
+  reactor_id: number | null;
+  analysis_type: string;
+  status: string;
+  result: VisionAnalysisResult;
+  confidence: number | null;
+  error: string | null;
+  created_at: string;
+};
+
+export const visionHealthLabels: Record<string, string> = {
+  healthy_green: 'Grün / gesund',
+  growing: 'Wächst',
+  low_biomass: 'Wenig Biomasse',
+  no_growth_visible: 'Kein Wachstum sichtbar',
+  contamination_suspected: 'Kontamination verdächtig',
+  too_dark: 'Zu dunkel',
+  overexposed: 'Überbelichtet',
+};
+
 export type Photo = {
   id: number;
   filename: string;
@@ -758,6 +842,7 @@ export type Photo = {
   reactor_name: string | null;
   asset_name: string | null;
   file_url: string;
+  latest_vision: VisionAnalysis | null;
 };
 
 export type AssetDetail = Asset & {
@@ -837,6 +922,7 @@ export type PhotoAnalysisStatus = {
   photo_id: number;
   status: string;
   detail: string;
+  latest_vision: VisionAnalysis | null;
 };
 
 export type ABrainStatus = {
@@ -915,6 +1001,9 @@ export type ABrainReactorContextItem = {
   name: string;
   status: ReactorStatus;
   open_task_count: number;
+  health_status: ReactorHealthStatus | null;
+  health_summary: string | null;
+  health_assessed_at: string | null;
 };
 
 export type ABrainPhotoContextItem = {
@@ -1045,6 +1134,11 @@ export type DashboardSummary = {
   reactors_attention: number;
   reactors_harvest_ready: number;
   reactors_incident_or_contamination: number;
+  reactors_health_nominal: number;
+  reactors_health_attention: number;
+  reactors_health_warning: number;
+  reactors_health_incident: number;
+  reactors_health_unknown: number;
   offline_devices: number;
   active_sensors: number;
   error_sensors: number;

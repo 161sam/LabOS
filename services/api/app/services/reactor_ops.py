@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from typing import Any
 
 from fastapi import HTTPException, status
 from sqlmodel import Session, select
@@ -299,6 +300,8 @@ def _serialize_reactor_twin_reads(session: Session, reactors: list[Reactor]) -> 
     photo_count_map = Counter(reactor_id for reactor_id in photos if reactor_id is not None)
     current_charge_map = _build_current_charge_map(charges)
     latest_event_map = _build_latest_event_map(session, events)
+    latest_vision_map = _build_latest_vision_map(session, reactor_ids)
+    latest_health_map = _build_latest_health_map(session, reactor_ids)
 
     return [
         _to_reactor_twin_read(
@@ -310,9 +313,37 @@ def _serialize_reactor_twin_reads(session: Session, reactors: list[Reactor]) -> 
             open_alert_count=open_alert_count_map.get(reactor.id, 0),
             photo_count=photo_count_map.get(reactor.id, 0),
             latest_event=latest_event_map.get(reactor.id),
+            latest_vision=latest_vision_map.get(reactor.id),
+            latest_health=latest_health_map.get(reactor.id),
         )
         for reactor in reactors
     ]
+
+
+def _build_latest_health_map(session: Session, reactor_ids: list[int]) -> dict[int, Any]:
+    from . import reactor_health as reactor_health_service
+
+    if not reactor_ids:
+        return {}
+    name_map = {reactor.id: reactor.name for reactor in session.exec(select(Reactor).where(Reactor.id.in_(reactor_ids))).all()}
+    latest = reactor_health_service.get_latest_for_reactors(session, reactor_ids)
+    return {
+        rid: reactor_health_service.to_read(assessment, reactor_name=name_map.get(rid))
+        for rid, assessment in latest.items()
+    }
+
+
+def _build_latest_vision_map(session: Session, reactor_ids: list[int]) -> dict[int, Any]:
+    from . import vision as vision_service
+
+    if not reactor_ids:
+        return {}
+    result: dict[int, Any] = {}
+    for reactor_id in reactor_ids:
+        analysis = vision_service.get_latest_for_reactor(session, reactor_id)
+        if analysis is not None:
+            result[reactor_id] = vision_service.to_read(analysis)
+    return result
 
 
 def _build_current_charge_map(charges: list[Charge]) -> dict[int, ChargeRead]:
@@ -384,6 +415,8 @@ def _to_reactor_twin_read(
     open_alert_count: int,
     photo_count: int,
     latest_event: ReactorEventRead | None,
+    latest_vision: Any | None = None,
+    latest_health: Any | None = None,
 ) -> ReactorTwinRead:
     now = _utcnow()
     return ReactorTwinRead(
@@ -422,4 +455,6 @@ def _to_reactor_twin_read(
         open_alert_count=open_alert_count,
         photo_count=photo_count,
         latest_event=latest_event,
+        latest_vision=latest_vision,
+        latest_health=latest_health,
     )
