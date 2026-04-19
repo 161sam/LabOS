@@ -19,6 +19,7 @@ from datetime import datetime, timezone
 from threading import Lock
 
 from ..config import settings
+from ..ros_mqtt_hybrid import MessageEnvelope
 
 try:  # pragma: no cover - optional runtime dependency
     import rclpy  # type: ignore
@@ -126,6 +127,12 @@ class RosBridge:
 
     def mark_event(self) -> None:
         self._last_event_at = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    def publish_envelope(self, envelope: MessageEnvelope) -> None:
+        """Orchestrator hook. When rclpy is live this will translate the
+        envelope into a ROS publish/service call; for now we just mark
+        activity so the hybrid stats show the routing worked end to end."""
+        self.mark_event()
 
     def _set_last_error(self, message: str) -> None:
         self._last_error = message

@@ -25,6 +25,14 @@ from sqlmodel import Session
 
 from ..config import settings
 from ..db import engine
+from ..ros_mqtt_hybrid import (
+    EnvelopeKind,
+    HybridPolicyError,
+    MessageEnvelope,
+    SourceTag,
+    get_orchestrator,
+    new_message_id,
+)
 from ..schemas import (
     MQTTAckPayload,
     MQTTBridgeStatusRead,
@@ -134,6 +142,26 @@ class MQTTBridge:
         command_type: str,
         command_uid: str | None = None,
     ) -> bool | None:
+        # Announce the command through the hybrid orchestrator first — the
+        # orchestrator enforces "commands cannot originate from MQTT/ROS"
+        # and records the routing decision. Best-effort: any registered
+        # ROS publisher runs; MQTT is still dispatched below for the
+        # actual wire publish.
+        try:
+            get_orchestrator().publish_command(
+                MessageEnvelope(
+                    message_id=command_uid or new_message_id(),
+                    source=SourceTag.labos,
+                    kind=EnvelopeKind.command,
+                    reactor_id=reactor_id,
+                    key=command_type,
+                    extras={'command_id': command_id, 'command_uid': command_uid},
+                )
+            )
+        except HybridPolicyError as exc:  # pragma: no cover - defensive only
+            self._set_last_error(f'Hybrid orchestrator rejected command: {exc}')
+            return False
+
         if not settings.mqtt_enabled or not settings.mqtt_publish_commands:
             return None
         client = self._client
@@ -166,6 +194,13 @@ class MQTTBridge:
             self._set_last_error(f'MQTT publish failed: {exc}')
             logger.warning('MQTT publish raised for command %s: %s', command_id, exc)
             return False
+
+    def publish_envelope(self, envelope: MessageEnvelope) -> None:
+        """Orchestrator hook. Outbound MQTT writes are handled by the
+        existing `publish_reactor_command` path; this method is a
+        deliberate no-op so that orchestrator.publish_command cannot
+        recurse into publish_reactor_command and create a loop."""
+        return None
 
     def handle_message(self, topic: str, payload: bytes) -> None:
         try:
@@ -215,6 +250,22 @@ class MQTTBridge:
                 session.add(telemetry)
                 session.commit()
             self._last_message_at = datetime.now(timezone.utc).replace(tzinfo=None)
+            # Announce to the hybrid orchestrator so ROS subscribers can
+            # see MQTT-originated telemetry. Loop-guard + source tag in
+            # the orchestrator ensure we don't re-publish back to MQTT.
+            try:
+                get_orchestrator().publish_telemetry(
+                    MessageEnvelope(
+                        source=SourceTag.mqtt,
+                        kind=EnvelopeKind.telemetry,
+                        reactor_id=reactor_id,
+                        key=sensor_type,
+                        value=payload.value,
+                        unit=payload.unit,
+                    )
+                )
+            except Exception:  # noqa: BLE001 - orchestrator failures must not affect persistence
+                pass
         except Exception as exc:
             self._set_last_error(f'Failed to persist MQTT telemetry for reactor {reactor_id}: {exc}')
             logger.warning('Failed to persist MQTT telemetry for reactor %s: %s', reactor_id, exc)

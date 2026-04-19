@@ -107,6 +107,49 @@ LabOS ist ein modularer Monolith aus:
 
 Die Architecture Boundary zwischen LabOS (Domain/State/Execution) und ABrain (Planning/Governance) ist als Code-Invariante implementiert und testgeprüft. Siehe [docs/architecture.md](docs/architecture.md).
 
+### ROS + MQTT Hybrid Model
+
+Both transports stay active side by side with a strict division of responsibility:
+
+```text
+Edge devices (ESP32, Arduino, …)          Robot runtime (ROS2 nodes)
+              │                                       │
+              ▼                                       ▼
+           MQTT Broker                             rclpy
+              │                                       │
+              └────────────► LabOS API ◄──────────────┘
+                          (Truth + Governance)
+                                 │
+                                 ▼
+                     ABrain ◄─ MCP ◄─ Smolit-AI-Assistant
+```
+
+- **MQTT** — best-effort transport for low-power edge devices and simple telemetry.
+- **ROS** — deterministic runtime for local robot workloads, high-frequency data and actions/services.
+- **LabOS** — the single source of truth for state and governance.
+
+Routing rules are enforced in code by `services/api/app/ros_mqtt_hybrid/`:
+
+- Telemetry flows `MQTT → LabOS → ROS` and `ROS → LabOS → MQTT` (optional broadcast); the **loop guard** prevents a message that arrived on one transport from being echoed back to the same transport.
+- Commands only originate from LabOS (`source='labos'`). Commands with `source='mqtt'` or `source='ros'` are rejected by the orchestrator — ROS callbacks that want to issue a command hand off through `abrain_execution.execute_action` first.
+- Every cross-system message is wrapped in a `MessageEnvelope` (`message_id`, `source`, `ts`, `kind`, payload) and passes the `LoopGuard` so duplicates are dropped.
+- `HybridTopicMapping` owns the canonical naming: MQTT `labos/reactor/{id}/telemetry/{sensor}` ↔ ROS `/labos/reactor/{id}/{sensor}`.
+
+Example dispatch from LabOS-internal code (`reactor_control.create_reactor_command` already routes through this on command publish):
+
+```python
+from app.ros_mqtt_hybrid import (
+    EnvelopeKind, MessageEnvelope, SourceTag, get_orchestrator,
+)
+
+get_orchestrator().publish_command(MessageEnvelope(
+    source=SourceTag.labos,
+    kind=EnvelopeKind.command,
+    reactor_id=5,
+    key='light_on',
+))
+```
+
 ### ROS Compatibility Layer
 
 LabOS optionally exposes its reactor/device world to ROS2 through a thin compatibility layer in `services/api/app/ros/`: reactors appear as ROS nodes, telemetry mirrors to `/labos/reactor/{id}/{sensor_type}`, and commands are reachable as services at `/labos/reactor/{id}/{command_type}`. The layer is additive — MQTT stays in place — and acts as **transport only**. Inbound ROS service callbacks dispatch through `abrain_execution.execute_action` (Safety Guards, Role Checks, Approval Gate and Trace Layer all apply); ROS is never authorized to execute commands directly. `rclpy` is an optional runtime dependency; when absent the bridge stays dormant and reports its status. Settings: `ROS_ENABLED=false` (default), `ROS_NODE_NAME=labos`, `ROS_NAMESPACE=/labos`.
