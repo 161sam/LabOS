@@ -739,6 +739,43 @@ export type Alert = {
   resolved_at: string | null;
 };
 
+export type VisionAnalysisResult = {
+  width?: number;
+  height?: number;
+  avg_rgb?: [number, number, number];
+  rgb_stddev?: [number, number, number];
+  brightness?: number;
+  sharpness?: number;
+  dominant_rgb?: [number, number, number];
+  dominant_ratio?: number;
+  green_ratio?: number;
+  brown_ratio?: number;
+  health_label?: string;
+  confidence?: number;
+};
+
+export type VisionAnalysis = {
+  id: number;
+  photo_id: number;
+  reactor_id: number | null;
+  analysis_type: string;
+  status: string;
+  result: VisionAnalysisResult;
+  confidence: number | null;
+  error: string | null;
+  created_at: string;
+};
+
+export const visionHealthLabels: Record<string, string> = {
+  healthy_green: 'Grün / gesund',
+  growing: 'Wächst',
+  low_biomass: 'Wenig Biomasse',
+  no_growth_visible: 'Kein Wachstum sichtbar',
+  contamination_suspected: 'Kontamination verdächtig',
+  too_dark: 'Zu dunkel',
+  overexposed: 'Überbelichtet',
+};
+
 export type Photo = {
   id: number;
   filename: string;
@@ -758,6 +795,7 @@ export type Photo = {
   reactor_name: string | null;
   asset_name: string | null;
   file_url: string;
+  latest_vision: VisionAnalysis | null;
 };
 
 export type AssetDetail = Asset & {
@@ -837,6 +875,7 @@ export type PhotoAnalysisStatus = {
   photo_id: number;
   status: string;
   detail: string;
+  latest_vision: VisionAnalysis | null;
 };
 
 export type ABrainStatus = {

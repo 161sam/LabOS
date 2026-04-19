@@ -37,6 +37,7 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
         'useraccount',
         'schedule',
         'scheduleexecution',
+        'visionanalysis',
         'wikipage',
     } <= table_names
 
@@ -453,8 +454,30 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
         'ix_useraccount_email',
     } <= user_indexes
 
+    vision_columns = {column['name'] for column in inspector.get_columns('visionanalysis')}
+    assert {
+        'id',
+        'photo_id',
+        'reactor_id',
+        'analysis_type',
+        'status',
+        'result',
+        'confidence',
+        'error',
+        'created_at',
+    } <= vision_columns
+
+    vision_indexes = {index['name'] for index in inspector.get_indexes('visionanalysis')}
+    assert {
+        'ix_visionanalysis_photo_id',
+        'ix_visionanalysis_reactor_id',
+        'ix_visionanalysis_analysis_type',
+        'ix_visionanalysis_status',
+        'ix_visionanalysis_created_at',
+    } <= vision_indexes
+
     with engine.connect() as connection:
         version = connection.execute(text('SELECT version_num FROM alembic_version')).scalar_one()
-        assert version == '20260419_0015'
+        assert version == '20260419_0016'
 
     engine.dispose()

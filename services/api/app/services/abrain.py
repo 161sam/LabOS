@@ -30,6 +30,7 @@ from . import alerts as alert_service
 from . import photos as photo_service
 from . import sensors as sensor_service
 from . import tasks as task_service
+from . import vision as vision_service
 
 _ALL_SECTIONS = [
     ABrainContextSection.tasks,
@@ -433,8 +434,14 @@ def _append_recent_activity(
     if context.photos:
         photo = context.photos[0]
         label = photo.title or f'Foto #{photo.id}'
+        vision_note = (
+            f" Vision-Einschaetzung: {photo.vision_health_label}"
+            if photo.vision_health_label
+            else ''
+        )
         highlights.append(
-            f"Zuletzt wurde '{label}' als Foto-Dokumentation erfasst ({photo.charge_name or photo.reactor_name or 'ohne Zuordnung'})."
+            f"Zuletzt wurde '{label}' als Foto-Dokumentation erfasst "
+            f"({photo.charge_name or photo.reactor_name or 'ohne Zuordnung'}).{vision_note}"
         )
         actions.append('Aktuelle Bilddokumentation fuer Verlauf und Nachweis in der Fotoansicht pruefen.')
         references.append(ABrainReferenceRead(entity_type='photo', entity_id=photo.id, label=label))
@@ -544,17 +551,25 @@ def _build_photo_section(
 ) -> list[ABrainPhotoContextItemRead] | None:
     if ABrainContextSection.photos not in included_sections:
         return None
-    return [
-        ABrainPhotoContextItemRead(
-            id=photo.id,
-            title=photo.title,
-            created_at=photo.created_at,
-            captured_at=photo.captured_at,
-            charge_name=photo.charge_name,
-            reactor_name=photo.reactor_name,
+    items: list[ABrainPhotoContextItemRead] = []
+    for photo in recent_photos[:5]:
+        vision = photo.latest_vision if getattr(photo, 'latest_vision', None) is not None else None
+        vision_result = vision.result if vision is not None else {}
+        items.append(
+            ABrainPhotoContextItemRead(
+                id=photo.id,
+                title=photo.title,
+                created_at=photo.created_at,
+                captured_at=photo.captured_at,
+                charge_name=photo.charge_name,
+                reactor_name=photo.reactor_name,
+                vision_health_label=vision_result.get('health_label') if vision_result else None,
+                vision_green_ratio=vision_result.get('green_ratio') if vision_result else None,
+                vision_brown_ratio=vision_result.get('brown_ratio') if vision_result else None,
+                vision_confidence=vision.confidence if vision is not None else None,
+            )
         )
-        for photo in recent_photos[:5]
-    ]
+    return items
 
 
 def _collect_sensor_attention(sensor_items: list[Any], now) -> list[ABrainSensorAttentionItemRead]:

@@ -57,8 +57,42 @@ LabOS ist nicht nur eine einzelne Labor-App, sondern das zentrale Betriebssystem
 - **Calibration / Maintenance / Safety V1**
 - **Command ACK / Retry V1**
 - **Scheduler / Automation Runtime V1**
+- **Vision Node / AI Integration V1**
 - Dashboard-Basis
 - Wiki-Basis
+
+---
+
+# Aktueller Status: Vision Node / AI Integration V1
+
+Mit diesem Schritt bekommt LabOS eine lokale, ML-freie Bildanalyse: jedes hochgeladene Foto wird automatisch ausgewertet und die Ergebnisse stehen in Photo-UI, ReactorOps-Twin und ABrain zur Verfuegung.
+
+## Enthalten
+
+- `VisionAnalysis`-Modell (`photo_id`, `reactor_id`, `analysis_type`, `status`, `result` JSON, `confidence`, `error`, `created_at`) mit Migration `20260419_0016`
+- `services/api/app/services/vision.py` liefert Pillow-basierten `analyze_image` mit Aufloesung, Durchschnitts- und Streuungs-RGB, Helligkeit, Schaerfe, dominanter Farbe, Gruen-/Braun-Anteil
+- regelbasierte Klassifikation `health_label`: `healthy_green`, `growing`, `low_biomass`, `no_growth_visible`, `contamination_suspected`, `too_dark`, `overexposed`
+- Konfidenz aus Kontrast, Schaerfe und Signalanteil (0-1)
+- Auto-Analyse nach `POST /api/v1/photos/upload`, Fehler werden als `status='failed'` persistiert ohne den Upload zu blockieren
+- API: `GET /api/v1/vision/photos/{id}`, `GET /api/v1/vision/photos/{id}/history`, `POST /api/v1/vision/analyze/{id}` (Operator)
+- `PhotoRead`, `PhotoAnalysisStatusRead` und `ReactorTwinRead` liefern `latest_vision`
+- ABrain-Kontext-Section `photos` traegt `vision_health_label`, `vision_green_ratio`, `vision_brown_ratio`, `vision_confidence`
+- `/photos`-Frontend zeigt Health-Badge je Kachel und eine Detailauswertung (Klassifikation, Konfidenz, Helligkeit, Schaerfe, Gruen-/Braun-Anteil, Ø- und dominante Farbe als Swatch) plus einen "Neu analysieren"-Button
+- 8 neue Backend-Tests fuer Auto-Analyse, History, Re-Analyse, Dunkel-/Kontaminations-Klassifikation, Reactor-Twin- und ABrain-Integration
+
+## Bewusst noch nicht enthalten
+
+- neuronale Modelle (torch, tensorflow, opencv-dnn) oder Objekt-/Segmentierung
+- GPU-/Jetson-Integration
+- mehrstufige Pipelines, Zeitreihen-Vergleiche oder automatische Alerts auf Vision-Ergebnissen
+- Vision-Triggerung ueber den Scheduler / MQTT-Node-Kommandos
+
+## Grundlage fuer
+
+- Vision V2 mit modellbasierter Klassifikation / Segmentation
+- automatische Alerts bei Kontaminationsverdacht oder Helligkeitsproblemen
+- ABrain-Hinweise und Empfehlungen auf Basis echter Bildmetriken
+- Kopplung mit Scheduler (`sample_capture`) fuer tagesaktuelle Bild-Vergleiche
 
 ---
 
@@ -236,6 +270,7 @@ Das bedeutet:
 7. Calibration / Maintenance / Safety V1 ✓
 8. Command ACK / Retry V1 ✓
 9. Scheduler / Automation Runtime V1 ✓
+10. Vision Node / AI Integration V1 ✓
 
 ---
 

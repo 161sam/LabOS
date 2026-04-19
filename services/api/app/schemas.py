@@ -1091,6 +1091,18 @@ class PhotoUpdate(PhotoPayload):
     pass
 
 
+class VisionAnalysisRead(AppSchema):
+    id: int
+    photo_id: int
+    reactor_id: int | None
+    analysis_type: str
+    status: str
+    result: dict[str, Any]
+    confidence: float | None
+    error: str | None
+    created_at: datetime
+
+
 class PhotoRead(AppSchema):
     id: int
     filename: str
@@ -1110,6 +1122,7 @@ class PhotoRead(AppSchema):
     reactor_name: str | None = None
     asset_name: str | None = None
     file_url: str
+    latest_vision: VisionAnalysisRead | None = None
 
 
 class ReactorEventRead(AppSchema):
@@ -1162,6 +1175,7 @@ class ReactorTwinRead(AppSchema):
     open_alert_count: int = 0
     photo_count: int = 0
     latest_event: ReactorEventRead | None = None
+    latest_vision: VisionAnalysisRead | None = None
 
 
 class ReactorTwinDetailRead(ReactorTwinRead):
@@ -1307,6 +1321,7 @@ class PhotoAnalysisStatusRead(AppSchema):
     photo_id: int
     status: str
     detail: str
+    latest_vision: VisionAnalysisRead | None = None
 
 
 class ABrainStatusRead(AppSchema):
@@ -1394,6 +1409,10 @@ class ABrainPhotoContextItemRead(AppSchema):
     captured_at: datetime | None
     charge_name: str | None = None
     reactor_name: str | None = None
+    vision_health_label: str | None = None
+    vision_green_ratio: float | None = None
+    vision_brown_ratio: float | None = None
+    vision_confidence: float | None = None
 
 
 class ABrainContextRead(AppSchema):

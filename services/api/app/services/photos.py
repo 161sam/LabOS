@@ -9,6 +9,7 @@ from sqlmodel import Session, select
 from ..config import settings
 from ..models import Asset, Charge, Photo, Reactor, _utcnow
 from ..schemas import PhotoRead, PhotoUpdate, PhotoUploadData
+from . import vision as vision_service
 
 _ALLOWED_MIME_EXTENSIONS = {
     'image/jpeg': '.jpg',
@@ -99,6 +100,10 @@ async def create_photo_upload(
     session.add(photo)
     session.commit()
     session.refresh(photo)
+    try:
+        vision_service.analyze_photo(session, photo)
+    except Exception:
+        session.rollback()
     return get_photo_read(session, photo.id)
 
 
@@ -160,9 +165,11 @@ def _serialize_photos(session: Session, photos: list[Photo]) -> list[PhotoRead]:
     if not photos:
         return []
 
+    photo_ids = [photo.id for photo in photos if photo.id is not None]
     charge_ids = sorted({photo.charge_id for photo in photos if photo.charge_id is not None})
     reactor_ids = sorted({photo.reactor_id for photo in photos if photo.reactor_id is not None})
     asset_ids = sorted({photo.asset_id for photo in photos if photo.asset_id is not None})
+    vision_by_photo = vision_service.get_latest_for_photos(session, photo_ids)
     charge_names = (
         {charge.id: charge.name for charge in session.exec(select(Charge).where(Charge.id.in_(charge_ids))).all()}
         if charge_ids
@@ -202,6 +209,11 @@ def _serialize_photos(session: Session, photos: list[Photo]) -> list[PhotoRead]:
             reactor_name=reactor_names.get(photo.reactor_id),
             asset_name=asset_names.get(photo.asset_id),
             file_url=f'/api/v1/photos/{photo.id}/file',
+            latest_vision=(
+                vision_service.to_read(vision_by_photo[photo.id])
+                if photo.id in vision_by_photo
+                else None
+            ),
         )
         for photo in photos
     ]

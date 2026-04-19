@@ -22,6 +22,7 @@ LabOS ist ein Raspberry-Pi-taugliches Operating System fuer EcoSphereLab. Es ver
 - **Calibration / Maintenance / Safety V1** mit Kalibrierstatus, Wartungserfassung, Incident-Tracking und Command-Guards
 - **Command ACK / Retry V1** mit Command-UID, MQTT-ACK-Topics, Zustell-/Timeout-Tracking und manuellem Retry
 - **Scheduler / Automation Runtime V1** mit interval/cron/manual-Schedules, Hintergrund-Runner und Ausfuehrungslog
+- **Vision Node / AI Integration V1** mit Pillow-basiertem Bild-Analyser, Auto-Analyse beim Foto-Upload und Integration in Photo-UI, ReactorOps und ABrain
 - integriertes Wiki auf Markdown-Basis
 - Docker-Compose-Setup für lokale Entwicklung
 
@@ -163,6 +164,48 @@ Diese Schicht macht zeitbasierte Automation moeglich, ohne einen externen Schedu
 - vollstaendige Cron-Syntax (Nicknames, L/W/#, Sekunden)
 - DAG-/Workflow-Orchestrierung
 - Uebergeordneter Retry-Controller fuer fehlgeschlagene Schedule-Runs
+
+## Vision Node / AI Integration V1
+
+Diese Schicht macht aus hochgeladenen Fotos direkt verwertbare Kennzahlen fuer Charges, Reaktoren und ABrain. Sie bleibt bewusst lokal und kommt ohne schwere ML-Stacks aus.
+
+### Was enthalten ist
+
+**VisionAnalysis-Modell**
+- Felder: `photo_id`, `reactor_id`, `analysis_type` (Default `basic`), `status` (`ok`|`failed`), `result` (JSON), `confidence`, `error`, `created_at`
+- Indizes ueber `photo_id`, `reactor_id`, `analysis_type`, `status`, `created_at`
+- Migration `20260419_0016_vision_ai_integration_v1`
+
+**Vision-Service (`services/api/app/services/vision.py`)**
+- Pillow-basierter `analyze_image` mit Aufloesung, Durchschnitts-/Streuungs-RGB, Helligkeit, Schaerfe, dominanter Farbe, Gruen-/Braun-Anteil
+- Regelbasierte Klassifikation in `health_label`: `healthy_green`, `growing`, `low_biomass`, `no_growth_visible`, `contamination_suspected`, `too_dark`, `overexposed`
+- Konfidenz kombiniert Kontrast, Schaerfe und Signal-Anteil
+- Fehlerfaelle (Datei fehlt, Bild defekt) werden als `status='failed'` persistiert
+
+**Auto-Analyse**
+- Nach jedem `POST /api/v1/photos/upload` wird automatisch eine VisionAnalysis erzeugt
+- Fehler der Analyse blockieren den Upload nicht, werden aber in der DB protokolliert
+
+**API**
+- `GET /api/v1/vision/photos/{photo_id}` – neueste Analyse eines Fotos
+- `GET /api/v1/vision/photos/{photo_id}/history` – komplette Historie
+- `POST /api/v1/vision/analyze/{photo_id}` – manuelle Neu-Analyse (Operator)
+
+**Integrationen**
+- `PhotoRead` und `PhotoAnalysisStatusRead` liefern `latest_vision`
+- `ReactorTwinRead` zeigt `latest_vision` je Reaktor
+- ABrain-Kontext (`/api/v1/abrain/context`, Section `photos`) enthaelt `vision_health_label`, `vision_green_ratio`, `vision_brown_ratio`, `vision_confidence`
+
+**Frontend**
+- `/photos`: Galerie-Kacheln zeigen den `health_label`-Badge, Detailansicht zeigt Klassifikation, Konfidenz, Helligkeit, Schaerfe, Gruen-/Braun-Anteil, Ø- und dominante Farbe (mit Farb-Swatches)
+- Button "Neu analysieren" triggert `POST /api/v1/vision/analyze/{id}`
+
+### Was bewusst noch nicht enthalten ist
+
+- neuronale Modelle (torch, tensorflow, opencv-dnn)
+- Segmentation oder Objekterkennung
+- GPU-/Jetson-spezifische Beschleunigung
+- mehrstufige Analyse-Pipelines oder Vergleichsmetriken ueber Zeit
 
 ## Struktur
 
