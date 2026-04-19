@@ -13,6 +13,7 @@ import {
   abrainContextSectionOptions,
   abrainPresetOptions,
 } from '../lib/lab-resources';
+import { useAuth } from './AuthProvider';
 import { Card } from './Card';
 import { FormField } from './FormField';
 import { InlineMessage } from './InlineMessage';
@@ -46,6 +47,7 @@ function formatDateTime(value: string | null) {
 }
 
 export function ABrainAssistant() {
+  const { user } = useAuth();
   const [status, setStatus] = useState<ABrainStatus | null>(null);
   const [presets, setPresets] = useState<ABrainPresetDefinition[]>([]);
   const [context, setContext] = useState<ABrainContext | null>(null);
@@ -55,6 +57,7 @@ export function ABrainAssistant() {
   const [queryLoading, setQueryLoading] = useState(false);
   const [pageError, setPageError] = useState<string | null>(null);
   const [queryError, setQueryError] = useState<string | null>(null);
+  const canQuery = user?.role === 'admin';
 
   async function loadData(preselectedPreset?: string) {
     setLoading(true);
@@ -164,6 +167,11 @@ export function ABrainAssistant() {
 
       <div className="grid cols-2">
         <Card title="Assistenz anfragen">
+          {!canQuery ? (
+            <InlineMessage>
+              ABrain-Abfragen sind in Auth / Rollen V1 nur fuer Admins freigegeben. Kontext und Status bleiben lesbar.
+            </InlineMessage>
+          ) : null}
           {queryError ? <InlineMessage tone="error">{queryError}</InlineMessage> : null}
 
           <div className="buttonRow" style={{ marginBottom: 16 }}>
@@ -187,6 +195,7 @@ export function ABrainAssistant() {
                   className="input"
                   value={form.preset}
                   onChange={(event) => applyPreset(event.target.value as ABrainPreset)}
+                  disabled={!canQuery}
                 >
                   {presets.map((preset) => (
                     <option key={preset.id} value={preset.id}>
@@ -204,6 +213,7 @@ export function ABrainAssistant() {
                         type="checkbox"
                         checked={form.include_context_sections.includes(option.value)}
                         onChange={() => toggleSection(option.value)}
+                        disabled={!canQuery}
                       />{' '}
                       {option.label}
                     </label>
@@ -219,11 +229,12 @@ export function ABrainAssistant() {
                 value={form.question}
                 onChange={(event) => setFormValue('question', event.target.value)}
                 required
+                disabled={!canQuery}
               />
             </FormField>
 
             <div className="buttonRow">
-              <button className="button" type="submit" disabled={queryLoading || loading}>
+              <button className="button" type="submit" disabled={queryLoading || loading || !canQuery}>
                 {queryLoading ? 'Analysiert…' : 'ABrain befragen'}
               </button>
             </div>

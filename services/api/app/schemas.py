@@ -20,6 +20,190 @@ class ReactorStatus(str, Enum):
     maintenance = 'maintenance'
 
 
+class ReactorPhase(str, Enum):
+    inoculation = 'inoculation'
+    growth = 'growth'
+    stabilization = 'stabilization'
+    harvest_ready = 'harvest_ready'
+    maintenance = 'maintenance'
+    paused = 'paused'
+    incident = 'incident'
+
+
+class ReactorTechnicalState(str, Enum):
+    nominal = 'nominal'
+    warning = 'warning'
+    maintenance = 'maintenance'
+    degraded = 'degraded'
+    error = 'error'
+
+
+class ReactorBiologicalState(str, Enum):
+    stable = 'stable'
+    adapting = 'adapting'
+    growing = 'growing'
+    stressed = 'stressed'
+    contaminated = 'contaminated'
+    unknown = 'unknown'
+
+
+class ReactorContaminationState(str, Enum):
+    suspected = 'suspected'
+    confirmed = 'confirmed'
+    recovering = 'recovering'
+    cleared = 'cleared'
+
+
+class ReactorEventType(str, Enum):
+    inoculation = 'inoculation'
+    medium_change = 'medium_change'
+    calibration = 'calibration'
+    contamination_suspected = 'contamination_suspected'
+    contamination_confirmed = 'contamination_confirmed'
+    maintenance = 'maintenance'
+    manual_adjustment = 'manual_adjustment'
+    observation = 'observation'
+    harvest = 'harvest'
+    incident = 'incident'
+
+
+class TelemetrySensorType(str, Enum):
+    temp = 'temp'
+    ph = 'ph'
+    light = 'light'
+    flow = 'flow'
+    ec = 'ec'
+    co2 = 'co2'
+    humidity = 'humidity'
+
+
+class TelemetrySource(str, Enum):
+    manual = 'manual'
+    device = 'device'
+    simulated = 'simulated'
+
+
+class DeviceNodeType(str, Enum):
+    sampling = 'sampling'
+    env_control = 'env_control'
+    sensor_bridge = 'sensor_bridge'
+    pump_driver = 'pump_driver'
+    light_controller = 'light_controller'
+    dosing = 'dosing'
+    safety = 'safety'
+    vision = 'vision'
+
+
+class DeviceNodeStatus(str, Enum):
+    online = 'online'
+    offline = 'offline'
+    warning = 'warning'
+    error = 'error'
+
+
+class ReactorControlParameter(str, Enum):
+    temp = 'temp'
+    ph = 'ph'
+    light = 'light'
+    flow = 'flow'
+    ec = 'ec'
+    co2 = 'co2'
+    humidity = 'humidity'
+
+
+class ReactorSetpointMode(str, Enum):
+    auto = 'auto'
+    manual = 'manual'
+
+
+class ReactorCommandType(str, Enum):
+    light_on = 'light_on'
+    light_off = 'light_off'
+    pump_on = 'pump_on'
+    pump_off = 'pump_off'
+    aeration_start = 'aeration_start'
+    aeration_stop = 'aeration_stop'
+    sample_capture = 'sample_capture'
+
+
+class ReactorCommandStatus(str, Enum):
+    pending = 'pending'
+    sent = 'sent'
+    acknowledged = 'acknowledged'
+    failed = 'failed'
+    blocked = 'blocked'
+    timeout = 'timeout'
+    retrying = 'retrying'
+
+
+class MQTTAckStatus(str, Enum):
+    ok = 'ok'
+    error = 'error'
+
+
+class CalibrationTargetType(str, Enum):
+    reactor = 'reactor'
+    device_node = 'device_node'
+    asset = 'asset'
+
+
+class CalibrationStatus(str, Enum):
+    valid = 'valid'
+    due = 'due'
+    expired = 'expired'
+    failed = 'failed'
+    unknown = 'unknown'
+
+
+class MaintenanceTargetType(str, Enum):
+    reactor = 'reactor'
+    device_node = 'device_node'
+    asset = 'asset'
+
+
+class MaintenanceType(str, Enum):
+    cleaning = 'cleaning'
+    inspection = 'inspection'
+    replacement = 'replacement'
+    tubing_flush = 'tubing_flush'
+    filter_change = 'filter_change'
+    pump_service = 'pump_service'
+    general_service = 'general_service'
+
+
+class MaintenanceStatus(str, Enum):
+    scheduled = 'scheduled'
+    done = 'done'
+    overdue = 'overdue'
+    skipped = 'skipped'
+
+
+class IncidentType(str, Enum):
+    sensor_untrusted = 'sensor_untrusted'
+    calibration_expired = 'calibration_expired'
+    node_offline = 'node_offline'
+    overheating_risk = 'overheating_risk'
+    dry_run_risk = 'dry_run_risk'
+    clogging_suspected = 'clogging_suspected'
+    flow_mismatch = 'flow_mismatch'
+    invalid_telemetry = 'invalid_telemetry'
+    unsafe_command_blocked = 'unsafe_command_blocked'
+    general = 'general'
+
+
+class IncidentSeverity(str, Enum):
+    info = 'info'
+    warning = 'warning'
+    high = 'high'
+    critical = 'critical'
+
+
+class IncidentStatus(str, Enum):
+    open = 'open'
+    acknowledged = 'acknowledged'
+    resolved = 'resolved'
+
+
 class AssetType(str, Enum):
     printer_3d = 'printer_3d'
     microscope = 'microscope'
@@ -40,6 +224,31 @@ class AssetStatus(str, Enum):
     error = 'error'
     inactive = 'inactive'
     retired = 'retired'
+
+
+class InventoryStatus(str, Enum):
+    available = 'available'
+    low_stock = 'low_stock'
+    out_of_stock = 'out_of_stock'
+    reserved = 'reserved'
+    expired = 'expired'
+    archived = 'archived'
+
+
+class LabelType(str, Enum):
+    qr = 'qr'
+    printed_label = 'printed_label'
+
+
+class LabelTargetType(str, Enum):
+    asset = 'asset'
+    inventory_item = 'inventory_item'
+
+
+class UserRole(str, Enum):
+    admin = 'admin'
+    operator = 'operator'
+    viewer = 'viewer'
 
 
 class SensorType(str, Enum):
@@ -243,6 +452,301 @@ class ReactorRead(AppSchema):
     notes: str | None
 
 
+class ReactorTwinPayload(AppSchema):
+    culture_type: str | None = Field(default=None, max_length=160)
+    strain: str | None = Field(default=None, max_length=160)
+    medium_recipe: str | None = Field(default=None, max_length=255)
+    inoculated_at: datetime | None = None
+    current_phase: ReactorPhase = ReactorPhase.growth
+    target_ph_min: float | None = Field(default=None, ge=0, le=14)
+    target_ph_max: float | None = Field(default=None, ge=0, le=14)
+    target_temp_min: float | None = Field(default=None, ge=-20, le=150)
+    target_temp_max: float | None = Field(default=None, ge=-20, le=150)
+    target_light_min: float | None = Field(default=None, ge=0, le=100000)
+    target_light_max: float | None = Field(default=None, ge=0, le=100000)
+    target_flow_min: float | None = Field(default=None, ge=0, le=100000)
+    target_flow_max: float | None = Field(default=None, ge=0, le=100000)
+    expected_harvest_window_start: datetime | None = None
+    expected_harvest_window_end: datetime | None = None
+    contamination_state: ReactorContaminationState | None = None
+    technical_state: ReactorTechnicalState = ReactorTechnicalState.nominal
+    biological_state: ReactorBiologicalState = ReactorBiologicalState.unknown
+    notes: str | None = Field(default=None, max_length=4000)
+
+    @field_validator('culture_type', 'strain', 'medium_recipe', 'notes')
+    @classmethod
+    def normalize_optional_text(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+    @model_validator(mode='after')
+    def validate_reactor_ranges(self) -> 'ReactorTwinPayload':
+        _validate_optional_range(self.target_ph_min, self.target_ph_max, 'target_ph')
+        _validate_optional_range(self.target_temp_min, self.target_temp_max, 'target_temp')
+        _validate_optional_range(self.target_light_min, self.target_light_max, 'target_light')
+        _validate_optional_range(self.target_flow_min, self.target_flow_max, 'target_flow')
+        if (
+            self.expected_harvest_window_start is not None
+            and self.expected_harvest_window_end is not None
+            and self.expected_harvest_window_start > self.expected_harvest_window_end
+        ):
+            raise ValueError('expected_harvest_window_start must be before expected_harvest_window_end')
+        return self
+
+
+class ReactorTwinCreate(ReactorTwinPayload):
+    reactor_id: int = Field(ge=1)
+
+
+class ReactorTwinUpdate(ReactorTwinPayload):
+    pass
+
+
+class ReactorTwinPhaseUpdate(AppSchema):
+    current_phase: ReactorPhase
+
+
+class ReactorTwinStateUpdate(AppSchema):
+    technical_state: ReactorTechnicalState
+    biological_state: ReactorBiologicalState
+    contamination_state: ReactorContaminationState | None = None
+
+
+class ReactorEventPayload(AppSchema):
+    event_type: ReactorEventType
+    title: str = Field(min_length=1, max_length=160)
+    description: str | None = Field(default=None, max_length=4000)
+    severity: AlertSeverity | None = None
+    phase_snapshot: ReactorPhase | None = None
+
+    @field_validator('title')
+    @classmethod
+    def normalize_required_title(cls, value: str) -> str:
+        return _normalize_required_text(value)
+
+    @field_validator('description')
+    @classmethod
+    def normalize_optional_description(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class ReactorEventCreate(ReactorEventPayload):
+    pass
+
+
+class TelemetryValueCreate(AppSchema):
+    reactor_id: int = Field(ge=1)
+    sensor_type: TelemetrySensorType
+    value: float
+    unit: str = Field(min_length=1, max_length=40)
+    source: TelemetrySource = TelemetrySource.manual
+    timestamp: datetime | None = None
+
+    @field_validator('unit')
+    @classmethod
+    def normalize_required_unit(cls, value: str) -> str:
+        return _normalize_required_text(value)
+
+
+class TelemetryValueRead(AppSchema):
+    id: int
+    reactor_id: int
+    reactor_name: str | None = None
+    sensor_type: TelemetrySensorType
+    value: float
+    unit: str
+    source: TelemetrySource
+    timestamp: datetime
+    created_at: datetime
+
+
+class DeviceNodePayload(AppSchema):
+    name: str = Field(min_length=1, max_length=160)
+    node_id: str | None = Field(default=None, min_length=1, max_length=120)
+    node_type: DeviceNodeType
+    status: DeviceNodeStatus = DeviceNodeStatus.online
+    last_seen_at: datetime | None = None
+    firmware_version: str | None = Field(default=None, max_length=80)
+    reactor_id: int | None = Field(default=None, ge=1)
+
+    @field_validator('name', 'node_id')
+    @classmethod
+    def normalize_node_text(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return _normalize_required_text(value)
+
+    @field_validator('firmware_version')
+    @classmethod
+    def normalize_optional_version(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class DeviceNodeCreate(DeviceNodePayload):
+    pass
+
+
+class DeviceNodeUpdate(AppSchema):
+    node_id: str | None = Field(default=None, min_length=1, max_length=120)
+    status: DeviceNodeStatus | None = None
+    last_seen_at: datetime | None = None
+    firmware_version: str | None = Field(default=None, max_length=80)
+    reactor_id: int | None = Field(default=None, ge=1)
+
+    @field_validator('node_id')
+    @classmethod
+    def normalize_optional_node_id(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+    @field_validator('firmware_version')
+    @classmethod
+    def normalize_optional_version(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class DeviceNodeRead(AppSchema):
+    id: int
+    name: str
+    node_id: str | None
+    node_type: DeviceNodeType
+    status: DeviceNodeStatus
+    last_seen_at: datetime
+    firmware_version: str | None
+    reactor_id: int | None
+    reactor_name: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class ReactorSetpointPayload(AppSchema):
+    parameter: ReactorControlParameter
+    target_value: float
+    min_value: float | None = None
+    max_value: float | None = None
+    mode: ReactorSetpointMode = ReactorSetpointMode.manual
+
+    @model_validator(mode='after')
+    def validate_range(self) -> 'ReactorSetpointPayload':
+        _validate_optional_range(self.min_value, self.max_value, 'setpoint')
+        return self
+
+
+class ReactorSetpointCreate(ReactorSetpointPayload):
+    pass
+
+
+class ReactorSetpointUpdate(AppSchema):
+    target_value: float | None = None
+    min_value: float | None = None
+    max_value: float | None = None
+    mode: ReactorSetpointMode | None = None
+
+    @model_validator(mode='after')
+    def validate_range(self) -> 'ReactorSetpointUpdate':
+        if self.min_value is not None or self.max_value is not None:
+            _validate_optional_range(self.min_value, self.max_value, 'setpoint')
+        return self
+
+
+class ReactorSetpointRead(AppSchema):
+    id: int
+    reactor_id: int
+    reactor_name: str | None = None
+    parameter: ReactorControlParameter
+    target_value: float
+    min_value: float | None
+    max_value: float | None
+    mode: ReactorSetpointMode
+    updated_at: datetime
+
+
+class ReactorCommandCreate(AppSchema):
+    command_type: ReactorCommandType
+
+
+class ReactorCommandRead(AppSchema):
+    id: int
+    reactor_id: int
+    reactor_name: str | None = None
+    command_type: ReactorCommandType
+    status: ReactorCommandStatus
+    blocked_reason: str | None = None
+    command_uid: str
+    published_at: datetime | None = None
+    acknowledged_at: datetime | None = None
+    retry_count: int = 0
+    max_retries: int = 3
+    last_error: str | None = None
+    timeout_at: datetime | None = None
+    ack_payload: dict | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class MQTTAckPayload(AppSchema):
+    command_id: int | None = None
+    command_uid: str | None = Field(default=None, min_length=1, max_length=64)
+    status: MQTTAckStatus = MQTTAckStatus.ok
+    error: str | None = Field(default=None, max_length=400)
+    received_at: datetime | None = None
+
+
+class MQTTTelemetryPayload(AppSchema):
+    value: float
+    unit: str = Field(min_length=1, max_length=40)
+    timestamp: datetime | None = None
+    source: TelemetrySource = TelemetrySource.device
+    node_id: str | None = Field(default=None, min_length=1, max_length=120)
+
+    @field_validator('unit')
+    @classmethod
+    def normalize_required_unit(cls, value: str) -> str:
+        return _normalize_required_text(value)
+
+    @field_validator('node_id')
+    @classmethod
+    def normalize_optional_node_id(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class MQTTNodeStatusPayload(AppSchema):
+    name: str | None = Field(default=None, max_length=160)
+    reactor_id: int | None = Field(default=None, ge=1)
+    node_type: DeviceNodeType = DeviceNodeType.env_control
+    status: DeviceNodeStatus = DeviceNodeStatus.online
+    firmware_version: str | None = Field(default=None, max_length=80)
+    last_seen_at: datetime | None = None
+
+    @field_validator('name', 'firmware_version')
+    @classmethod
+    def normalize_optional_text_fields(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class MQTTHeartbeatPayload(AppSchema):
+    reactor_id: int | None = Field(default=None, ge=1)
+    node_type: DeviceNodeType = DeviceNodeType.env_control
+    firmware_version: str | None = Field(default=None, max_length=80)
+    last_seen_at: datetime | None = None
+
+    @field_validator('firmware_version')
+    @classmethod
+    def normalize_optional_firmware(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class MQTTBridgeStatusRead(AppSchema):
+    enabled: bool
+    dependency_available: bool
+    connected: bool
+    broker_host: str
+    broker_port: int
+    client_id: str
+    topic_prefix: str
+    publish_commands: bool
+    last_message_at: datetime | None = None
+    last_error: str | None = None
+
+
 class SensorPayload(AppSchema):
     name: str = Field(min_length=1, max_length=120)
     sensor_type: SensorType
@@ -352,6 +856,138 @@ class AssetUpdate(AssetPayload):
 
 class AssetStatusUpdate(AppSchema):
     status: AssetStatus
+
+
+class InventoryPayload(AppSchema):
+    name: str = Field(min_length=1, max_length=160)
+    category: str = Field(min_length=1, max_length=80)
+    status: InventoryStatus = InventoryStatus.available
+    quantity: float = Field(ge=0, le=999999999.999)
+    unit: str = Field(min_length=1, max_length=40)
+    min_quantity: float | None = Field(default=None, ge=0, le=999999999.999)
+    location: str = Field(min_length=1, max_length=160)
+    zone: str | None = Field(default=None, max_length=120)
+    supplier: str | None = Field(default=None, max_length=160)
+    sku: str | None = Field(default=None, max_length=120)
+    notes: str | None = Field(default=None, max_length=4000)
+    asset_id: int | None = Field(default=None, ge=1)
+    wiki_ref: str | None = Field(default=None, max_length=255)
+    last_restocked_at: datetime | None = None
+    expiry_date: date | None = None
+
+    @field_validator('name', 'category', 'unit', 'location')
+    @classmethod
+    def normalize_required_text(cls, value: str) -> str:
+        return _normalize_required_text(value)
+
+    @field_validator('zone', 'supplier', 'sku', 'notes', 'wiki_ref')
+    @classmethod
+    def normalize_optional_text(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+    @model_validator(mode='after')
+    def validate_min_quantity(self) -> 'InventoryPayload':
+        if self.min_quantity is not None and self.min_quantity < 0:
+            raise ValueError('min_quantity must be greater than or equal to 0')
+        return self
+
+
+class InventoryCreate(InventoryPayload):
+    pass
+
+
+class InventoryUpdate(InventoryPayload):
+    pass
+
+
+class InventoryStatusUpdate(AppSchema):
+    status: InventoryStatus
+
+
+class LabelPayload(AppSchema):
+    label_code: str | None = Field(default=None, min_length=3, max_length=80)
+    label_type: LabelType = LabelType.qr
+    target_type: LabelTargetType
+    target_id: int = Field(ge=1)
+    display_name: str | None = Field(default=None, max_length=160)
+    location_snapshot: str | None = Field(default=None, max_length=255)
+    note: str | None = Field(default=None, max_length=4000)
+    is_active: bool = True
+
+    @field_validator('label_code')
+    @classmethod
+    def normalize_label_code(cls, value: str | None) -> str | None:
+        normalized = _normalize_optional_text(value)
+        return normalized.upper() if normalized else None
+
+    @field_validator('display_name', 'location_snapshot', 'note')
+    @classmethod
+    def normalize_optional_text(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class LabelCreate(LabelPayload):
+    pass
+
+
+class LabelUpdate(LabelPayload):
+    pass
+
+
+class LabelActiveUpdate(AppSchema):
+    is_active: bool
+
+
+class UserPayload(AppSchema):
+    username: str = Field(min_length=3, max_length=80)
+    display_name: str | None = Field(default=None, max_length=160)
+    email: str | None = Field(default=None, max_length=160)
+    role: UserRole = UserRole.viewer
+    is_active: bool = True
+    note: str | None = Field(default=None, max_length=4000)
+
+    @field_validator('username')
+    @classmethod
+    def normalize_username(cls, value: str) -> str:
+        return _normalize_required_text(value).lower()
+
+    @field_validator('display_name', 'email', 'note')
+    @classmethod
+    def normalize_optional_text(cls, value: str | None) -> str | None:
+        normalized = _normalize_optional_text(value)
+        if normalized and '@' in normalized:
+            return normalized.lower()
+        return normalized
+
+
+class UserCreate(UserPayload):
+    password: str = Field(min_length=8, max_length=256)
+
+
+class UserUpdate(UserPayload):
+    pass
+
+
+class UserRoleUpdate(AppSchema):
+    role: UserRole
+
+
+class UserActiveUpdate(AppSchema):
+    is_active: bool
+
+
+class UserPasswordUpdate(AppSchema):
+    password: str = Field(min_length=8, max_length=256)
+
+
+class AuthLoginRequest(AppSchema):
+    username: str = Field(min_length=1, max_length=80)
+    password: str = Field(min_length=1, max_length=256)
+
+    @field_validator('username')
+    @classmethod
+    def normalize_username(cls, value: str) -> str:
+        return _normalize_required_text(value).lower()
 
 
 class TaskPayload(AppSchema):
@@ -476,6 +1112,76 @@ class PhotoRead(AppSchema):
     file_url: str
 
 
+class ReactorEventRead(AppSchema):
+    id: int
+    reactor_id: int
+    reactor_name: str | None = None
+    event_type: ReactorEventType
+    title: str
+    description: str | None
+    severity: AlertSeverity | None
+    phase_snapshot: ReactorPhase | None
+    created_at: datetime
+    created_by_user_id: int | None
+    created_by_username: str | None = None
+
+
+class ReactorTwinRead(AppSchema):
+    id: int | None
+    is_configured: bool = True
+    reactor_id: int
+    reactor_name: str
+    reactor_type: str
+    reactor_status: ReactorStatus
+    reactor_volume_l: float
+    reactor_location: str | None
+    culture_type: str | None
+    strain: str | None
+    medium_recipe: str | None
+    inoculated_at: datetime | None
+    current_phase: ReactorPhase
+    target_ph_min: float | None
+    target_ph_max: float | None
+    target_temp_min: float | None
+    target_temp_max: float | None
+    target_light_min: float | None
+    target_light_max: float | None
+    target_flow_min: float | None
+    target_flow_max: float | None
+    expected_harvest_window_start: datetime | None
+    expected_harvest_window_end: datetime | None
+    contamination_state: ReactorContaminationState | None
+    technical_state: ReactorTechnicalState
+    biological_state: ReactorBiologicalState
+    notes: str | None
+    created_at: datetime
+    updated_at: datetime
+    current_charge: ChargeRead | None = None
+    sensor_count: int = 0
+    open_task_count: int = 0
+    open_alert_count: int = 0
+    photo_count: int = 0
+    latest_event: ReactorEventRead | None = None
+
+
+class ReactorTwinDetailRead(ReactorTwinRead):
+    recent_events: list[ReactorEventRead]
+    open_tasks: list[TaskRead]
+    recent_alerts: list[AlertRead]
+    recent_photos: list[PhotoRead]
+    recent_sensors: list[SensorRead]
+
+
+class ReactorTelemetryOverviewRead(AppSchema):
+    reactor_id: int
+    reactor_name: str
+    latest_temp: float | None = None
+    latest_temp_unit: str | None = None
+    latest_ph: float | None = None
+    latest_ph_unit: str | None = None
+    last_telemetry_at: datetime | None = None
+
+
 class AssetRead(AppSchema):
     id: int
     name: str
@@ -508,6 +1214,93 @@ class AssetOverviewRead(AppSchema):
     assets_in_maintenance: int
     assets_in_error: int
     upcoming_maintenance_assets: list[AssetRead]
+
+
+class InventoryRead(AppSchema):
+    id: int
+    name: str
+    category: str
+    status: InventoryStatus
+    quantity: float
+    unit: str
+    min_quantity: float | None
+    location: str
+    zone: str | None
+    supplier: str | None
+    sku: str | None
+    notes: str | None
+    asset_id: int | None
+    asset_name: str | None = None
+    wiki_ref: str | None
+    last_restocked_at: datetime | None
+    expiry_date: date | None
+    created_at: datetime
+    updated_at: datetime
+    is_low_stock: bool
+    is_out_of_stock: bool
+    needs_restock: bool
+
+
+class InventoryOverviewRead(AppSchema):
+    total_items: int
+    low_stock_items: int
+    out_of_stock_items: int
+    critical_items: list[InventoryRead]
+
+
+class LabelRead(AppSchema):
+    id: int
+    label_code: str
+    label_type: LabelType
+    target_type: LabelTargetType
+    target_id: int
+    display_name: str | None
+    location_snapshot: str | None
+    note: str | None
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+    target_name: str | None = None
+    target_location: str | None = None
+    target_status: str | None = None
+    scan_path: str
+    scan_url: str
+    target_manager_path: str
+    target_manager_url: str
+    qr_path: str
+    qr_url: str
+
+
+class LabelTargetRead(AppSchema):
+    label: LabelRead
+    asset: AssetRead | None = None
+    inventory_item: InventoryRead | None = None
+
+
+class LabelOverviewRead(AppSchema):
+    labeled_assets: int
+    labeled_inventory_items: int
+    recent_labels: list[LabelRead]
+
+
+class UserRead(AppSchema):
+    id: int
+    username: str
+    display_name: str | None
+    email: str | None
+    role: UserRole
+    is_active: bool
+    auth_source: str
+    note: str | None
+    created_at: datetime
+    updated_at: datetime
+    last_login_at: datetime | None
+
+
+class AuthLoginResponse(AppSchema):
+    access_token: str
+    token_type: str = 'bearer'
+    user: UserRead
 
 
 class PhotoAnalysisStatusRead(AppSchema):
@@ -718,14 +1511,198 @@ class EvaluateAllRulesResponse(AppSchema):
     executions: list[RuleExecutionRead]
 
 
+class CalibrationRecordCreate(AppSchema):
+    target_type: CalibrationTargetType
+    target_id: int = Field(ge=1)
+    parameter: str = Field(min_length=1, max_length=80)
+    status: CalibrationStatus = CalibrationStatus.unknown
+    calibrated_at: datetime | None = None
+    due_at: datetime | None = None
+    calibration_value: float | None = None
+    reference_value: float | None = None
+    note: str | None = Field(default=None, max_length=2000)
+
+    @field_validator('parameter')
+    @classmethod
+    def normalize_parameter(cls, value: str) -> str:
+        return _normalize_required_text(value)
+
+    @field_validator('note')
+    @classmethod
+    def normalize_note(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class CalibrationRecordUpdate(AppSchema):
+    status: CalibrationStatus | None = None
+    calibrated_at: datetime | None = None
+    due_at: datetime | None = None
+    calibration_value: float | None = None
+    reference_value: float | None = None
+    note: str | None = Field(default=None, max_length=2000)
+
+    @field_validator('note')
+    @classmethod
+    def normalize_note(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class CalibrationRecordRead(AppSchema):
+    id: int
+    target_type: CalibrationTargetType
+    target_id: int
+    target_name: str | None = None
+    parameter: str
+    status: CalibrationStatus
+    calibrated_at: datetime | None
+    due_at: datetime | None
+    calibration_value: float | None
+    reference_value: float | None
+    performed_by_user_id: int | None
+    performed_by_username: str | None = None
+    note: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class CalibrationOverviewRead(AppSchema):
+    total: int
+    valid: int
+    due: int
+    expired: int
+    failed: int
+    unknown: int
+    due_or_expired: int
+
+
+class MaintenanceRecordCreate(AppSchema):
+    target_type: MaintenanceTargetType
+    target_id: int = Field(ge=1)
+    maintenance_type: MaintenanceType
+    status: MaintenanceStatus = MaintenanceStatus.scheduled
+    performed_at: datetime | None = None
+    due_at: datetime | None = None
+    note: str | None = Field(default=None, max_length=2000)
+
+    @field_validator('note')
+    @classmethod
+    def normalize_note(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class MaintenanceRecordUpdate(AppSchema):
+    maintenance_type: MaintenanceType | None = None
+    status: MaintenanceStatus | None = None
+    performed_at: datetime | None = None
+    due_at: datetime | None = None
+    note: str | None = Field(default=None, max_length=2000)
+
+    @field_validator('note')
+    @classmethod
+    def normalize_note(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class MaintenanceRecordRead(AppSchema):
+    id: int
+    target_type: MaintenanceTargetType
+    target_id: int
+    target_name: str | None = None
+    maintenance_type: MaintenanceType
+    status: MaintenanceStatus
+    performed_at: datetime | None
+    due_at: datetime | None
+    performed_by_user_id: int | None
+    performed_by_username: str | None = None
+    note: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class MaintenanceOverviewRead(AppSchema):
+    total: int
+    scheduled: int
+    done: int
+    overdue: int
+    skipped: int
+
+
+class SafetyIncidentCreate(AppSchema):
+    reactor_id: int | None = Field(default=None, ge=1)
+    device_node_id: int | None = Field(default=None, ge=1)
+    asset_id: int | None = Field(default=None, ge=1)
+    incident_type: IncidentType
+    severity: IncidentSeverity = IncidentSeverity.warning
+    title: str = Field(min_length=1, max_length=200)
+    description: str | None = Field(default=None, max_length=4000)
+
+    @field_validator('title')
+    @classmethod
+    def normalize_title(cls, value: str) -> str:
+        return _normalize_required_text(value)
+
+    @field_validator('description')
+    @classmethod
+    def normalize_description(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class SafetyIncidentUpdate(AppSchema):
+    status: IncidentStatus | None = None
+    severity: IncidentSeverity | None = None
+    description: str | None = Field(default=None, max_length=4000)
+
+    @field_validator('description')
+    @classmethod
+    def normalize_description(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class SafetyIncidentRead(AppSchema):
+    id: int
+    reactor_id: int | None
+    reactor_name: str | None = None
+    device_node_id: int | None
+    device_node_name: str | None = None
+    asset_id: int | None
+    incident_type: IncidentType
+    severity: IncidentSeverity
+    status: IncidentStatus
+    title: str
+    description: str | None
+    created_at: datetime
+    resolved_at: datetime | None
+    created_by_user_id: int | None
+    created_by_username: str | None = None
+
+
+class SafetyOverviewRead(AppSchema):
+    open_incidents: int
+    acknowledged_incidents: int
+    critical_incidents: int
+    high_incidents: int
+    blocked_commands: int
+    calibration_expired: int
+    maintenance_overdue: int
+
+
 class DashboardSummaryRead(AppSchema):
     active_charges: int
     reactors_online: int
+    reactors_attention: int
+    reactors_harvest_ready: int
+    reactors_incident_or_contamination: int
+    offline_devices: int
     active_sensors: int
     error_sensors: int
     active_assets: int
     assets_in_maintenance: int
     assets_in_error: int
+    labeled_assets: int
+    inventory_items: int
+    inventory_low_stock: int
+    inventory_out_of_stock: int
+    labeled_inventory_items: int
     open_tasks: int
     due_today_tasks: int
     critical_alerts: int
@@ -733,18 +1710,145 @@ class DashboardSummaryRead(AppSchema):
     photo_count: int
     uploads_last_7_days: int
     active_rules: int
+    open_safety_incidents: int
+    calibration_due_or_expired: int
+    maintenance_overdue: int
     sensor_overview: list[SensorOverviewRead]
+    reactor_telemetry_overview: list[ReactorTelemetryOverviewRead]
     recent_alerts: list[AlertRead]
     recent_photos: list[PhotoRead]
+    recent_reactor_events: list[ReactorEventRead]
     recent_rule_executions: list[RuleExecutionRead]
     upcoming_maintenance_assets: list[AssetRead]
+    critical_inventory_items: list[InventoryRead]
+    recent_labels: list[LabelRead]
+    recent_safety_incidents: list[SafetyIncidentRead]
     message: str
+
+
+def _validate_optional_range(min_value: float | None, max_value: float | None, field_name: str) -> None:
+    if min_value is None or max_value is None:
+        return
+    if min_value > max_value:
+        raise ValueError(f'{field_name}_min must be less than or equal to {field_name}_max')
 
 
 def _require_config_keys(config: dict[str, Any], keys: set[str], scope: str) -> None:
     missing = sorted(key for key in keys if key not in config)
     if missing:
         raise ValueError(f'{scope} missing required keys: {", ".join(missing)}')
+
+
+class ScheduleType(str, Enum):
+    interval = 'interval'
+    cron = 'cron'
+    manual = 'manual'
+
+
+class ScheduleTargetType(str, Enum):
+    command = 'command'
+    rule = 'rule'
+
+
+class ScheduleExecutionStatus(str, Enum):
+    success = 'success'
+    failed = 'failed'
+    skipped = 'skipped'
+
+
+class SchedulePayload(AppSchema):
+    name: str = Field(min_length=1, max_length=160)
+    description: str | None = Field(default=None, max_length=4000)
+    schedule_type: ScheduleType
+    interval_seconds: int | None = Field(default=None, ge=5, le=7 * 24 * 3600)
+    cron_expr: str | None = Field(default=None, max_length=120)
+    target_type: ScheduleTargetType
+    target_id: int | None = Field(default=None, ge=1)
+    reactor_id: int | None = Field(default=None, ge=1)
+    target_params: dict[str, Any] = Field(default_factory=dict)
+    is_enabled: bool = True
+
+    @field_validator('name')
+    @classmethod
+    def normalize_name(cls, value: str) -> str:
+        return _normalize_required_text(value)
+
+    @field_validator('description')
+    @classmethod
+    def normalize_description(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+    @field_validator('cron_expr')
+    @classmethod
+    def normalize_cron(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+    @model_validator(mode='after')
+    def validate_schedule_payload(self):
+        if self.schedule_type == ScheduleType.interval:
+            if self.interval_seconds is None:
+                raise ValueError('interval schedules require interval_seconds')
+        elif self.schedule_type == ScheduleType.cron:
+            if not self.cron_expr:
+                raise ValueError('cron schedules require cron_expr')
+        if self.target_type == ScheduleTargetType.command:
+            if self.reactor_id is None:
+                raise ValueError('command schedules require reactor_id')
+            command_type = self.target_params.get('command_type') if isinstance(self.target_params, dict) else None
+            if not command_type:
+                raise ValueError('command schedules require target_params.command_type')
+        if self.target_type == ScheduleTargetType.rule:
+            if self.target_id is None:
+                raise ValueError('rule schedules require target_id')
+        return self
+
+
+class ScheduleCreate(SchedulePayload):
+    pass
+
+
+class ScheduleUpdate(SchedulePayload):
+    pass
+
+
+class ScheduleEnabledUpdate(AppSchema):
+    is_enabled: bool
+
+
+class ScheduleRead(AppSchema):
+    id: int
+    name: str
+    description: str | None
+    schedule_type: ScheduleType
+    interval_seconds: int | None
+    cron_expr: str | None
+    target_type: ScheduleTargetType
+    target_id: int | None
+    reactor_id: int | None
+    target_params: dict[str, Any]
+    is_enabled: bool
+    last_run_at: datetime | None
+    next_run_at: datetime | None
+    last_status: ScheduleExecutionStatus | None
+    last_error: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class ScheduleExecutionRead(AppSchema):
+    id: int
+    schedule_id: int
+    status: ScheduleExecutionStatus
+    trigger: str
+    started_at: datetime
+    finished_at: datetime | None
+    result: dict[str, Any]
+    error: str | None
+
+
+class ScheduleRunResponse(AppSchema):
+    schedule: ScheduleRead
+    execution: ScheduleExecutionRead
 
 
 def _validate_rule_configuration(

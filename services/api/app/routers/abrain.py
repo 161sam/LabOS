@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session
 
+from ..auth import require_admin_user, require_authenticated_user
 from ..db import get_session
 from ..schemas import (
     ABrainContextRead,
@@ -12,7 +13,11 @@ from ..schemas import (
 )
 from ..services import abrain as abrain_service
 
-router = APIRouter(prefix='/abrain', tags=['abrain'])
+router = APIRouter(
+    prefix='/abrain',
+    tags=['abrain'],
+    dependencies=[Depends(require_authenticated_user)],
+)
 
 
 @router.get('/status', response_model=ABrainStatusRead)
@@ -33,6 +38,10 @@ def abrain_context(
     return abrain_service.build_lab_context(session, include_sections=include_sections)
 
 
-@router.post('/query', response_model=ABrainQueryResponse)
+@router.post(
+    '/query',
+    response_model=ABrainQueryResponse,
+    dependencies=[Depends(require_admin_user)],
+)
 def abrain_query(payload: ABrainQueryRequest, session: Session = Depends(get_session)):
     return abrain_service.query(session, payload)

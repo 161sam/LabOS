@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query, status
 from sqlmodel import Session
 
+from ..auth import require_admin_user, require_authenticated_user
 from ..db import get_session
 from ..schemas import (
     EvaluateAllRulesResponse,
@@ -13,10 +14,18 @@ from ..schemas import (
 )
 from ..services import rules as rule_service
 
-router = APIRouter(prefix='/rules', tags=['rules'])
+router = APIRouter(
+    prefix='/rules',
+    tags=['rules'],
+    dependencies=[Depends(require_authenticated_user)],
+)
 
 
-@router.post('/evaluate-all', response_model=EvaluateAllRulesResponse)
+@router.post(
+    '/evaluate-all',
+    response_model=EvaluateAllRulesResponse,
+    dependencies=[Depends(require_admin_user)],
+)
 def evaluate_all_rules(
     dry_run: bool = Query(default=True),
     session: Session = Depends(get_session),
@@ -29,7 +38,12 @@ def list_rules(session: Session = Depends(get_session)):
     return rule_service.list_rules(session)
 
 
-@router.post('', response_model=RuleRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    '',
+    response_model=RuleRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_admin_user)],
+)
 def create_rule(payload: RuleCreate, session: Session = Depends(get_session)):
     return rule_service.create_rule(session, payload)
 
@@ -47,19 +61,31 @@ def get_rule(rule_id: int, session: Session = Depends(get_session)):
     return rule_service.get_rule_read(session, rule_id)
 
 
-@router.put('/{rule_id}', response_model=RuleRead)
+@router.put(
+    '/{rule_id}',
+    response_model=RuleRead,
+    dependencies=[Depends(require_admin_user)],
+)
 def update_rule(rule_id: int, payload: RuleUpdate, session: Session = Depends(get_session)):
     rule = rule_service.get_rule_or_404(session, rule_id)
     return rule_service.update_rule(session, rule, payload)
 
 
-@router.patch('/{rule_id}/enabled', response_model=RuleRead)
+@router.patch(
+    '/{rule_id}/enabled',
+    response_model=RuleRead,
+    dependencies=[Depends(require_admin_user)],
+)
 def update_rule_enabled(rule_id: int, payload: RuleEnabledUpdate, session: Session = Depends(get_session)):
     rule = rule_service.get_rule_or_404(session, rule_id)
     return rule_service.update_rule_enabled(session, rule, payload)
 
 
-@router.post('/{rule_id}/evaluate', response_model=RuleEvaluationResponse)
+@router.post(
+    '/{rule_id}/evaluate',
+    response_model=RuleEvaluationResponse,
+    dependencies=[Depends(require_admin_user)],
+)
 def evaluate_rule(
     rule_id: int,
     dry_run: bool = Query(default=True),

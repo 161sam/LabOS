@@ -13,6 +13,185 @@ export const reactorStatusOptions = [
   { value: 'maintenance', label: 'Wartung' },
 ] as const;
 
+export const reactorPhaseOptions = [
+  { value: 'inoculation', label: 'Inokulation' },
+  { value: 'growth', label: 'Wachstum' },
+  { value: 'stabilization', label: 'Stabilisierung' },
+  { value: 'harvest_ready', label: 'Harvest Ready' },
+  { value: 'maintenance', label: 'Wartung' },
+  { value: 'paused', label: 'Pausiert' },
+  { value: 'incident', label: 'Incident' },
+] as const;
+
+export const reactorTechnicalStateOptions = [
+  { value: 'nominal', label: 'Nominal' },
+  { value: 'warning', label: 'Warning' },
+  { value: 'maintenance', label: 'Maintenance' },
+  { value: 'degraded', label: 'Degraded' },
+  { value: 'error', label: 'Error' },
+] as const;
+
+export const reactorBiologicalStateOptions = [
+  { value: 'stable', label: 'Stabil' },
+  { value: 'adapting', label: 'Adapting' },
+  { value: 'growing', label: 'Growing' },
+  { value: 'stressed', label: 'Stressed' },
+  { value: 'contaminated', label: 'Contaminated' },
+  { value: 'unknown', label: 'Unknown' },
+] as const;
+
+export const reactorContaminationStateOptions = [
+  { value: 'suspected', label: 'Suspected' },
+  { value: 'confirmed', label: 'Confirmed' },
+  { value: 'recovering', label: 'Recovering' },
+  { value: 'cleared', label: 'Cleared' },
+] as const;
+
+export const reactorEventTypeOptions = [
+  { value: 'inoculation', label: 'Inokulation' },
+  { value: 'medium_change', label: 'Mediumwechsel' },
+  { value: 'calibration', label: 'Kalibrierung' },
+  { value: 'contamination_suspected', label: 'Kontaminationsverdacht' },
+  { value: 'contamination_confirmed', label: 'Kontamination bestaetigt' },
+  { value: 'maintenance', label: 'Wartung' },
+  { value: 'manual_adjustment', label: 'Manuelle Anpassung' },
+  { value: 'observation', label: 'Beobachtung' },
+  { value: 'harvest', label: 'Ernte' },
+  { value: 'incident', label: 'Incident' },
+] as const;
+
+export const telemetrySensorTypeOptions = [
+  { value: 'temp', label: 'Temperatur' },
+  { value: 'ph', label: 'pH' },
+  { value: 'light', label: 'Licht' },
+  { value: 'flow', label: 'Flow' },
+  { value: 'ec', label: 'EC' },
+  { value: 'co2', label: 'CO2' },
+  { value: 'humidity', label: 'Luftfeuchte' },
+] as const;
+
+export const telemetrySourceOptions = [
+  { value: 'manual', label: 'Manual' },
+  { value: 'device', label: 'Device' },
+  { value: 'simulated', label: 'Simulated' },
+] as const;
+
+export const deviceNodeTypeOptions = [
+  { value: 'sampling', label: 'Sampling' },
+  { value: 'env_control', label: 'Env Control' },
+  { value: 'sensor_bridge', label: 'Sensor Bridge' },
+  { value: 'pump_driver', label: 'Pump Driver' },
+  { value: 'light_controller', label: 'Light Controller' },
+  { value: 'dosing', label: 'Dosing' },
+  { value: 'safety', label: 'Safety' },
+  { value: 'vision', label: 'Vision' },
+] as const;
+
+export const deviceNodeStatusOptions = [
+  { value: 'online', label: 'Online' },
+  { value: 'offline', label: 'Offline' },
+  { value: 'warning', label: 'Warning' },
+  { value: 'error', label: 'Error' },
+] as const;
+
+export const reactorControlParameterOptions = [
+  { value: 'temp', label: 'Temperatur' },
+  { value: 'ph', label: 'pH' },
+  { value: 'light', label: 'Licht' },
+  { value: 'flow', label: 'Flow' },
+  { value: 'ec', label: 'EC' },
+  { value: 'co2', label: 'CO2' },
+  { value: 'humidity', label: 'Luftfeuchte' },
+] as const;
+
+export const reactorSetpointModeOptions = [
+  { value: 'auto', label: 'Auto' },
+  { value: 'manual', label: 'Manual' },
+] as const;
+
+export const reactorCommandTypeOptions = [
+  { value: 'light_on', label: 'Light On' },
+  { value: 'light_off', label: 'Light Off' },
+  { value: 'pump_on', label: 'Pump On' },
+  { value: 'pump_off', label: 'Pump Off' },
+  { value: 'aeration_start', label: 'Aeration Start' },
+  { value: 'aeration_stop', label: 'Aeration Stop' },
+  { value: 'sample_capture', label: 'Sample Capture' },
+] as const;
+
+export const reactorCommandStatusOptions = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'sent', label: 'Sent' },
+  { value: 'acknowledged', label: 'Bestätigt' },
+  { value: 'failed', label: 'Failed' },
+  { value: 'blocked', label: 'Blockiert' },
+  { value: 'timeout', label: 'Timeout' },
+  { value: 'retrying', label: 'Retry läuft' },
+] as const;
+
+export const calibrationTargetTypeOptions = [
+  { value: 'reactor', label: 'Reaktor' },
+  { value: 'device_node', label: 'Device Node' },
+  { value: 'asset', label: 'Asset' },
+] as const;
+
+export const calibrationStatusOptions = [
+  { value: 'valid', label: 'Gueltig' },
+  { value: 'due', label: 'Faellig' },
+  { value: 'expired', label: 'Abgelaufen' },
+  { value: 'failed', label: 'Fehlgeschlagen' },
+  { value: 'unknown', label: 'Unbekannt' },
+] as const;
+
+export const maintenanceTargetTypeOptions = [
+  { value: 'reactor', label: 'Reaktor' },
+  { value: 'device_node', label: 'Device Node' },
+  { value: 'asset', label: 'Asset' },
+] as const;
+
+export const maintenanceTypeOptions = [
+  { value: 'cleaning', label: 'Reinigung' },
+  { value: 'inspection', label: 'Inspektion' },
+  { value: 'replacement', label: 'Austausch' },
+  { value: 'tubing_flush', label: 'Schlauchspuelung' },
+  { value: 'filter_change', label: 'Filterwechsel' },
+  { value: 'pump_service', label: 'Pumpenservice' },
+  { value: 'general_service', label: 'Allgemeiner Service' },
+] as const;
+
+export const maintenanceStatusOptions = [
+  { value: 'scheduled', label: 'Geplant' },
+  { value: 'done', label: 'Erledigt' },
+  { value: 'overdue', label: 'Ueberfaellig' },
+  { value: 'skipped', label: 'Uebersprungen' },
+] as const;
+
+export const incidentTypeOptions = [
+  { value: 'sensor_untrusted', label: 'Sensor nicht vertrauenswuerdig' },
+  { value: 'calibration_expired', label: 'Kalibrierung abgelaufen' },
+  { value: 'node_offline', label: 'Node offline' },
+  { value: 'overheating_risk', label: 'Ueberhitzungsrisiko' },
+  { value: 'dry_run_risk', label: 'Trockenlaufrisiko' },
+  { value: 'clogging_suspected', label: 'Verstopfungsverdacht' },
+  { value: 'flow_mismatch', label: 'Flow-Abweichung' },
+  { value: 'invalid_telemetry', label: 'Ungueltige Telemetrie' },
+  { value: 'unsafe_command_blocked', label: 'Unsicherer Befehl blockiert' },
+  { value: 'general', label: 'Allgemein' },
+] as const;
+
+export const incidentSeverityOptions = [
+  { value: 'info', label: 'Info' },
+  { value: 'warning', label: 'Warnung' },
+  { value: 'high', label: 'Hoch' },
+  { value: 'critical', label: 'Kritisch' },
+] as const;
+
+export const incidentStatusOptions = [
+  { value: 'open', label: 'Offen' },
+  { value: 'acknowledged', label: 'Quittiert' },
+  { value: 'resolved', label: 'Geloest' },
+] as const;
+
 export const assetTypeOptions = [
   { value: 'printer_3d', label: '3D-Drucker' },
   { value: 'microscope', label: 'Mikroskop' },
@@ -33,6 +212,45 @@ export const assetStatusOptions = [
   { value: 'error', label: 'Fehler' },
   { value: 'inactive', label: 'Inaktiv' },
   { value: 'retired', label: 'Ausgemustert' },
+] as const;
+
+export const inventoryCategoryOptions = [
+  { value: 'filament', label: 'Filament' },
+  { value: 'electronic_component', label: 'Elektronikteil' },
+  { value: 'cable', label: 'Kabel' },
+  { value: 'screw', label: 'Schrauben' },
+  { value: 'tubing', label: 'Schlauch / Tubing' },
+  { value: 'chemical', label: 'Chemikalie' },
+  { value: 'nutrient', label: 'Naehrmedium' },
+  { value: 'cleaning_supply', label: 'Reinigungsmittel' },
+  { value: 'spare_part', label: 'Ersatzteil' },
+  { value: 'consumable', label: 'Verbrauchsmaterial' },
+  { value: 'storage_box_content', label: 'Boxinhalt' },
+] as const;
+
+export const inventoryStatusOptions = [
+  { value: 'available', label: 'Verfuegbar' },
+  { value: 'low_stock', label: 'Knapp' },
+  { value: 'out_of_stock', label: 'Leer' },
+  { value: 'reserved', label: 'Reserviert' },
+  { value: 'expired', label: 'Abgelaufen' },
+  { value: 'archived', label: 'Archiviert' },
+] as const;
+
+export const labelTypeOptions = [
+  { value: 'qr', label: 'QR' },
+  { value: 'printed_label', label: 'Gedrucktes Label' },
+] as const;
+
+export const labelTargetTypeOptions = [
+  { value: 'asset', label: 'Asset' },
+  { value: 'inventory_item', label: 'Inventory' },
+] as const;
+
+export const userRoleOptions = [
+  { value: 'admin', label: 'Admin' },
+  { value: 'operator', label: 'Operator' },
+  { value: 'viewer', label: 'Viewer' },
 ] as const;
 
 export const sensorTypeOptions = [
@@ -134,8 +352,34 @@ export const ruleExecutionStatusOptions = [
 
 export type ChargeStatus = (typeof chargeStatusOptions)[number]['value'];
 export type ReactorStatus = (typeof reactorStatusOptions)[number]['value'];
+export type ReactorPhase = (typeof reactorPhaseOptions)[number]['value'];
+export type ReactorTechnicalState = (typeof reactorTechnicalStateOptions)[number]['value'];
+export type ReactorBiologicalState = (typeof reactorBiologicalStateOptions)[number]['value'];
+export type ReactorContaminationState = (typeof reactorContaminationStateOptions)[number]['value'];
+export type ReactorEventType = (typeof reactorEventTypeOptions)[number]['value'];
+export type TelemetrySensorType = (typeof telemetrySensorTypeOptions)[number]['value'];
+export type TelemetrySource = (typeof telemetrySourceOptions)[number]['value'];
+export type DeviceNodeType = (typeof deviceNodeTypeOptions)[number]['value'];
+export type DeviceNodeStatus = (typeof deviceNodeStatusOptions)[number]['value'];
+export type ReactorControlParameter = (typeof reactorControlParameterOptions)[number]['value'];
+export type ReactorSetpointMode = (typeof reactorSetpointModeOptions)[number]['value'];
+export type ReactorCommandType = (typeof reactorCommandTypeOptions)[number]['value'];
+export type ReactorCommandStatus = (typeof reactorCommandStatusOptions)[number]['value'];
+export type CalibrationTargetType = (typeof calibrationTargetTypeOptions)[number]['value'];
+export type CalibrationStatus = (typeof calibrationStatusOptions)[number]['value'];
+export type MaintenanceTargetType = (typeof maintenanceTargetTypeOptions)[number]['value'];
+export type MaintenanceType = (typeof maintenanceTypeOptions)[number]['value'];
+export type MaintenanceStatus = (typeof maintenanceStatusOptions)[number]['value'];
+export type IncidentType = (typeof incidentTypeOptions)[number]['value'];
+export type IncidentSeverity = (typeof incidentSeverityOptions)[number]['value'];
+export type IncidentStatus = (typeof incidentStatusOptions)[number]['value'];
 export type AssetType = (typeof assetTypeOptions)[number]['value'];
 export type AssetStatus = (typeof assetStatusOptions)[number]['value'];
+export type InventoryCategory = (typeof inventoryCategoryOptions)[number]['value'];
+export type InventoryStatus = (typeof inventoryStatusOptions)[number]['value'];
+export type LabelType = (typeof labelTypeOptions)[number]['value'];
+export type LabelTargetType = (typeof labelTargetTypeOptions)[number]['value'];
+export type UserRole = (typeof userRoleOptions)[number]['value'];
 export type SensorType = (typeof sensorTypeOptions)[number]['value'];
 export type SensorStatus = (typeof sensorStatusOptions)[number]['value'];
 export type TaskStatus = (typeof taskStatusOptions)[number]['value'];
@@ -172,6 +416,226 @@ export type Reactor = {
   notes: string | null;
 };
 
+export type ReactorEvent = {
+  id: number;
+  reactor_id: number;
+  reactor_name: string | null;
+  event_type: ReactorEventType;
+  title: string;
+  description: string | null;
+  severity: AlertSeverity | null;
+  phase_snapshot: ReactorPhase | null;
+  created_at: string;
+  created_by_user_id: number | null;
+  created_by_username: string | null;
+};
+
+export type TelemetryValue = {
+  id: number;
+  reactor_id: number;
+  reactor_name: string | null;
+  sensor_type: TelemetrySensorType;
+  value: number;
+  unit: string;
+  source: TelemetrySource;
+  timestamp: string;
+  created_at: string;
+};
+
+export type DeviceNode = {
+  id: number;
+  name: string;
+  node_id: string | null;
+  node_type: DeviceNodeType;
+  status: DeviceNodeStatus;
+  last_seen_at: string;
+  firmware_version: string | null;
+  reactor_id: number | null;
+  reactor_name: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ReactorSetpoint = {
+  id: number;
+  reactor_id: number;
+  reactor_name: string | null;
+  parameter: ReactorControlParameter;
+  target_value: number;
+  min_value: number | null;
+  max_value: number | null;
+  mode: ReactorSetpointMode;
+  updated_at: string;
+};
+
+export type ReactorCommand = {
+  id: number;
+  reactor_id: number;
+  reactor_name: string | null;
+  command_type: ReactorCommandType;
+  status: ReactorCommandStatus;
+  blocked_reason: string | null;
+  command_uid: string;
+  published_at: string | null;
+  acknowledged_at: string | null;
+  retry_count: number;
+  max_retries: number;
+  last_error: string | null;
+  timeout_at: string | null;
+  ack_payload: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CalibrationRecord = {
+  id: number;
+  target_type: CalibrationTargetType;
+  target_id: number;
+  target_name: string | null;
+  parameter: string;
+  status: CalibrationStatus;
+  calibrated_at: string | null;
+  due_at: string | null;
+  calibration_value: number | null;
+  reference_value: number | null;
+  performed_by_user_id: number | null;
+  performed_by_username: string | null;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CalibrationOverview = {
+  total: number;
+  valid: number;
+  due: number;
+  expired: number;
+  failed: number;
+  unknown: number;
+  due_or_expired: number;
+};
+
+export type MaintenanceRecord = {
+  id: number;
+  target_type: MaintenanceTargetType;
+  target_id: number;
+  target_name: string | null;
+  maintenance_type: MaintenanceType;
+  status: MaintenanceStatus;
+  performed_at: string | null;
+  due_at: string | null;
+  performed_by_user_id: number | null;
+  performed_by_username: string | null;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type MaintenanceOverview = {
+  total: number;
+  scheduled: number;
+  done: number;
+  overdue: number;
+  skipped: number;
+};
+
+export type SafetyIncident = {
+  id: number;
+  reactor_id: number | null;
+  reactor_name: string | null;
+  device_node_id: number | null;
+  device_node_name: string | null;
+  asset_id: number | null;
+  incident_type: IncidentType;
+  severity: IncidentSeverity;
+  status: IncidentStatus;
+  title: string;
+  description: string | null;
+  created_at: string;
+  resolved_at: string | null;
+  created_by_user_id: number | null;
+  created_by_username: string | null;
+};
+
+export type SafetyOverview = {
+  open_incidents: number;
+  acknowledged_incidents: number;
+  critical_incidents: number;
+  high_incidents: number;
+  blocked_commands: number;
+  calibration_expired: number;
+  maintenance_overdue: number;
+};
+
+export type MQTTBridgeStatus = {
+  enabled: boolean;
+  dependency_available: boolean;
+  connected: boolean;
+  broker_host: string;
+  broker_port: number;
+  client_id: string;
+  topic_prefix: string;
+  publish_commands: boolean;
+  last_message_at: string | null;
+  last_error: string | null;
+};
+
+export type ReactorTwin = {
+  id: number | null;
+  is_configured: boolean;
+  reactor_id: number;
+  reactor_name: string;
+  reactor_type: string;
+  reactor_status: ReactorStatus;
+  reactor_volume_l: number;
+  reactor_location: string | null;
+  culture_type: string | null;
+  strain: string | null;
+  medium_recipe: string | null;
+  inoculated_at: string | null;
+  current_phase: ReactorPhase;
+  target_ph_min: number | null;
+  target_ph_max: number | null;
+  target_temp_min: number | null;
+  target_temp_max: number | null;
+  target_light_min: number | null;
+  target_light_max: number | null;
+  target_flow_min: number | null;
+  target_flow_max: number | null;
+  expected_harvest_window_start: string | null;
+  expected_harvest_window_end: string | null;
+  contamination_state: ReactorContaminationState | null;
+  technical_state: ReactorTechnicalState;
+  biological_state: ReactorBiologicalState;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  current_charge: Charge | null;
+  sensor_count: number;
+  open_task_count: number;
+  open_alert_count: number;
+  photo_count: number;
+  latest_event: ReactorEvent | null;
+};
+
+export type ReactorTwinDetail = ReactorTwin & {
+  recent_events: ReactorEvent[];
+  open_tasks: Task[];
+  recent_alerts: Alert[];
+  recent_photos: Photo[];
+  recent_sensors: Sensor[];
+};
+
+export type ReactorTelemetryOverview = {
+  reactor_id: number;
+  reactor_name: string;
+  latest_temp: number | null;
+  latest_temp_unit: string | null;
+  latest_ph: number | null;
+  latest_ph_unit: string | null;
+  last_telemetry_at: string | null;
+};
+
 export type Asset = {
   id: number;
   name: string;
@@ -192,6 +656,31 @@ export type Asset = {
   updated_at: string;
   open_task_count: number;
   photo_count: number;
+};
+
+export type InventoryItem = {
+  id: number;
+  name: string;
+  category: string;
+  status: InventoryStatus;
+  quantity: number;
+  unit: string;
+  min_quantity: number | null;
+  location: string;
+  zone: string | null;
+  supplier: string | null;
+  sku: string | null;
+  notes: string | null;
+  asset_id: number | null;
+  asset_name: string | null;
+  wiki_ref: string | null;
+  last_restocked_at: string | null;
+  expiry_date: string | null;
+  created_at: string;
+  updated_at: string;
+  is_low_stock: boolean;
+  is_out_of_stock: boolean;
+  needs_restock: boolean;
 };
 
 export type Sensor = {
@@ -281,6 +770,67 @@ export type AssetOverview = {
   assets_in_maintenance: number;
   assets_in_error: number;
   upcoming_maintenance_assets: Asset[];
+};
+
+export type InventoryOverview = {
+  total_items: number;
+  low_stock_items: number;
+  out_of_stock_items: number;
+  critical_items: InventoryItem[];
+};
+
+export type Label = {
+  id: number;
+  label_code: string;
+  label_type: LabelType;
+  target_type: LabelTargetType;
+  target_id: number;
+  display_name: string | null;
+  location_snapshot: string | null;
+  note: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  target_name: string | null;
+  target_location: string | null;
+  target_status: string | null;
+  scan_path: string;
+  scan_url: string;
+  target_manager_path: string;
+  target_manager_url: string;
+  qr_path: string;
+  qr_url: string;
+};
+
+export type LabelTarget = {
+  label: Label;
+  asset: Asset | null;
+  inventory_item: InventoryItem | null;
+};
+
+export type LabelOverview = {
+  labeled_assets: number;
+  labeled_inventory_items: number;
+  recent_labels: Label[];
+};
+
+export type User = {
+  id: number;
+  username: string;
+  display_name: string | null;
+  email: string | null;
+  role: UserRole;
+  is_active: boolean;
+  auth_source: string;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+  last_login_at: string | null;
+};
+
+export type AuthLoginResponse = {
+  access_token: string;
+  user: User;
 };
 
 export type PhotoAnalysisStatus = {
@@ -432,14 +982,80 @@ export type RuleEvaluationResponse = {
   execution: RuleExecution;
 };
 
+export const scheduleTypeOptions = [
+  { value: 'interval', label: 'Interval' },
+  { value: 'cron', label: 'Cron' },
+  { value: 'manual', label: 'Manuell' },
+] as const;
+
+export const scheduleTargetTypeOptions = [
+  { value: 'command', label: 'Reactor Command' },
+  { value: 'rule', label: 'Rule' },
+] as const;
+
+export const scheduleExecutionStatusOptions = [
+  { value: 'success', label: 'Success' },
+  { value: 'failed', label: 'Failed' },
+  { value: 'skipped', label: 'Skipped' },
+] as const;
+
+export type ScheduleType = (typeof scheduleTypeOptions)[number]['value'];
+export type ScheduleTargetType = (typeof scheduleTargetTypeOptions)[number]['value'];
+export type ScheduleExecutionStatus = (typeof scheduleExecutionStatusOptions)[number]['value'];
+
+export type Schedule = {
+  id: number;
+  name: string;
+  description: string | null;
+  schedule_type: ScheduleType;
+  interval_seconds: number | null;
+  cron_expr: string | null;
+  target_type: ScheduleTargetType;
+  target_id: number | null;
+  reactor_id: number | null;
+  target_params: Record<string, unknown>;
+  is_enabled: boolean;
+  last_run_at: string | null;
+  next_run_at: string | null;
+  last_status: ScheduleExecutionStatus | null;
+  last_error: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ScheduleExecution = {
+  id: number;
+  schedule_id: number;
+  status: ScheduleExecutionStatus;
+  trigger: string;
+  started_at: string;
+  finished_at: string | null;
+  result: Record<string, unknown>;
+  error: string | null;
+};
+
+export type ScheduleRunResponse = {
+  schedule: Schedule;
+  execution: ScheduleExecution;
+};
+
 export type DashboardSummary = {
   active_charges: number;
   reactors_online: number;
+  reactors_attention: number;
+  reactors_harvest_ready: number;
+  reactors_incident_or_contamination: number;
+  offline_devices: number;
   active_sensors: number;
   error_sensors: number;
   active_assets: number;
   assets_in_maintenance: number;
   assets_in_error: number;
+  labeled_assets: number;
+  inventory_items: number;
+  inventory_low_stock: number;
+  inventory_out_of_stock: number;
+  labeled_inventory_items: number;
   open_tasks: number;
   due_today_tasks: number;
   critical_alerts: number;
@@ -447,10 +1063,18 @@ export type DashboardSummary = {
   photo_count: number;
   uploads_last_7_days: number;
   active_rules: number;
+  open_safety_incidents: number;
+  calibration_due_or_expired: number;
+  maintenance_overdue: number;
   sensor_overview: Sensor[];
+  reactor_telemetry_overview: ReactorTelemetryOverview[];
   recent_alerts: Alert[];
   recent_photos: Photo[];
+  recent_reactor_events: ReactorEvent[];
   recent_rule_executions: RuleExecution[];
   upcoming_maintenance_assets: Asset[];
+  critical_inventory_items: InventoryItem[];
+  recent_labels: Label[];
+  recent_safety_incidents: SafetyIncident[];
   message: string;
 };

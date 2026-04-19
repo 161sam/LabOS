@@ -3,6 +3,7 @@ from sqlmodel import Session, select
 
 from ..models import Reactor
 from ..schemas import ReactorCreate, ReactorStatusUpdate, ReactorUpdate
+from . import reactor_ops as reactor_ops_service
 
 
 def list_reactors(session: Session) -> list[Reactor]:
@@ -30,6 +31,7 @@ def create_reactor(session: Session, payload: ReactorCreate) -> Reactor:
     session.add(reactor)
     session.commit()
     session.refresh(reactor)
+    reactor_ops_service.create_default_twin_for_reactor(session, reactor.id)
     return reactor
 
 

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query, status
 from sqlmodel import Session
 
+from ..auth import require_authenticated_user, require_operator_user
 from ..db import get_session
 from ..schemas import (
     AssetCreate,
@@ -13,7 +14,7 @@ from ..schemas import (
 )
 from ..services import assets as asset_service
 
-router = APIRouter(prefix='/assets', tags=['assets'])
+router = APIRouter(prefix='/assets', tags=['assets'], dependencies=[Depends(require_authenticated_user)])
 
 
 @router.get('', response_model=list[AssetRead])
@@ -44,12 +45,21 @@ def get_asset(asset_id: int, session: Session = Depends(get_session)):
 
 
 @router.post('', response_model=AssetRead, status_code=status.HTTP_201_CREATED)
-def create_asset(payload: AssetCreate, session: Session = Depends(get_session)):
+def create_asset(
+    payload: AssetCreate,
+    session: Session = Depends(get_session),
+    current_user=Depends(require_operator_user),
+):
     return asset_service.create_asset(session, payload)
 
 
 @router.put('/{asset_id}', response_model=AssetRead)
-def update_asset(asset_id: int, payload: AssetUpdate, session: Session = Depends(get_session)):
+def update_asset(
+    asset_id: int,
+    payload: AssetUpdate,
+    session: Session = Depends(get_session),
+    current_user=Depends(require_operator_user),
+):
     asset = asset_service.get_asset_or_404(session, asset_id)
     return asset_service.update_asset(session, asset, payload)
 
@@ -59,6 +69,7 @@ def update_asset_status(
     asset_id: int,
     payload: AssetStatusUpdate,
     session: Session = Depends(get_session),
+    current_user=Depends(require_operator_user),
 ):
     asset = asset_service.get_asset_or_404(session, asset_id)
     return asset_service.update_asset_status(session, asset, payload)

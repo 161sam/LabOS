@@ -12,10 +12,11 @@ if str(API_ROOT) not in sys.path:
 from app import db, seed
 from app.config import settings
 from app.main import app
+from app.services import mqtt_bridge, scheduler as scheduler_service
 
 
 @pytest.fixture()
-def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def anonymous_client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     db_path = tmp_path / 'labos-test.db'
     storage_path = tmp_path / 'storage'
     storage_path.mkdir(parents=True, exist_ok=True)
@@ -27,9 +28,27 @@ def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(db, 'engine', test_engine)
     monkeypatch.setattr(seed, 'engine', test_engine)
     monkeypatch.setattr(settings, 'storage_path', str(storage_path))
+    monkeypatch.setattr(settings, 'mqtt_enabled', False)
+    monkeypatch.setattr(settings, 'mqtt_publish_commands', False)
+    monkeypatch.setattr(settings, 'scheduler_enabled', False)
 
     with TestClient(app) as test_client:
         yield test_client
 
+    scheduler_service.get_scheduler_runner().stop()
+    mqtt_bridge.get_mqtt_bridge().stop()
     app.dependency_overrides.clear()
     test_engine.dispose()
+
+
+@pytest.fixture()
+def client(anonymous_client: TestClient):
+    response = anonymous_client.post(
+        '/api/v1/auth/login',
+        json={
+            'username': settings.bootstrap_admin_username,
+            'password': settings.bootstrap_admin_password,
+        },
+    )
+    assert response.status_code == 200
+    return anonymous_client
