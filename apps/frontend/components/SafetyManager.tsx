@@ -303,8 +303,8 @@ export function SafetyManager() {
     <div style={{ padding: '1.5rem' }}>
       <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem' }}>Safety &amp; Betrieb</h1>
 
-      {pageError && <InlineMessage type="error" message={pageError} />}
-      {notice && <InlineMessage type="success" message={notice} onDismiss={() => setNotice(null)} />}
+      {pageError && <InlineMessage tone="error">{pageError}</InlineMessage>}
+      {notice && <InlineMessage tone="success">{notice}</InlineMessage>}
 
       {overview && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
@@ -382,7 +382,7 @@ export function SafetyManager() {
             <Card style={{ marginBottom: '1rem' }}>
               <form onSubmit={(e) => { void handleIncidentSubmit(e); }}>
                 <h3 style={{ marginBottom: '0.75rem' }}>Neues Incident</h3>
-                {formError && <InlineMessage type="error" message={formError} />}
+                {formError && <InlineMessage tone="error">{formError}</InlineMessage>}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                   <FormField label="Typ">
                     <select value={incidentForm.incident_type} onChange={(e) => setIncidentForm((f) => ({ ...f, incident_type: e.target.value as IncidentType }))} required>
@@ -484,7 +484,7 @@ export function SafetyManager() {
             <Card style={{ marginBottom: '1rem' }}>
               <form onSubmit={(e) => { void handleCalSubmit(e); }}>
                 <h3 style={{ marginBottom: '0.75rem' }}>Neue Kalibrierung</h3>
-                {formError && <InlineMessage type="error" message={formError} />}
+                {formError && <InlineMessage tone="error">{formError}</InlineMessage>}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                   <FormField label="Zieltyp">
                     <select value={calForm.target_type} onChange={(e) => setCalForm((f) => ({ ...f, target_type: e.target.value as CalibrationTargetType }))}>
@@ -598,7 +598,7 @@ export function SafetyManager() {
             <Card style={{ marginBottom: '1rem' }}>
               <form onSubmit={(e) => { void handleMaintSubmit(e); }}>
                 <h3 style={{ marginBottom: '0.75rem' }}>Neuer Wartungseintrag</h3>
-                {formError && <InlineMessage type="error" message={formError} />}
+                {formError && <InlineMessage tone="error">{formError}</InlineMessage>}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                   <FormField label="Zieltyp">
                     <select value={maintForm.target_type} onChange={(e) => setMaintForm((f) => ({ ...f, target_type: e.target.value as MaintenanceTargetType }))}>

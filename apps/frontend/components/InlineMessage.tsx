@@ -1,8 +1,10 @@
+export type InlineMessageTone = 'info' | 'success' | 'warning' | 'error';
+
 export function InlineMessage({
   tone = 'info',
   children,
 }: {
-  tone?: 'info' | 'success' | 'error';
+  tone?: InlineMessageTone;
   children: React.ReactNode;
 }) {
   return <div className={`inlineMessage inlineMessage-${tone}`}>{children}</div>;
