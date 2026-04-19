@@ -30,10 +30,40 @@ LabOS ist nicht nur eine einzelne Labor-App, sondern das zentrale Betriebssystem
   Regeln, Alerts, Tasks, nachvollziehbare Ausführungen, Dry-Runs
 
 - **AI Assistenz**  
-  ABrain auf echter LabOS-Datengrundlage statt losgelöster Demo-Logik
+  LabOS ist **nicht selbst das Brain**. Ziel ist ein sauberes Andocken eines externen ABrain über eine MCP-/Tool-Adapter-Schicht; Smolit-AI-Assistant übernimmt die Nutzerkommunikation. Der bestehende lokale ABrain-Stub ist Übergangs-/Dev-Fallback, nicht Endzustand (siehe Zielarchitektur).
 
 - **R&D Ops**  
   Projekte, Experimente, Hypothesen, Ergebnisse, Iterationen, Learnings
+
+---
+
+# Zielarchitektur
+
+LabOS ist im Zielbild **Domain- und Tool-/State-System**, nicht Brain.
+
+```text
+Smolit-AI-Assistant  →  ABrain  →  LabOS MCP Server / Tool Adapter  →  LabOS API / DB
+```
+
+## Rollenverteilung
+
+- **LabOS** = Domain-, Realitäts- und Tool-/State-System
+  (ReactorOps, Telemetrie, Commands, Safety, Assets, Inventory, Vision, Scheduler, Operator-UI, lokale fachliche Guards)
+- **ABrain** = Brain, Governance, Planning, Execution Control, Trace, Audit, agentische Orchestrierung
+- **Smolit-AI-Assistant** = User-Interaktion, Sprache, UX, Chat
+
+## Entscheidungsregel
+
+- LabOS beschreibt und kontrolliert die Laborrealität.
+- ABrain entscheidet, plant und regiert die Ausführung.
+- Der Smolit-AI-Assistant spricht mit dem Menschen.
+
+## Konsequenzen für diese Roadmap
+
+- Die bestehende `ABrain Integration V1` in LabOS bleibt als **Übergangs- / Bridge- / Dev-Fallback-Schicht** erhalten, ist aber **nicht** der Endzustand.
+- `ABrain V2` im Sinne dieser Roadmap bedeutet **nicht** einen intelligenteren internen LabOS-Assistenten, sondern einen sauberen Adapter nach außen: MCP-Server / Tool-Adapter, Context Builder, Action Catalog, Governance Boundary, Response- und Trace-Mapping.
+- LabOS baut **kein** eigenes Planungs- oder Agenten-System und dupliziert **keine** ABrain-Governance oder Approval-Flows.
+- Domain- und Safety-Guards (Kalibrierung, Safety-Incidents, Command-Guard) bleiben lokal in LabOS.
 
 ---
 
@@ -45,7 +75,7 @@ LabOS ist nicht nur eine einzelne Labor-App, sondern das zentrale Betriebssystem
 - Sensorik V1
 - Tasks + Alerts V1
 - Photo Upload + Vision Basis V1
-- ABrain Integration V1 mit echtem LabOS-Kontext
+- ABrain Integration V1 mit echtem LabOS-Kontext (Übergangs-/Bridge-Schicht, siehe Zielarchitektur)
 - Regelengine / Automation V1
 - AssetOps / DeviceOps V1
 - Inventory / MaterialOps V1
@@ -324,9 +354,10 @@ Das bedeutet:
 
 ## Priorität D – Intelligence Layer
 
-12. Vision V2 für strukturierte Foto-Auswertung
-13. ABrain V2 Cross-Domain Assistenz
-14. Predictive / Recommendation Features
+12. **ABrain Adapter Alignment V1** (MCP / Tool Adapter, Context Builder, Action Catalog, Governance Boundary, Response/Trace Mapping — siehe [ABrain Roadmap](#abrain-roadmap))
+13. Vision V2 für strukturierte Foto-Auswertung
+14. **ABrain V2 Domain Reasoning** (Reactor Intelligence, Daily Ops, Incident Review, Maintenance Suggestions, Cross-Domain Reasoning — Reasoning liegt im externen ABrain, nicht in LabOS)
+15. Predictive / Recommendation Features
 
 ---
 
@@ -537,19 +568,54 @@ Ein Reaktor wird nicht nur Stammdatensatz, sondern Prozessobjekt.
 
 # ABrain Roadmap
 
-## ABrain V2
+> Zielbild (siehe [Zielarchitektur](#zielarchitektur)):
+> `Smolit-AI-Assistant → ABrain → LabOS MCP / Tool Adapter → LabOS API / DB`.
+> LabOS liefert Domain-State, Aktionen und Guards; ABrain liefert Planung, Governance und Reasoning. Der bestehende lokale `/api/v1/abrain/*`-Stub bleibt Übergangsschicht.
 
-- Cross-Domain Kontext
-- Geräte + Inventory + Reaktoren + IT + Experimente
-- strukturierte Empfehlungen
-- Explainability
-- Rule Suggestions
+## ABrain Adapter Alignment V1 (nächste Phase)
 
-## Später:
+Ziel: LabOS wird sauber andockbar für ein externes ABrain. Diese Phase ist **keine Feature-Erweiterung der internen Assistenzlogik**, sondern der Umbau zum Adapter.
 
-- aktive Assistenz
-- Voice Layer
-- Multi-Agent Flows
+Bausteine:
+
+- **Context Builder**
+  - strukturierte LabOS-Sicht für ABrain: Reaktoren (inkl. Reactor Health), Safety, Telemetrie, Vision, Tasks, Alerts, Inventory, Assets, Scheduler
+  - stabile Schemas, klare Section-Keys, zeitliche Bezugspunkte
+- **Action Catalog / Tool Surface**
+  - kuratierte Liste der von außen aufrufbaren LabOS-Aktionen
+  - z.B. Reactor-Command queueen, Reactor-Health neu bewerten, Task anlegen, Alert anlegen, Inventory-Status setzen, Schedule an-/ausschalten
+  - jede Aktion mit Zweck, Parametern, Rolle, Seiteneffekten
+- **MCP Server oder Tool Adapter**
+  - eine saubere technische Andockschicht, über die ABrain Kontext lesen und Actions auslösen kann
+  - kein agentisches Verhalten in LabOS selbst
+- **Governance Boundary**
+  - LabOS validiert, führt aus und protokolliert, plant aber nicht
+  - ABrain ist für Planung, Approval, Execution Control und Audit zuständig
+  - lokale Safety-/Domain-Guards (Kalibrierung, Safety-Incidents, Command-Guard) bleiben in LabOS und sind auch für extern initiierte Aktionen verbindlich
+- **Response / Trace Mapping**
+  - ABrain-Antworten und -Entscheidungen werden auf LabOS-Events, -Tasks oder -Commands gemappt
+  - jede extern ausgelöste Aktion bleibt in LabOS nachvollziehbar (wer, wann, welche Aktion, welches Ergebnis)
+- **Lokaler Dev-Fallback**
+  - der bestehende Stub bleibt nur als optionaler, sekundärer Pfad für Offline- und Dev-Betrieb erhalten
+  - er wird nicht weiter zu einem „smarten internen Assistent" ausgebaut
+
+## ABrain V2 Domain Reasoning (Folgephase)
+
+Baut auf Adapter Alignment V1 auf. Das eigentliche Reasoning passiert **im externen ABrain**, nicht in LabOS. LabOS liefert dafür Daten, Aktionen und Guardrails.
+
+Themenfelder:
+
+- **Reactor Intelligence** – Trends in Reactor Health, Telemetrie und Vision, frühe Warnsignale
+- **Daily Ops** – Tagesplanung, Routinen, operative Vorschläge auf Basis offener Tasks/Alerts
+- **Incident Review** – Ursachenanalyse für Safety-Incidents und Command-Fails mit Bezug auf Historie
+- **Maintenance Suggestions** – Wartungs-/Kalibriervorschläge aus CalibrationRecord / MaintenanceRecord / Asset-Historie
+- **Cross-Domain Reasoning** – BioOps + ReactorOps + MakerOps + ITOps + KnowledgeOps gemeinsam betrachten
+
+## Später
+
+- aktive Assistenz (ABrain-initiiert, über den Adapter)
+- Voice Layer (über Smolit-AI-Assistant)
+- Multi-Agent Flows (orchestriert in ABrain, ausgeführt gegen LabOS-Actions)
 
 ---
 
@@ -570,7 +636,9 @@ Ein Reaktor wird nicht nur Stammdatensatz, sondern Prozessobjekt.
 
 - Assets / Devices sind nicht dasselbe wie Inventory
 - Reaktoren sind nicht nur Assets, sondern Prozesssysteme
-- ABrain bleibt Assistenzschicht, nicht Primärsystem
+- LabOS ist **nicht** das Brain; ABrain übernimmt Planung und Governance, LabOS liefert Domain-State und Actions über einen MCP-/Tool-Adapter
+- der lokale ABrain-Stub ist Übergangs-/Dev-Fallback, kein Endzustand
+- Smolit-AI-Assistant ist die User-/Chat-Ebene, nicht LabOS selbst
 - Automatisierung muss sichtbar, protokolliert und deaktivierbar bleiben
 - Vision ersetzt keine saubere Sensorik
 - jede Erweiterung muss für Raspberry Pi 4/5 praktikabel bleiben

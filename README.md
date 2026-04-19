@@ -27,6 +27,38 @@ LabOS ist ein Raspberry-Pi-taugliches Operating System fuer EcoSphereLab. Es ver
 - integriertes Wiki auf Markdown-Basis
 - Docker-Compose-Setup für lokale Entwicklung
 
+## Zielarchitektur
+
+LabOS ist im Zielbild **nicht** selbst das Brain. Der geplante Aufbau ist:
+
+```text
+Smolit-AI-Assistant  →  ABrain  →  LabOS MCP Server / Tool Adapter  →  LabOS API / DB
+```
+
+### Rollenverteilung
+
+- **LabOS** = Domain-, Realitaets- und Tool-/State-System
+  - ReactorOps, Telemetrie, Commands, Safety, Assets, Inventory, Vision, Scheduler
+  - Operator-UI fuer den Menschen am Lab
+  - lokale fachliche Guards: Kalibrierung, Safety-Incidents, Command-Guard
+- **ABrain** = Brain, Governance, Planning, Execution Control, Trace, Audit, agentische Orchestrierung
+- **Smolit-AI-Assistant** = User-Interaktion, Sprache, UX, Chat mit dem Menschen
+
+### Entscheidungsregel
+
+- LabOS beschreibt und kontrolliert die Laborrealitaet.
+- ABrain entscheidet, plant und regiert die Ausfuehrung.
+- Der Smolit-AI-Assistant spricht mit dem Menschen.
+
+### Konsequenz fuer die LabOS-Roadmap
+
+- Der bestehende `/api/v1/abrain/*`-Stub ist eine **Uebergangs-/Bridge-/Dev-Fallback-Schicht**, nicht der Endzustand.
+- Die nächste Ausbaustufe ist kein „intelligenterer interner Assistent", sondern das saubere Andocken des externen ABrain via MCP-Server / Tool-Adapter.
+- LabOS baut **kein** eigenes Planungs- oder Agenten-System und **dupliziert keine** ABrain-Governance.
+- LabOS konzentriert sich auf sauberes Domain-Modell, klare Aktionen/Tools und die Adapter-Schicht nach ABrain.
+
+Die naechsten konkreten Arbeiten in dieser Richtung sind in [ROADMAP.md](ROADMAP.md) unter **ABrain Adapter Alignment V1** und **ABrain V2 Domain Reasoning** beschrieben.
+
 ## Calibration / Maintenance / Safety V1
 
 Diese Schicht schafft die Sicherheits- und Betriebsgrundlage fuer reaktornahe Steuerung.
@@ -826,9 +858,13 @@ Vision-Stub pruefen:
 curl http://localhost:8000/api/v1/photos/1/analysis-status
 ```
 
-## ABrain Integration V1
+## ABrain Integration V1 (Uebergangsschicht)
 
-LabOS stellt jetzt einen ersten datenbasierten Assistenz-Layer bereit, der echte Systemdaten zusammenfasst und fuer feste Laborfragen nutzbar macht.
+> Dieser Layer ist bewusst als **Bridge / Dev-Fallback** eingestuft.
+> Ziel-Endpunkt fuer LabOS ist nicht ein interner Assistent, sondern ein sauber andockbarer MCP-Server / Tool-Adapter, ueber den das externe ABrain Planung und Governance uebernimmt (siehe [Zielarchitektur](#zielarchitektur)).
+> ABrain Integration V1 bleibt erhalten, damit LabOS auch offline und waehrend der Migration auf MCP fachlich nutzbare Antworten zurueckgeben kann.
+
+LabOS stellt einen datenbasierten Assistenz-Layer bereit, der echte Systemdaten zusammenfasst und fuer feste Laborfragen nutzbar macht.
 
 Kontextquellen:
 
