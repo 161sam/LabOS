@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .db import run_migrations
 from .services import mqtt_bridge as mqtt_bridge_service
-from .routers import abrain, alerts, assets, auth, charges, dashboard, inventory, labels, photos, reactor_control, reactor_ops, reactors, rules, sensors, tasks, users, wiki
+from .routers import abrain, alerts, assets, auth, calibration, charges, dashboard, inventory, labels, maintenance, photos, reactor_control, reactor_ops, reactors, rules, safety, sensors, tasks, users, wiki
 from .seed import seed_data
 
 
@@ -55,6 +55,9 @@ app.include_router(photos.router, prefix=api_prefix)
 app.include_router(rules.router, prefix=api_prefix)
 app.include_router(tasks.router, prefix=api_prefix)
 app.include_router(alerts.router, prefix=api_prefix)
+app.include_router(calibration.router, prefix=api_prefix)
+app.include_router(maintenance.router, prefix=api_prefix)
+app.include_router(safety.router, prefix=api_prefix)
 app.include_router(users.router, prefix=api_prefix)
 app.include_router(wiki.router, prefix=api_prefix)
 app.include_router(abrain.router, prefix=api_prefix)

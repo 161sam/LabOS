@@ -54,8 +54,52 @@ LabOS ist nicht nur eine einzelne Labor-App, sondern das zentrale Betriebssystem
 - ReactorOps / Digital Twin V1
 - Reactor Control / Telemetry V1
 - MQTT / ESP32 / Pi Architektur V1
+- **Calibration / Maintenance / Safety V1**
 - Dashboard-Basis
 - Wiki-Basis
+
+---
+
+# Aktueller Status: Calibration / Maintenance / Safety V1
+
+Dieser Schritt gibt LabOS erstmals eine saubere betriebliche Sicherheits- und Vertrauensebene fuer Reaktoren, Sensoren und Nodes.
+
+## Enthalten
+
+- `CalibrationRecord` fuer pH, Temp, EC, Flow und andere Parameter auf Reaktoren, Nodes und Assets
+- `MaintenanceRecord` fuer Reinigung, Inspektion, Austausch und Service
+- `SafetyIncident` mit Typen, Schweregraden, Statuswechsel und optionalem Reaktor-/Node-Bezug
+- Command-Guard-Logik: Commands werden geblockt, wenn kritische Incidents offen sind, Nodes offline sind oder Kalibrierungen abgelaufen sind
+- `blocked_reason` als erklaerbares Protokollfeld am ReactorCommand
+- Dashboard-KPIs: offene Incidents, faellige Kalibrierungen, ueberfaellige Wartung
+- Safety-Seite `/safety` mit Incident-, Kalibrierungs- und Wartungsansicht
+- Seed-Daten fuer nachvollziehbare Demo-Szenarien
+- 25 Backend-Tests fuer alle neuen Endpunkte und Guard-Logik
+
+## Verhaeltnis zu ReactorOps / Reactor Control
+
+- ReactorOps (Digital Twin, Setpoints, Events) bleibt unveraendert
+- Commands nutzen jetzt die Guard-Schicht vor dem MQTT-Publish
+- Incidents koennen sich auf Reaktor-ID oder DeviceNode-ID beziehen
+- Kalibrierung und Wartung sind Ziel-ID-basiert, nicht im Digital Twin modelliert
+
+## Bewusst noch nicht enthalten
+
+- echte Hardware-Abschaltung / GPIO-Safe-State
+- ACK / Retry fuer Commands
+- PID / Control Loops
+- automatische Kalibrierworkflows
+- MQTT-Haertung / TLS
+- vollautomatische Safety-Steuerung
+- Compliance-/Audit-Framework
+
+## Grundlage fuer
+
+- Command ACK / Retry mit Guard-Pre-Check
+- Scheduler mit Guard-Bedingungen
+- Vision Node
+- echte Hardware-Kommandos mit Safety-Gate
+- geschlossene Regelkreise mit Interlock-Bedingungen
 
 ---
 
@@ -118,9 +162,9 @@ Das bedeutet:
 
 ## Priorität B – ReactorOps Ausbau
 
-5. ReactorOps / Digital Twin V1
-6. Reactor Control / Telemetry V1
-7. Calibration / Maintenance / Safety V1
+5. ReactorOps / Digital Twin V1 ✓
+6. Reactor Control / Telemetry V1 ✓
+7. Calibration / Maintenance / Safety V1 ✓
 
 ---
 

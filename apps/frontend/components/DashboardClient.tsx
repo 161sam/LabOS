@@ -89,6 +89,12 @@ export function DashboardClient() {
       </div>
 
       <div className="grid cols-3">
+        <Card title="Safety Incidents (offen)"><div className="kpi" style={{ color: data.open_safety_incidents > 0 ? '#e53e3e' : undefined }}>{data.open_safety_incidents}</div></Card>
+        <Card title="Kalibrierung fällig/abgelaufen"><div className="kpi" style={{ color: data.calibration_due_or_expired > 0 ? '#dd6b20' : undefined }}>{data.calibration_due_or_expired}</div></Card>
+        <Card title="Wartung überfällig"><div className="kpi" style={{ color: data.maintenance_overdue > 0 ? '#dd6b20' : undefined }}>{data.maintenance_overdue}</div></Card>
+      </div>
+
+      <div className="grid cols-3">
         <Card title="Aktive Assets"><div className="kpi">{data.active_assets}</div></Card>
         <Card title="Assets in Wartung"><div className="kpi">{data.assets_in_maintenance}</div></Card>
         <Card title="Assets im Fehler"><div className="kpi">{data.assets_in_error}</div></Card>

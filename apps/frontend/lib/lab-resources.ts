@@ -123,6 +123,70 @@ export const reactorCommandStatusOptions = [
   { value: 'pending', label: 'Pending' },
   { value: 'sent', label: 'Sent' },
   { value: 'failed', label: 'Failed' },
+  { value: 'blocked', label: 'Blockiert' },
+] as const;
+
+export const calibrationTargetTypeOptions = [
+  { value: 'reactor', label: 'Reaktor' },
+  { value: 'device_node', label: 'Device Node' },
+  { value: 'asset', label: 'Asset' },
+] as const;
+
+export const calibrationStatusOptions = [
+  { value: 'valid', label: 'Gueltig' },
+  { value: 'due', label: 'Faellig' },
+  { value: 'expired', label: 'Abgelaufen' },
+  { value: 'failed', label: 'Fehlgeschlagen' },
+  { value: 'unknown', label: 'Unbekannt' },
+] as const;
+
+export const maintenanceTargetTypeOptions = [
+  { value: 'reactor', label: 'Reaktor' },
+  { value: 'device_node', label: 'Device Node' },
+  { value: 'asset', label: 'Asset' },
+] as const;
+
+export const maintenanceTypeOptions = [
+  { value: 'cleaning', label: 'Reinigung' },
+  { value: 'inspection', label: 'Inspektion' },
+  { value: 'replacement', label: 'Austausch' },
+  { value: 'tubing_flush', label: 'Schlauchspuelung' },
+  { value: 'filter_change', label: 'Filterwechsel' },
+  { value: 'pump_service', label: 'Pumpenservice' },
+  { value: 'general_service', label: 'Allgemeiner Service' },
+] as const;
+
+export const maintenanceStatusOptions = [
+  { value: 'scheduled', label: 'Geplant' },
+  { value: 'done', label: 'Erledigt' },
+  { value: 'overdue', label: 'Ueberfaellig' },
+  { value: 'skipped', label: 'Uebersprungen' },
+] as const;
+
+export const incidentTypeOptions = [
+  { value: 'sensor_untrusted', label: 'Sensor nicht vertrauenswuerdig' },
+  { value: 'calibration_expired', label: 'Kalibrierung abgelaufen' },
+  { value: 'node_offline', label: 'Node offline' },
+  { value: 'overheating_risk', label: 'Ueberhitzungsrisiko' },
+  { value: 'dry_run_risk', label: 'Trockenlaufrisiko' },
+  { value: 'clogging_suspected', label: 'Verstopfungsverdacht' },
+  { value: 'flow_mismatch', label: 'Flow-Abweichung' },
+  { value: 'invalid_telemetry', label: 'Ungueltige Telemetrie' },
+  { value: 'unsafe_command_blocked', label: 'Unsicherer Befehl blockiert' },
+  { value: 'general', label: 'Allgemein' },
+] as const;
+
+export const incidentSeverityOptions = [
+  { value: 'info', label: 'Info' },
+  { value: 'warning', label: 'Warnung' },
+  { value: 'high', label: 'Hoch' },
+  { value: 'critical', label: 'Kritisch' },
+] as const;
+
+export const incidentStatusOptions = [
+  { value: 'open', label: 'Offen' },
+  { value: 'acknowledged', label: 'Quittiert' },
+  { value: 'resolved', label: 'Geloest' },
 ] as const;
 
 export const assetTypeOptions = [
@@ -298,6 +362,14 @@ export type ReactorControlParameter = (typeof reactorControlParameterOptions)[nu
 export type ReactorSetpointMode = (typeof reactorSetpointModeOptions)[number]['value'];
 export type ReactorCommandType = (typeof reactorCommandTypeOptions)[number]['value'];
 export type ReactorCommandStatus = (typeof reactorCommandStatusOptions)[number]['value'];
+export type CalibrationTargetType = (typeof calibrationTargetTypeOptions)[number]['value'];
+export type CalibrationStatus = (typeof calibrationStatusOptions)[number]['value'];
+export type MaintenanceTargetType = (typeof maintenanceTargetTypeOptions)[number]['value'];
+export type MaintenanceType = (typeof maintenanceTypeOptions)[number]['value'];
+export type MaintenanceStatus = (typeof maintenanceStatusOptions)[number]['value'];
+export type IncidentType = (typeof incidentTypeOptions)[number]['value'];
+export type IncidentSeverity = (typeof incidentSeverityOptions)[number]['value'];
+export type IncidentStatus = (typeof incidentStatusOptions)[number]['value'];
 export type AssetType = (typeof assetTypeOptions)[number]['value'];
 export type AssetStatus = (typeof assetStatusOptions)[number]['value'];
 export type InventoryCategory = (typeof inventoryCategoryOptions)[number]['value'];
@@ -399,7 +471,88 @@ export type ReactorCommand = {
   reactor_name: string | null;
   command_type: ReactorCommandType;
   status: ReactorCommandStatus;
+  blocked_reason: string | null;
   created_at: string;
+};
+
+export type CalibrationRecord = {
+  id: number;
+  target_type: CalibrationTargetType;
+  target_id: number;
+  target_name: string | null;
+  parameter: string;
+  status: CalibrationStatus;
+  calibrated_at: string | null;
+  due_at: string | null;
+  calibration_value: number | null;
+  reference_value: number | null;
+  performed_by_user_id: number | null;
+  performed_by_username: string | null;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CalibrationOverview = {
+  total: number;
+  valid: number;
+  due: number;
+  expired: number;
+  failed: number;
+  unknown: number;
+  due_or_expired: number;
+};
+
+export type MaintenanceRecord = {
+  id: number;
+  target_type: MaintenanceTargetType;
+  target_id: number;
+  target_name: string | null;
+  maintenance_type: MaintenanceType;
+  status: MaintenanceStatus;
+  performed_at: string | null;
+  due_at: string | null;
+  performed_by_user_id: number | null;
+  performed_by_username: string | null;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type MaintenanceOverview = {
+  total: number;
+  scheduled: number;
+  done: number;
+  overdue: number;
+  skipped: number;
+};
+
+export type SafetyIncident = {
+  id: number;
+  reactor_id: number | null;
+  reactor_name: string | null;
+  device_node_id: number | null;
+  device_node_name: string | null;
+  asset_id: number | null;
+  incident_type: IncidentType;
+  severity: IncidentSeverity;
+  status: IncidentStatus;
+  title: string;
+  description: string | null;
+  created_at: string;
+  resolved_at: string | null;
+  created_by_user_id: number | null;
+  created_by_username: string | null;
+};
+
+export type SafetyOverview = {
+  open_incidents: number;
+  acknowledged_incidents: number;
+  critical_incidents: number;
+  high_incidents: number;
+  blocked_commands: number;
+  calibration_expired: number;
+  maintenance_overdue: number;
 };
 
 export type MQTTBridgeStatus = {
@@ -841,6 +994,9 @@ export type DashboardSummary = {
   photo_count: number;
   uploads_last_7_days: number;
   active_rules: number;
+  open_safety_incidents: number;
+  calibration_due_or_expired: number;
+  maintenance_overdue: number;
   sensor_overview: Sensor[];
   reactor_telemetry_overview: ReactorTelemetryOverview[];
   recent_alerts: Alert[];
@@ -850,5 +1006,6 @@ export type DashboardSummary = {
   upcoming_maintenance_assets: Asset[];
   critical_inventory_items: InventoryItem[];
   recent_labels: Label[];
+  recent_safety_incidents: SafetyIncident[];
   message: string;
 };

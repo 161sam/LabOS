@@ -25,6 +25,7 @@ const navItems: Array<{
   { label: 'Fotos', href: '/photos' },
   { label: 'Aufgaben', href: '/tasks' },
   { label: 'Alerts', href: '/alerts' },
+  { label: 'Safety', href: '/safety' },
   { label: 'Automation', href: '/rules' },
   { label: 'Wiki', href: '/wiki' },
   { label: 'ABrain', href: '/abrain' },

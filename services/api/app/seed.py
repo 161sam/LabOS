@@ -7,16 +7,19 @@ from .db import engine
 from .models import (
     Asset,
     Alert,
+    CalibrationRecord,
     Charge,
     DeviceNode,
     InventoryItem,
     Label,
+    MaintenanceRecord,
     Reactor,
     ReactorCommand,
     ReactorEvent,
     ReactorSetpoint,
     ReactorTwin,
     Rule,
+    SafetyIncident,
     Sensor,
     SensorValue,
     Task,
@@ -935,6 +938,158 @@ def seed_data() -> bool:
                     },
                 )
             )
+            seeded_any = True
+
+        if session.exec(select(CalibrationRecord)).first() is None:
+            reactor = session.exec(select(Reactor).where(Reactor.name == 'Reaktor-A1')).first()
+            reactor_c = session.exec(select(Reactor).where(Reactor.name == 'Reaktor-C1')).first()
+            node = session.exec(select(DeviceNode)).first()
+            if reactor is not None:
+                session.add(CalibrationRecord(
+                    target_type='reactor',
+                    target_id=reactor.id,
+                    parameter='ph',
+                    status='expired',
+                    calibrated_at=now - timedelta(days=90),
+                    due_at=now - timedelta(days=30),
+                    calibration_value=7.01,
+                    reference_value=7.00,
+                    note='pH-Sonde A1 abgelaufen – Nachkalibrierung erforderlich.',
+                    created_at=now - timedelta(days=90),
+                    updated_at=now - timedelta(days=30),
+                ))
+                session.add(CalibrationRecord(
+                    target_type='reactor',
+                    target_id=reactor.id,
+                    parameter='temp',
+                    status='valid',
+                    calibrated_at=now - timedelta(days=14),
+                    due_at=now + timedelta(days=76),
+                    calibration_value=23.1,
+                    reference_value=23.0,
+                    note='Temperaturmessung A1 kalibriert.',
+                    created_at=now - timedelta(days=14),
+                    updated_at=now - timedelta(days=14),
+                ))
+            if reactor_c is not None:
+                session.add(CalibrationRecord(
+                    target_type='reactor',
+                    target_id=reactor_c.id,
+                    parameter='ec',
+                    status='due',
+                    calibrated_at=now - timedelta(days=60),
+                    due_at=now - timedelta(days=1),
+                    note='EC-Sonde C1 faellig.',
+                    created_at=now - timedelta(days=60),
+                    updated_at=now - timedelta(days=1),
+                ))
+            if node is not None:
+                session.add(CalibrationRecord(
+                    target_type='device_node',
+                    target_id=node.id,
+                    parameter='flow',
+                    status='valid',
+                    calibrated_at=now - timedelta(days=7),
+                    due_at=now + timedelta(days=83),
+                    note='Flow-Sensor Node kalibriert.',
+                    created_at=now - timedelta(days=7),
+                    updated_at=now - timedelta(days=7),
+                ))
+            seeded_any = True
+
+        if session.exec(select(MaintenanceRecord)).first() is None:
+            reactor = session.exec(select(Reactor).where(Reactor.name == 'Reaktor-A1')).first()
+            reactor_b = session.exec(select(Reactor).where(Reactor.name == 'Reaktor-B1')).first()
+            node = session.exec(select(DeviceNode)).first()
+            if reactor is not None:
+                session.add(MaintenanceRecord(
+                    target_type='reactor',
+                    target_id=reactor.id,
+                    maintenance_type='cleaning',
+                    status='overdue',
+                    due_at=now - timedelta(days=5),
+                    note='Wöchentliche Reinigung Reaktor A1 ueberfaellig.',
+                    created_at=now - timedelta(days=12),
+                    updated_at=now - timedelta(days=5),
+                ))
+                session.add(MaintenanceRecord(
+                    target_type='reactor',
+                    target_id=reactor.id,
+                    maintenance_type='tubing_flush',
+                    status='scheduled',
+                    due_at=now + timedelta(days=3),
+                    note='Schlauchspuelung planmaessig.',
+                    created_at=now - timedelta(days=2),
+                    updated_at=now - timedelta(days=2),
+                ))
+            if reactor_b is not None:
+                session.add(MaintenanceRecord(
+                    target_type='reactor',
+                    target_id=reactor_b.id,
+                    maintenance_type='pump_service',
+                    status='done',
+                    performed_at=now - timedelta(days=3),
+                    note='Pumpenservice Reaktor B1 abgeschlossen.',
+                    created_at=now - timedelta(days=10),
+                    updated_at=now - timedelta(days=3),
+                ))
+            if node is not None:
+                session.add(MaintenanceRecord(
+                    target_type='device_node',
+                    target_id=node.id,
+                    maintenance_type='inspection',
+                    status='scheduled',
+                    due_at=now + timedelta(days=7),
+                    note='Node-Inspektion geplant.',
+                    created_at=now - timedelta(days=1),
+                    updated_at=now - timedelta(days=1),
+                ))
+            seeded_any = True
+
+        if session.exec(select(SafetyIncident)).first() is None:
+            reactor = session.exec(select(Reactor).where(Reactor.name == 'Reaktor-A1')).first()
+            reactor_c = session.exec(select(Reactor).where(Reactor.name == 'Reaktor-C1')).first()
+            node = session.exec(select(DeviceNode)).first()
+            if reactor is not None:
+                session.add(SafetyIncident(
+                    reactor_id=reactor.id,
+                    incident_type='calibration_expired',
+                    severity='high',
+                    status='open',
+                    title='pH-Kalibrierung Reaktor A1 abgelaufen',
+                    description='Die pH-Sonde wurde seit 90 Tagen nicht kalibriert. Steuerungsbefehle mit pH-Bezug koennen blockiert werden.',
+                    created_at=now - timedelta(days=2),
+                ))
+                session.add(SafetyIncident(
+                    reactor_id=reactor.id,
+                    incident_type='clogging_suspected',
+                    severity='warning',
+                    status='acknowledged',
+                    title='Verstopfungsverdacht Zulaufschlauch A1',
+                    description='Anomaler Druckabfall im Zuluftschlauch erkannt. Bitte ueberpruefen.',
+                    created_at=now - timedelta(days=5),
+                ))
+            if reactor_c is not None:
+                session.add(SafetyIncident(
+                    reactor_id=reactor_c.id,
+                    incident_type='node_offline',
+                    severity='warning',
+                    status='open',
+                    title='Sensor-Node Reaktor C1 offline',
+                    description='Der zugeordnete Sensor-Node meldet sich seit > 15 Minuten nicht mehr.',
+                    created_at=now - timedelta(hours=2),
+                ))
+            if node is not None:
+                session.add(SafetyIncident(
+                    device_node_id=node.id,
+                    incident_type='invalid_telemetry',
+                    severity='info',
+                    status='resolved',
+                    title='Ungueltige Telemetriewerte empfangen',
+                    description='Kurzzeitig ungueltige Messwerte vom Node empfangen. Selbst behoben.',
+                    created_at=now - timedelta(days=7),
+                    resolved_at=now - timedelta(days=6),
+                ))
             seeded_any = True
 
         if seeded_any:

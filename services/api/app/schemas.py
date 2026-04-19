@@ -130,6 +130,70 @@ class ReactorCommandStatus(str, Enum):
     pending = 'pending'
     sent = 'sent'
     failed = 'failed'
+    blocked = 'blocked'
+
+
+class CalibrationTargetType(str, Enum):
+    reactor = 'reactor'
+    device_node = 'device_node'
+    asset = 'asset'
+
+
+class CalibrationStatus(str, Enum):
+    valid = 'valid'
+    due = 'due'
+    expired = 'expired'
+    failed = 'failed'
+    unknown = 'unknown'
+
+
+class MaintenanceTargetType(str, Enum):
+    reactor = 'reactor'
+    device_node = 'device_node'
+    asset = 'asset'
+
+
+class MaintenanceType(str, Enum):
+    cleaning = 'cleaning'
+    inspection = 'inspection'
+    replacement = 'replacement'
+    tubing_flush = 'tubing_flush'
+    filter_change = 'filter_change'
+    pump_service = 'pump_service'
+    general_service = 'general_service'
+
+
+class MaintenanceStatus(str, Enum):
+    scheduled = 'scheduled'
+    done = 'done'
+    overdue = 'overdue'
+    skipped = 'skipped'
+
+
+class IncidentType(str, Enum):
+    sensor_untrusted = 'sensor_untrusted'
+    calibration_expired = 'calibration_expired'
+    node_offline = 'node_offline'
+    overheating_risk = 'overheating_risk'
+    dry_run_risk = 'dry_run_risk'
+    clogging_suspected = 'clogging_suspected'
+    flow_mismatch = 'flow_mismatch'
+    invalid_telemetry = 'invalid_telemetry'
+    unsafe_command_blocked = 'unsafe_command_blocked'
+    general = 'general'
+
+
+class IncidentSeverity(str, Enum):
+    info = 'info'
+    warning = 'warning'
+    high = 'high'
+    critical = 'critical'
+
+
+class IncidentStatus(str, Enum):
+    open = 'open'
+    acknowledged = 'acknowledged'
+    resolved = 'resolved'
 
 
 class AssetType(str, Enum):
@@ -597,6 +661,7 @@ class ReactorCommandRead(AppSchema):
     reactor_name: str | None = None
     command_type: ReactorCommandType
     status: ReactorCommandStatus
+    blocked_reason: str | None = None
     created_at: datetime
 
 
@@ -1421,6 +1486,181 @@ class EvaluateAllRulesResponse(AppSchema):
     executions: list[RuleExecutionRead]
 
 
+class CalibrationRecordCreate(AppSchema):
+    target_type: CalibrationTargetType
+    target_id: int = Field(ge=1)
+    parameter: str = Field(min_length=1, max_length=80)
+    status: CalibrationStatus = CalibrationStatus.unknown
+    calibrated_at: datetime | None = None
+    due_at: datetime | None = None
+    calibration_value: float | None = None
+    reference_value: float | None = None
+    note: str | None = Field(default=None, max_length=2000)
+
+    @field_validator('parameter')
+    @classmethod
+    def normalize_parameter(cls, value: str) -> str:
+        return _normalize_required_text(value)
+
+    @field_validator('note')
+    @classmethod
+    def normalize_note(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class CalibrationRecordUpdate(AppSchema):
+    status: CalibrationStatus | None = None
+    calibrated_at: datetime | None = None
+    due_at: datetime | None = None
+    calibration_value: float | None = None
+    reference_value: float | None = None
+    note: str | None = Field(default=None, max_length=2000)
+
+    @field_validator('note')
+    @classmethod
+    def normalize_note(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class CalibrationRecordRead(AppSchema):
+    id: int
+    target_type: CalibrationTargetType
+    target_id: int
+    target_name: str | None = None
+    parameter: str
+    status: CalibrationStatus
+    calibrated_at: datetime | None
+    due_at: datetime | None
+    calibration_value: float | None
+    reference_value: float | None
+    performed_by_user_id: int | None
+    performed_by_username: str | None = None
+    note: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class CalibrationOverviewRead(AppSchema):
+    total: int
+    valid: int
+    due: int
+    expired: int
+    failed: int
+    unknown: int
+    due_or_expired: int
+
+
+class MaintenanceRecordCreate(AppSchema):
+    target_type: MaintenanceTargetType
+    target_id: int = Field(ge=1)
+    maintenance_type: MaintenanceType
+    status: MaintenanceStatus = MaintenanceStatus.scheduled
+    performed_at: datetime | None = None
+    due_at: datetime | None = None
+    note: str | None = Field(default=None, max_length=2000)
+
+    @field_validator('note')
+    @classmethod
+    def normalize_note(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class MaintenanceRecordUpdate(AppSchema):
+    maintenance_type: MaintenanceType | None = None
+    status: MaintenanceStatus | None = None
+    performed_at: datetime | None = None
+    due_at: datetime | None = None
+    note: str | None = Field(default=None, max_length=2000)
+
+    @field_validator('note')
+    @classmethod
+    def normalize_note(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class MaintenanceRecordRead(AppSchema):
+    id: int
+    target_type: MaintenanceTargetType
+    target_id: int
+    target_name: str | None = None
+    maintenance_type: MaintenanceType
+    status: MaintenanceStatus
+    performed_at: datetime | None
+    due_at: datetime | None
+    performed_by_user_id: int | None
+    performed_by_username: str | None = None
+    note: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class MaintenanceOverviewRead(AppSchema):
+    total: int
+    scheduled: int
+    done: int
+    overdue: int
+    skipped: int
+
+
+class SafetyIncidentCreate(AppSchema):
+    reactor_id: int | None = Field(default=None, ge=1)
+    device_node_id: int | None = Field(default=None, ge=1)
+    asset_id: int | None = Field(default=None, ge=1)
+    incident_type: IncidentType
+    severity: IncidentSeverity = IncidentSeverity.warning
+    title: str = Field(min_length=1, max_length=200)
+    description: str | None = Field(default=None, max_length=4000)
+
+    @field_validator('title')
+    @classmethod
+    def normalize_title(cls, value: str) -> str:
+        return _normalize_required_text(value)
+
+    @field_validator('description')
+    @classmethod
+    def normalize_description(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class SafetyIncidentUpdate(AppSchema):
+    status: IncidentStatus | None = None
+    severity: IncidentSeverity | None = None
+    description: str | None = Field(default=None, max_length=4000)
+
+    @field_validator('description')
+    @classmethod
+    def normalize_description(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class SafetyIncidentRead(AppSchema):
+    id: int
+    reactor_id: int | None
+    reactor_name: str | None = None
+    device_node_id: int | None
+    device_node_name: str | None = None
+    asset_id: int | None
+    incident_type: IncidentType
+    severity: IncidentSeverity
+    status: IncidentStatus
+    title: str
+    description: str | None
+    created_at: datetime
+    resolved_at: datetime | None
+    created_by_user_id: int | None
+    created_by_username: str | None = None
+
+
+class SafetyOverviewRead(AppSchema):
+    open_incidents: int
+    acknowledged_incidents: int
+    critical_incidents: int
+    high_incidents: int
+    blocked_commands: int
+    calibration_expired: int
+    maintenance_overdue: int
+
+
 class DashboardSummaryRead(AppSchema):
     active_charges: int
     reactors_online: int
@@ -1445,6 +1685,9 @@ class DashboardSummaryRead(AppSchema):
     photo_count: int
     uploads_last_7_days: int
     active_rules: int
+    open_safety_incidents: int
+    calibration_due_or_expired: int
+    maintenance_overdue: int
     sensor_overview: list[SensorOverviewRead]
     reactor_telemetry_overview: list[ReactorTelemetryOverviewRead]
     recent_alerts: list[AlertRead]
@@ -1454,6 +1697,7 @@ class DashboardSummaryRead(AppSchema):
     upcoming_maintenance_assets: list[AssetRead]
     critical_inventory_items: list[InventoryRead]
     recent_labels: list[LabelRead]
+    recent_safety_incidents: list[SafetyIncidentRead]
     message: str
 
 

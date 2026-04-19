@@ -153,7 +153,76 @@ class ReactorCommand(SQLModel, table=True):
     reactor_id: int = Field(foreign_key='reactor.id', index=True)
     command_type: str
     status: str = 'pending'
+    blocked_reason: Optional[str] = None
     created_at: datetime = Field(default_factory=_utcnow)
+
+
+class CalibrationRecord(SQLModel, table=True):
+    __table_args__ = (
+        Index('ix_calibrationrecord_target_type_target_id', 'target_type', 'target_id'),
+        Index('ix_calibrationrecord_status', 'status'),
+        Index('ix_calibrationrecord_due_at', 'due_at'),
+        Index('ix_calibrationrecord_created_at', 'created_at'),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    target_type: str
+    target_id: int
+    parameter: str
+    status: str = 'unknown'
+    calibrated_at: Optional[datetime] = None
+    due_at: Optional[datetime] = None
+    calibration_value: Optional[float] = None
+    reference_value: Optional[float] = None
+    performed_by_user_id: Optional[int] = Field(default=None, foreign_key='useraccount.id')
+    note: Optional[str] = None
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
+
+
+class MaintenanceRecord(SQLModel, table=True):
+    __table_args__ = (
+        Index('ix_maintenancerecord_target_type_target_id', 'target_type', 'target_id'),
+        Index('ix_maintenancerecord_status', 'status'),
+        Index('ix_maintenancerecord_due_at', 'due_at'),
+        Index('ix_maintenancerecord_created_at', 'created_at'),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    target_type: str
+    target_id: int
+    maintenance_type: str
+    status: str = 'scheduled'
+    performed_at: Optional[datetime] = None
+    due_at: Optional[datetime] = None
+    performed_by_user_id: Optional[int] = Field(default=None, foreign_key='useraccount.id')
+    note: Optional[str] = None
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
+
+
+class SafetyIncident(SQLModel, table=True):
+    __table_args__ = (
+        Index('ix_safetyincident_reactor_id', 'reactor_id'),
+        Index('ix_safetyincident_device_node_id', 'device_node_id'),
+        Index('ix_safetyincident_status', 'status'),
+        Index('ix_safetyincident_severity', 'severity'),
+        Index('ix_safetyincident_incident_type', 'incident_type'),
+        Index('ix_safetyincident_created_at', 'created_at'),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    reactor_id: Optional[int] = Field(default=None, foreign_key='reactor.id')
+    device_node_id: Optional[int] = Field(default=None, foreign_key='devicenode.id')
+    asset_id: Optional[int] = None
+    incident_type: str
+    severity: str = 'warning'
+    status: str = 'open'
+    title: str
+    description: Optional[str] = None
+    created_at: datetime = Field(default_factory=_utcnow)
+    resolved_at: Optional[datetime] = None
+    created_by_user_id: Optional[int] = Field(default=None, foreign_key='useraccount.id')
 
 
 class Sensor(SQLModel, table=True):

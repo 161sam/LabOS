@@ -9,12 +9,15 @@ from ..models import Alert, Asset, Charge, Photo, Reactor, Sensor, Task
 from ..schemas import DashboardSummaryRead
 from ..services import assets as asset_service
 from ..services import alerts as alert_service
+from ..services import calibration as calibration_service
 from ..services import inventory as inventory_service
 from ..services import labels as label_service
+from ..services import maintenance as maintenance_service
 from ..services import photos as photo_service
 from ..services import reactor_control as reactor_control_service
 from ..services import reactor_ops as reactor_ops_service
 from ..services import rules as rule_service
+from ..services import safety as safety_service
 from ..services import sensors as sensor_service
 
 router = APIRouter(
@@ -87,6 +90,9 @@ def dashboard_summary(session: Session = Depends(get_session)):
         'photo_count': photo_count,
         'uploads_last_7_days': photo_service.count_recent_uploads(session, days=7),
         'active_rules': rule_service.count_active_rules(session),
+        'open_safety_incidents': safety_service.count_open_incidents(session),
+        'calibration_due_or_expired': calibration_service.count_due_or_expired(session),
+        'maintenance_overdue': maintenance_service.count_overdue(session),
         'sensor_overview': sensor_service.list_sensor_overview(session, limit=4),
         'reactor_telemetry_overview': reactor_control_service.list_reactor_telemetry_overview(session),
         'recent_alerts': alert_service.list_alerts(session, limit=4),
@@ -96,5 +102,6 @@ def dashboard_summary(session: Session = Depends(get_session)):
         'upcoming_maintenance_assets': asset_overview.upcoming_maintenance_assets,
         'critical_inventory_items': inventory_overview.critical_items,
         'recent_labels': label_overview.recent_labels,
+        'recent_safety_incidents': safety_service.list_safety_incidents(session, limit=4),
         'message': 'LabOS API erreichbar'
     }

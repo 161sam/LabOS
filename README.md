@@ -19,8 +19,64 @@ LabOS ist ein Raspberry-Pi-taugliches Operating System fuer EcoSphereLab. Es ver
 - Foto Upload + Vision Basis V1
 - ABrain Integration V1 mit echtem LabOS-Kontext
 - Regelengine / Automation V1
+- **Calibration / Maintenance / Safety V1** mit Kalibrierstatus, Wartungserfassung, Incident-Tracking und Command-Guards
 - integriertes Wiki auf Markdown-Basis
 - Docker-Compose-Setup für lokale Entwicklung
+
+## Calibration / Maintenance / Safety V1
+
+Diese Schicht schafft die Sicherheits- und Betriebsgrundlage fuer reaktornahe Steuerung.
+
+### Was enthalten ist
+
+**Kalibrierung (`CalibrationRecord`)**
+- Kalibrierzustaende: `valid`, `due`, `expired`, `failed`, `unknown`
+- Zieltypen: `reactor`, `device_node`, `asset`
+- Parameter-basiert (pH, Temp, EC, Flow usw.)
+- API: `GET/POST /api/v1/calibration`, `PATCH /api/v1/calibration/{id}`, `GET /api/v1/calibration/overview`
+
+**Wartung (`MaintenanceRecord`)**
+- Wartungstypen: `cleaning`, `inspection`, `replacement`, `tubing_flush`, `filter_change`, `pump_service`, `general_service`
+- Status: `scheduled`, `done`, `overdue`, `skipped`
+- API: `GET/POST /api/v1/maintenance`, `PATCH /api/v1/maintenance/{id}`, `GET /api/v1/maintenance/overview`
+
+**Safety Incidents (`SafetyIncident`)**
+- Incident-Typen: `calibration_expired`, `node_offline`, `dry_run_risk`, `clogging_suspected`, u.a.
+- Schweregrade: `info`, `warning`, `high`, `critical`
+- Status: `open`, `acknowledged`, `resolved`
+- API: `GET/POST /api/v1/safety/incidents`, `PATCH /api/v1/safety/incidents/{id}`, `GET /api/v1/safety/overview`
+
+**Command-Guard-Logik**
+- Reactor-Commands werden serverseitig geprueft, bevor sie an MQTT weitergegeben werden
+- Blockiergruende: kritischer offener Incident, offline/error Node fuer sicherheitssensitive Commands, `dry_run_risk`-Incident fuer Pumpe/Aeration, abgelaufene Kalibrierung fuer Sample-Capture
+- Geblockte Commands erhalten `status=blocked` + `blocked_reason`
+- Kein echtes Hardware-Interlock in diesem Schritt – nur Protokollierung und UI-Sichtbarkeit
+
+**Dashboard-Integration**
+- KPIs: offene Incidents, faellige/abgelaufene Kalibrierungen, ueberfaellige Wartung
+
+**Frontend**
+- Neue Seite `/safety` mit Tabs: Incidents, Kalibrierung, Wartung
+- Dashboard zeigt Safety-KPIs mit Farbwarnungen
+- Navigation-Link "Safety" in AppShell
+
+### Was bewusst noch nicht enthalten ist
+
+- echte Hardware-Abschaltung / GPIO-Safe-State
+- ACK/Retry fuer Commands
+- PID-Regelung / Scheduler
+- automatische Kalibrierablaeuf
+- MQTT-Haertung / TLS
+- Compliance-/Audit-Framework
+- vollautomatische Safety-Steuerung
+
+### Grundlage fuer
+
+- Command ACK / Retry
+- Scheduler mit Guard-Bedingungen
+- Vision Node
+- echte Hardware-Kommandos mit Safety-Gate
+- geschlossene Regelkreise
 
 ## Struktur
 

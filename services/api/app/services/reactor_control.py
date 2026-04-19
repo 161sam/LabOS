@@ -211,7 +211,20 @@ def create_reactor_command(
     *,
     publisher: CommandPublisher | None = None,
 ) -> ReactorCommandRead:
+    from . import safety as safety_service
     get_reactor_or_404(session, reactor_id)
+    blocked_reason = safety_service.check_command_guards(session, reactor_id, payload.command_type.value)
+    if blocked_reason is not None:
+        command = ReactorCommand(
+            reactor_id=reactor_id,
+            command_type=payload.command_type.value,
+            status='blocked',
+            blocked_reason=blocked_reason,
+        )
+        session.add(command)
+        session.commit()
+        session.refresh(command)
+        return _serialize_commands(session, [command])[0]
     command = ReactorCommand(
         reactor_id=reactor_id,
         command_type=payload.command_type.value,
@@ -461,6 +474,7 @@ def _serialize_commands(session: Session, commands: list[ReactorCommand]) -> lis
             reactor_name=reactor_map.get(command.reactor_id),
             command_type=command.command_type,
             status=command.status,
+            blocked_reason=command.blocked_reason,
             created_at=command.created_at,
         )
         for command in commands
