@@ -1686,6 +1686,7 @@ class ABrainExecutionLogRead(AppSchema):
     source: str | None = None
     executed_by: str | None = None
     trace_id: str | None = None
+    approval_request_id: int | None = None
     result: dict[str, Any]
     created_at: datetime
 

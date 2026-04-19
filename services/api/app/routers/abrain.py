@@ -11,7 +11,9 @@ from ..schemas import (
     ABrainContextRead,
     ABrainContextSection,
     ABrainExecuteRequest,
+    ABrainExecutionLogRead,
     ABrainExecutionResult,
+    ABrainExecutionStatus,
     ABrainPresetRead,
     ABrainQueryRequest,
     ABrainQueryResponse,
@@ -87,3 +89,31 @@ def abrain_execute(
     current_user: UserRead = Depends(get_current_user),
 ):
     return abrain_execution.execute_action(session, payload, current_user)
+
+
+@router.get('/executions', response_model=list[ABrainExecutionLogRead])
+def abrain_list_executions(
+    status: ABrainExecutionStatus | None = Query(default=None),
+    action: str | None = Query(default=None),
+    trace_id: str | None = Query(default=None),
+    executed_by: str | None = Query(default=None),
+    approval_request_id: int | None = Query(default=None),
+    has_approval: bool | None = Query(default=None),
+    limit: int = Query(default=100, ge=1, le=500),
+    session: Session = Depends(get_session),
+):
+    return abrain_execution.list_execution_logs(
+        session,
+        status=status,
+        action=action,
+        trace_id=trace_id,
+        executed_by=executed_by,
+        approval_request_id=approval_request_id,
+        has_approval=has_approval,
+        limit=limit,
+    )
+
+
+@router.get('/executions/{log_id}', response_model=ABrainExecutionLogRead)
+def abrain_get_execution(log_id: int, session: Session = Depends(get_session)):
+    return abrain_execution.get_execution_log(session, log_id)

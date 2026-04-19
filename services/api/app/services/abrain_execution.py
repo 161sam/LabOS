@@ -27,10 +27,10 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-from fastapi import HTTPException
-from sqlmodel import Session
+from fastapi import HTTPException, status as http_status
+from sqlmodel import Session, select
 
-from ..models import ABrainExecutionLog
+from ..models import ABrainExecutionLog, ApprovalRequest
 from ..schemas import (
     ABrainActionDescriptor,
     ABrainExecuteRequest,
@@ -287,7 +287,11 @@ def _record(
     )
 
 
-def get_log_read(log: ABrainExecutionLog) -> ABrainExecutionLogRead:
+def get_log_read(
+    log: ABrainExecutionLog,
+    *,
+    approval_request_id: int | None = None,
+) -> ABrainExecutionLogRead:
     return ABrainExecutionLogRead(
         id=log.id,
         action=log.action,
@@ -297,13 +301,94 @@ def get_log_read(log: ABrainExecutionLog) -> ABrainExecutionLogRead:
         source=log.source,
         executed_by=log.executed_by,
         trace_id=log.trace_id,
+        approval_request_id=approval_request_id,
         result=log.result,
         created_at=log.created_at,
     )
 
 
+def list_execution_logs(
+    session: Session,
+    *,
+    status: ABrainExecutionStatus | None = None,
+    action: str | None = None,
+    trace_id: str | None = None,
+    executed_by: str | None = None,
+    approval_request_id: int | None = None,
+    has_approval: bool | None = None,
+    limit: int = 100,
+) -> list[ABrainExecutionLogRead]:
+    limit = max(1, min(int(limit), 500))
+
+    target_log_id: int | None = None
+    if approval_request_id is not None:
+        approval = session.get(ApprovalRequest, approval_request_id)
+        if approval is None or approval.executed_execution_log_id is None:
+            return []
+        target_log_id = approval.executed_execution_log_id
+
+    statement = select(ABrainExecutionLog)
+    if status is not None:
+        statement = statement.where(ABrainExecutionLog.status == status.value)
+    if action:
+        statement = statement.where(ABrainExecutionLog.action == action)
+    if trace_id:
+        statement = statement.where(ABrainExecutionLog.trace_id == trace_id)
+    if executed_by:
+        statement = statement.where(ABrainExecutionLog.executed_by == executed_by)
+    if target_log_id is not None:
+        statement = statement.where(ABrainExecutionLog.id == target_log_id)
+    statement = statement.order_by(
+        ABrainExecutionLog.created_at.desc(),
+        ABrainExecutionLog.id.desc(),
+    ).limit(limit)
+
+    logs = list(session.exec(statement).all())
+    if not logs:
+        return []
+
+    approval_map = _build_approval_map(session, [log.id for log in logs])
+
+    if has_approval is True:
+        logs = [log for log in logs if log.id in approval_map]
+    elif has_approval is False:
+        logs = [log for log in logs if log.id not in approval_map]
+
+    return [get_log_read(log, approval_request_id=approval_map.get(log.id)) for log in logs]
+
+
+def get_execution_log(session: Session, log_id: int) -> ABrainExecutionLogRead:
+    log = session.get(ABrainExecutionLog, log_id)
+    if log is None:
+        raise HTTPException(
+            status_code=http_status.HTTP_404_NOT_FOUND,
+            detail='Execution log not found',
+        )
+    approval_map = _build_approval_map(session, [log.id])
+    return get_log_read(log, approval_request_id=approval_map.get(log.id))
+
+
+def _build_approval_map(session: Session, log_ids: list[int]) -> dict[int, int]:
+    if not log_ids:
+        return {}
+    approvals = list(
+        session.exec(
+            select(ApprovalRequest).where(
+                ApprovalRequest.executed_execution_log_id.in_(log_ids)
+            )
+        ).all()
+    )
+    mapping: dict[int, int] = {}
+    for approval in approvals:
+        if approval.executed_execution_log_id is not None:
+            mapping[approval.executed_execution_log_id] = approval.id
+    return mapping
+
+
 __all__ = [
     'ACTION_MAP',
     'execute_action',
+    'get_execution_log',
     'get_log_read',
+    'list_execution_logs',
 ]

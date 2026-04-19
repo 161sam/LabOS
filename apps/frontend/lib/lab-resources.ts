@@ -1391,17 +1391,35 @@ export type TraceTimelineEvent = {
   details: Record<string, unknown>;
 };
 
+export type ABrainExecutionStatusValue =
+  | 'executed'
+  | 'pending_approval'
+  | 'blocked'
+  | 'rejected'
+  | 'failed';
+
 export type ABrainExecutionLogEntry = {
   id: number;
   action: string;
   params: Record<string, unknown>;
-  status: string;
+  status: ABrainExecutionStatusValue | string;
   blocked_reason: string | null;
   source: string | null;
   executed_by: string | null;
   trace_id: string | null;
+  approval_request_id: number | null;
   result: Record<string, unknown>;
   created_at: string;
+};
+
+export type ABrainExecutionListFilters = {
+  status?: ABrainExecutionStatusValue;
+  action?: string;
+  trace_id?: string;
+  executed_by?: string;
+  approval_request_id?: number;
+  has_approval?: boolean;
+  limit?: number;
 };
 
 export type TraceContextDetail = TraceContext & {

@@ -32,6 +32,7 @@ const navItems: Array<{
   { label: 'ABrain', href: '/abrain' },
   { label: 'Approvals', href: '/approvals' },
   { label: 'Traces', href: '/traces' },
+  { label: 'Executions', href: '/executions' },
   { label: 'Benutzer', href: '/users', roles: ['admin'] },
 ];
 
