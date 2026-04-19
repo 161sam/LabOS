@@ -501,6 +501,59 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
 
     with engine.connect() as connection:
         version = connection.execute(text('SELECT version_num FROM alembic_version')).scalar_one()
-        assert version == '20260419_0017'
+        assert version == '20260419_0019'
+
+        exec_log_table = inspector.get_columns('abrainexecutionlog')
+        exec_log_columns = {column['name'] for column in exec_log_table}
+        assert {
+            'id',
+            'action',
+            'params',
+            'status',
+            'blocked_reason',
+            'source',
+            'executed_by',
+            'trace_id',
+            'result',
+            'created_at',
+        } <= exec_log_columns
+        exec_log_indexes = {index['name'] for index in inspector.get_indexes('abrainexecutionlog')}
+        assert {
+            'ix_abrainexecutionlog_action',
+            'ix_abrainexecutionlog_status',
+            'ix_abrainexecutionlog_trace_id',
+            'ix_abrainexecutionlog_created_at',
+        } <= exec_log_indexes
+
+        approval_columns = {column['name'] for column in inspector.get_columns('approvalrequest')}
+        assert {
+            'id',
+            'action_name',
+            'action_params',
+            'requested_by_source',
+            'requested_by_user_id',
+            'requested_via',
+            'trace_id',
+            'risk_level',
+            'status',
+            'reason',
+            'decision_note',
+            'approval_required',
+            'approved_by_user_id',
+            'decided_at',
+            'executed_execution_log_id',
+            'blocked_reason',
+            'last_error',
+            'created_at',
+            'updated_at',
+        } <= approval_columns
+        approval_indexes = {index['name'] for index in inspector.get_indexes('approvalrequest')}
+        assert {
+            'ix_approvalrequest_status',
+            'ix_approvalrequest_action_name',
+            'ix_approvalrequest_trace_id',
+            'ix_approvalrequest_requested_by_source',
+            'ix_approvalrequest_created_at',
+        } <= approval_indexes
 
     engine.dispose()

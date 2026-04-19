@@ -1040,6 +1040,129 @@ export type ABrainQueryResponse = {
   note: string | null;
 };
 
+export type ABrainActionRiskLevel = 'low' | 'medium' | 'high' | 'critical';
+export type ABrainActionDomain =
+  | 'operations'
+  | 'reactor'
+  | 'safety'
+  | 'maintenance'
+  | 'vision'
+  | 'scheduler';
+
+export type ABrainActionDescriptor = {
+  name: string;
+  description: string;
+  domain: ABrainActionDomain;
+  risk_level: ABrainActionRiskLevel;
+  requires_approval: boolean;
+  allowed_roles: string[];
+  arguments: Record<string, string>;
+  guarded_by: string[];
+  notes: string | null;
+};
+
+export type ABrainActionCatalog = {
+  contract_version: string;
+  generated_at: string;
+  actions: ABrainActionDescriptor[];
+};
+
+export type ABrainAdapterTelemetrySummary = {
+  sensor_type: string;
+  latest_value: number | null;
+  unit: string | null;
+  last_at: string | null;
+  in_range: boolean | null;
+};
+
+export type ABrainAdapterReactorContext = {
+  id: number;
+  name: string;
+  status: ReactorStatus;
+  phase: ReactorPhase | null;
+  technical_state: ReactorTechnicalState | null;
+  biological_state: ReactorBiologicalState | null;
+  health_status: ReactorHealthStatus | null;
+  health_summary: string | null;
+  health_assessed_at: string | null;
+  open_task_count: number;
+  open_incident_count: number;
+  telemetry: ABrainAdapterTelemetrySummary[];
+  latest_vision_label: string | null;
+  latest_vision_confidence: number | null;
+};
+
+export type ABrainAdapterOperationsContext = {
+  overdue_tasks: ABrainTaskContextItem[];
+  critical_alerts: ABrainAlertContextItem[];
+  blocked_command_count: number;
+  failed_command_count: number;
+  due_calibration_count: number;
+  overdue_maintenance_count: number;
+  open_safety_incident_count: number;
+};
+
+export type ABrainAdapterResourceContextItem = {
+  kind: string;
+  id: number;
+  name: string;
+  detail: string | null;
+};
+
+export type ABrainAdapterResourceContext = {
+  low_stock: ABrainAdapterResourceContextItem[];
+  out_of_stock: ABrainAdapterResourceContextItem[];
+  assets_attention: ABrainAdapterResourceContextItem[];
+  offline_nodes: ABrainAdapterResourceContextItem[];
+};
+
+export type ABrainAdapterScheduleContext = {
+  active_schedule_count: number;
+  recent_failed_run_count: number;
+  schedules: ABrainAdapterResourceContextItem[];
+};
+
+export type ABrainAdapterContext = {
+  generated_at: string;
+  contract_version: string;
+  mode: string;
+  fallback_used: boolean;
+  summary: ABrainSummaryCounts;
+  reactors: ABrainAdapterReactorContext[];
+  operations: ABrainAdapterOperationsContext;
+  resources: ABrainAdapterResourceContext;
+  schedule: ABrainAdapterScheduleContext;
+  photos: ABrainPhotoContextItem[];
+};
+
+export type ABrainAdapterRecommendedAction = {
+  action: string;
+  target: string | null;
+  reason: string;
+  risk_level: ABrainActionRiskLevel;
+  requires_approval: boolean;
+  blocked: boolean;
+  blocked_reason: string | null;
+};
+
+export type ABrainAdapterResponse = {
+  question: string;
+  preset: ABrainPreset | null;
+  mode: string;
+  fallback_used: boolean;
+  contract_version: string;
+  trace_id: string | null;
+  summary: string;
+  highlights: string[];
+  recommended_actions: ABrainAdapterRecommendedAction[];
+  blocked_actions: ABrainAdapterRecommendedAction[];
+  approval_required: boolean;
+  policy_decision: string | null;
+  used_context_sections: ABrainContextSection[];
+  referenced_entities: ABrainReference[];
+  notes: string[];
+};
+
 export type Rule = {
   id: number;
   name: string;
@@ -1171,4 +1294,50 @@ export type DashboardSummary = {
   recent_labels: Label[];
   recent_safety_incidents: SafetyIncident[];
   message: string;
+};
+
+export type ApprovalRequestStatus =
+  | 'pending'
+  | 'approved'
+  | 'rejected'
+  | 'executed'
+  | 'failed'
+  | 'cancelled';
+
+export type ApprovalRequestSource = 'abrain' | 'local_dev_fallback' | 'operator';
+
+export type ApprovalRequestVia = 'adapter' | 'legacy_query' | 'future_mcp' | 'operator_ui';
+
+export type ApprovalRequest = {
+  id: number;
+  action_name: string;
+  action_params: Record<string, unknown>;
+  requested_by_source: ApprovalRequestSource;
+  requested_by_user_id: number | null;
+  requested_by_username: string | null;
+  requested_via: ApprovalRequestVia;
+  trace_id: string | null;
+  risk_level: ABrainActionRiskLevel | null;
+  status: ApprovalRequestStatus;
+  reason: string | null;
+  decision_note: string | null;
+  approval_required: boolean;
+  approved_by_user_id: number | null;
+  approved_by_username: string | null;
+  decided_at: string | null;
+  executed_execution_log_id: number | null;
+  blocked_reason: string | null;
+  last_error: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ApprovalOverview = {
+  pending: number;
+  approved: number;
+  rejected: number;
+  executed: number;
+  failed: number;
+  cancelled: number;
+  high_risk_pending: number;
 };

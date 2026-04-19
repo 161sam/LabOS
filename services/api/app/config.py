@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     abrain_base_url: str = 'http://abrain:8080'
     abrain_use_stub: bool = True
     abrain_timeout_seconds: float = 8.0
+    abrain_enabled: bool = True
+    abrain_use_local_fallback: bool = True
+    abrain_mode: str = 'auto'
+    abrain_adapter_contract_version: str = 'v1'
     storage_path: str = 'storage'
     photo_max_upload_bytes: int = 8 * 1024 * 1024
     public_web_base_url: str = 'http://localhost:3000'

@@ -1,3 +1,15 @@
+"""Safety — GUARD / CONSTRAINT layer (not a decision layer).
+
+Boundary Hardening V1: safety is the ONLY place in LabOS authorized to
+block a command. This is an invariant of the architecture, not a policy
+decision. A guard answers the narrow question "is executing this
+command right now a safety violation?"; it does NOT answer "should this
+command exist in the first place?".
+
+`blocked_reason` strings are prefixed with `safety_guard:` so the
+intent is explicit at the API boundary. Every other decision
+(planning, prioritization, orchestration) belongs to ABrain.
+"""
 from __future__ import annotations
 
 from fastapi import HTTPException, status
@@ -125,7 +137,10 @@ def check_command_guards(
     """Return a blocked_reason string if the command should be blocked, else None."""
     critical_incident = has_critical_open_incident_for_reactor(session, reactor_id)
     if critical_incident is not None:
-        return f'Blocked: critical safety incident open (#{critical_incident.id}: {critical_incident.title})'
+        return (
+            f'safety_guard: blocked — critical safety incident open '
+            f'(#{critical_incident.id}: {critical_incident.title})'
+        )
 
     reactor_nodes = list(
         session.exec(
@@ -135,7 +150,10 @@ def check_command_guards(
     offline_nodes = [n for n in reactor_nodes if n.status in ('offline', 'error')]
     if offline_nodes and command_type in ('pump_on', 'aeration_start', 'sample_capture'):
         node_names = ', '.join(n.name for n in offline_nodes[:3])
-        return f'Blocked: reactor node(s) offline or in error state ({node_names})'
+        return (
+            f'safety_guard: blocked — reactor node(s) offline or in error state '
+            f'({node_names})'
+        )
 
     if command_type in ('pump_on', 'aeration_start'):
         dry_run = session.exec(
@@ -146,14 +164,17 @@ def check_command_guards(
             )
         ).first()
         if dry_run is not None:
-            return f'Blocked: dry_run_risk incident open (#{dry_run.id})'
+            return f'safety_guard: blocked — dry_run_risk incident open (#{dry_run.id})'
 
     if command_type == 'sample_capture':
         expired_cal = calibration_service.has_expired_calibration_for_target(
             session, 'reactor', reactor_id
         )
         if expired_cal:
-            return 'Blocked: expired or failed calibration record exists for this reactor'
+            return (
+                'safety_guard: blocked — expired or failed calibration record '
+                'exists for this reactor'
+            )
 
     return None
 

@@ -1,3 +1,18 @@
+"""Reactor Control — VALIDATE, GUARD, EXECUTE.
+
+Boundary Hardening V1: command creation in LabOS performs three
+narrow steps, in this order:
+
+1. validate the command shape and target reactor exists,
+2. consult the safety guard (`check_command_guards`) — the ONLY
+   authorized blocker,
+3. dispatch the command to the device (if not blocked).
+
+LabOS does NOT decide whether a command is *sensible* — that
+determination (strategy, planning, priority) belongs to ABrain. If the
+guard allows it, we execute; if the guard blocks it, we persist the
+blocked command with `safety_guard: ...` reason and stop.
+"""
 from __future__ import annotations
 
 from collections import defaultdict

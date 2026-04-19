@@ -30,6 +30,7 @@ const navItems: Array<{
   { label: 'Scheduler', href: '/schedules' },
   { label: 'Wiki', href: '/wiki' },
   { label: 'ABrain', href: '/abrain' },
+  { label: 'Approvals', href: '/approvals' },
   { label: 'Benutzer', href: '/users', roles: ['admin'] },
 ];
 

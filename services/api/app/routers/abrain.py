@@ -1,17 +1,25 @@
 from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session
 
-from ..auth import require_admin_user, require_authenticated_user
+from ..auth import get_current_user, require_admin_user, require_authenticated_user
 from ..db import get_session
 from ..schemas import (
+    ABrainActionCatalogRead,
+    ABrainAdapterContextRead,
+    ABrainAdapterQueryRequest,
+    ABrainAdapterResponse,
     ABrainContextRead,
     ABrainContextSection,
+    ABrainExecuteRequest,
+    ABrainExecutionResult,
     ABrainPresetRead,
     ABrainQueryRequest,
     ABrainQueryResponse,
     ABrainStatusRead,
+    UserRead,
 )
 from ..services import abrain as abrain_service
+from ..services import abrain_actions, abrain_adapter, abrain_execution
 
 router = APIRouter(
     prefix='/abrain',
@@ -45,3 +53,37 @@ def abrain_context(
 )
 def abrain_query(payload: ABrainQueryRequest, session: Session = Depends(get_session)):
     return abrain_service.query(session, payload)
+
+
+@router.get('/actions', response_model=ABrainActionCatalogRead)
+def abrain_actions_catalog():
+    return abrain_actions.get_catalog()
+
+
+@router.get('/adapter/context', response_model=ABrainAdapterContextRead)
+def abrain_adapter_context(
+    include_sections: list[ABrainContextSection] | None = Query(default=None),
+    session: Session = Depends(get_session),
+):
+    return abrain_adapter.build_context(session, include_sections=include_sections)
+
+
+@router.post(
+    '/adapter/query',
+    response_model=ABrainAdapterResponse,
+    dependencies=[Depends(require_admin_user)],
+)
+def abrain_adapter_query(
+    payload: ABrainAdapterQueryRequest,
+    session: Session = Depends(get_session),
+):
+    return abrain_adapter.query_adapter(session, payload)
+
+
+@router.post('/execute', response_model=ABrainExecutionResult)
+def abrain_execute(
+    payload: ABrainExecuteRequest,
+    session: Session = Depends(get_session),
+    current_user: UserRead = Depends(get_current_user),
+):
+    return abrain_execution.execute_action(session, payload, current_user)

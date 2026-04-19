@@ -571,6 +571,56 @@ class ReactorHealthAssessment(SQLModel, table=True):
     created_at: datetime = Field(default_factory=_utcnow)
 
 
+class ABrainExecutionLog(SQLModel, table=True):
+    __table_args__ = (
+        Index('ix_abrainexecutionlog_action', 'action'),
+        Index('ix_abrainexecutionlog_status', 'status'),
+        Index('ix_abrainexecutionlog_trace_id', 'trace_id'),
+        Index('ix_abrainexecutionlog_created_at', 'created_at'),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    action: str
+    params: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
+    status: str
+    blocked_reason: Optional[str] = None
+    source: Optional[str] = None
+    executed_by: Optional[str] = None
+    trace_id: Optional[str] = None
+    result: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
+    created_at: datetime = Field(default_factory=_utcnow)
+
+
+class ApprovalRequest(SQLModel, table=True):
+    __table_args__ = (
+        Index('ix_approvalrequest_status', 'status'),
+        Index('ix_approvalrequest_action_name', 'action_name'),
+        Index('ix_approvalrequest_trace_id', 'trace_id'),
+        Index('ix_approvalrequest_requested_by_source', 'requested_by_source'),
+        Index('ix_approvalrequest_created_at', 'created_at'),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    action_name: str
+    action_params: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
+    requested_by_source: str
+    requested_by_user_id: Optional[int] = Field(default=None, foreign_key='useraccount.id')
+    requested_via: str
+    trace_id: Optional[str] = None
+    risk_level: Optional[str] = None
+    status: str = Field(default='pending')
+    reason: Optional[str] = None
+    decision_note: Optional[str] = None
+    approval_required: bool = Field(default=True)
+    approved_by_user_id: Optional[int] = Field(default=None, foreign_key='useraccount.id')
+    decided_at: Optional[datetime] = None
+    executed_execution_log_id: Optional[int] = Field(default=None, foreign_key='abrainexecutionlog.id')
+    blocked_reason: Optional[str] = None
+    last_error: Optional[str] = None
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
+
+
 class WikiPage(SQLModel, table=True):
     slug: str = Field(primary_key=True)
     title: str

@@ -1,3 +1,17 @@
+"""MQTT bridge — TRANSPORT ONLY.
+
+Boundary Hardening V1: this module receives telemetry/node/ACK
+messages and publishes reactor commands. It contains NO interpretation
+or decision logic:
+
+- incoming telemetry is persisted verbatim (after schema validation),
+- incoming node status updates the device-node row,
+- incoming ACKs flip the command status via `process_command_ack`,
+- outgoing commands are published to the pre-computed topic.
+
+Any logic that looks like "if telemetry X > Y then do Z" does NOT
+belong here. Decisions live behind the ABrain adapter.
+"""
 from __future__ import annotations
 
 import json

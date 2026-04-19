@@ -89,6 +89,9 @@ Smolit-AI-Assistant  →  ABrain  →  LabOS MCP Server / Tool Adapter  →  Lab
 - **Scheduler / Automation Runtime V1**
 - **Vision Node / AI Integration V1**
 - **Sensor + Vision Fusion / Reactor Health V1**
+- **ABrain Adapter Alignment V1 (Phase 1+2+3)**
+- **Boundary Hardening V1**
+- **Approval System V1 (HITL + Queue + UI + Audit)**
 - Dashboard-Basis
 - Wiki-Basis
 
@@ -340,6 +343,9 @@ Das bedeutet:
 9. Scheduler / Automation Runtime V1 ✓
 10. Vision Node / AI Integration V1 ✓
 11. Sensor + Vision Fusion / Reactor Health V1 ✓
+12. ABrain Adapter Alignment V1 ✓ (Phase 1: Context Builder, Action Catalog, Adapter-Orchestrator, Governance-Boundary, Response/Trace Mapping; Phase 2: Legacy-Endpoints `/api/v1/abrain/status|query` delegieren jetzt als Thin Adapter an `abrain_adapter`, keine eigene Reasoning-Logik mehr in `services/abrain.py`; Phase 3: Execution + Governance Flow — static `ACTION_MAP`, Role-/Approval-/Safety-Guards, `ABrainExecutionLog`, `POST /api/v1/abrain/execute`, vollständige Trace-Protokollierung)
+13. Boundary Hardening V1 ✓ (harte Trennung LabOS vs. ABrain: Signal-statt-Entscheidung-Prinzip, Rule Engine als Local-Automation-Fallback markiert, Scheduler auf Execution-Only beschränkt, Reactor-Health/Vision als Classification + Signals, Safety als einzige Blocker-Autorität mit `safety_guard:`-Prefix, ABrain-Stub klar als Dev-Fallback gekennzeichnet)
+14. Approval System V1 ✓ (HITL-Queue + State + UI + Audit für approval-pflichtige ABrain-Aktionen: `ApprovalRequest`-Modell + Migration 0019, `services/approvals.py`, Integration in `abrain_execution` für `pending_approval`-Flow, `POST /api/v1/approvals/{id}/approve|reject` mit Rollenlogik (viewer read / operator low+medium / admin inkl. high+critical), Re-Apply von Safety- und Rollen-Guards bei Ausführung via bestehenden `execute_action`-Pfad, `/approvals`-Operator-UI mit Overview, Filter, Detail, Decision-Note; Approval ist release, nicht bypass)
 
 ---
 
@@ -572,9 +578,45 @@ Ein Reaktor wird nicht nur Stammdatensatz, sondern Prozessobjekt.
 > `Smolit-AI-Assistant → ABrain → LabOS MCP / Tool Adapter → LabOS API / DB`.
 > LabOS liefert Domain-State, Aktionen und Guards; ABrain liefert Planung, Governance und Reasoning. Der bestehende lokale `/api/v1/abrain/*`-Stub bleibt Übergangsschicht.
 
-## ABrain Adapter Alignment V1 (nächste Phase)
+## ABrain Adapter Alignment V1 (Phase 1 + Phase 2 + Phase 3 abgeschlossen)
 
 Ziel: LabOS wird sauber andockbar für ein externes ABrain. Diese Phase ist **keine Feature-Erweiterung der internen Assistenzlogik**, sondern der Umbau zum Adapter.
+
+Phase 1 liefert:
+
+- Context Builder als `app/services/abrain_context.py` (Reactor-, Operations-, Resource-, Schedule-Context, vertraglich über `ABrainAdapterContextRead`).
+- Statischer Action Catalog in `app/services/abrain_actions.py` (9 kuratierte Aktionen mit Risk/Approval/Allowed-Roles/Guards).
+- Thin HTTP Client `app/services/abrain_client.py` gegen externes ABrain (mit Timeout, Enable, Mode).
+- Adapter-Orchestrator `app/services/abrain_adapter.py` mit Response/Trace Mapping, Approval-/Blocked-Actions und lokalem Fallback (`policy_decision=local_rules_v1`).
+- Router-Ergänzung `/api/v1/abrain/actions`, `/api/v1/abrain/adapter/context`, `/api/v1/abrain/adapter/query` (Admin-only für `adapter/query`).
+- Frontend-Console `ABrainAdapterConsole` auf `/abrain` mit Modus-Anzeige, Tool-Surface-Preview, Trace-ID und Risk/Approval-Badges.
+- Neue Settings: `ABRAIN_ENABLED`, `ABRAIN_MODE`, `ABRAIN_USE_LOCAL_FALLBACK`, `ABRAIN_ADAPTER_CONTRACT_VERSION`.
+
+Phase 2 liefert (Thin Adapter Routing):
+
+- `services/abrain.py` ist reine Legacy-Facade ohne eigene Reasoning-/Fallback-Logik. `get_status()` und `query()` delegieren an `abrain_adapter`.
+- `/api/v1/abrain/status` und `/api/v1/abrain/query` nutzen dieselbe Context-, Catalog- und Governance-Kette wie `/adapter/*`.
+- Adapter-Modus `local` wird für das Legacy-Schema als `stub` zurückgemeldet, damit die bestehende UI kompatibel bleibt.
+- Direkter HTTP-Client-Aufruf aus `services/abrain.py` wurde entfernt; einziger HTTP-Pfad nach ABrain ist jetzt `abrain_client.py`.
+- Neuer Test `test_legacy_query_delegates_through_adapter` verifiziert den Adapter-Pfad der Legacy-Route.
+
+Phase 3 liefert (Execution + Governance Flow):
+
+- `services/abrain_execution.py` mit **statischem `ACTION_MAP`** (`labos.create_task`, `labos.create_alert`, `labos.create_reactor_command`, `labos.retry_reactor_command`, `labos.ack_safety_incident`). Kein Dynamic Dispatch, kein Reflection, keine neuen Actions ohne Code-Review.
+- Execution-Pipeline: Catalog-Lookup → Role-Check gegen `descriptor.allowed_roles` → Approval-Gate (`requires_approval` ohne `approve=True` → `pending_approval`) → Dispatch an bestehende Service-Layer → Ergebnis-Normalisierung → Log.
+- Safety-Guard: Reactor-Commands delegieren an `reactor_control.create_reactor_command`, das lokal `safety_service.check_command_guards` ruft. Ein `status='blocked'`-Ergebnis wird als `ABrainExecutionStatus.blocked` mit `blocked_reason='safety_guard: …'` protokolliert.
+- Neues Modell `ABrainExecutionLog` (Migration `20260419_0018`) mit `action`, `params`, `status`, `blocked_reason`, `executed_by`, `trace_id`, `source`, `result`, `created_at` und Indizes auf `action`, `status`, `trace_id`, `created_at`.
+- Neuer Endpoint `POST /api/v1/abrain/execute` (Role-Check passiert im Service via Katalog, nicht am Router) mit Rückgabe `ABrainExecutionResult`.
+- Neue Schemas `ABrainExecuteRequest`, `ABrainExecutionResult`, `ABrainExecutionStatus`, `ABrainExecutionLogRead`.
+- Governance-Regel: Reasoning-, Fallback- und Policy-Entscheidungen bleiben im Adapter. `abrain_execution` ist reiner Enforcement- und Audit-Pfad — kein Planning, kein Dynamic Routing.
+
+Noch offen (bewusst außerhalb Phase 1/2/3):
+
+- Vollwertiger MCP-Server (aktuell nur HTTP-Adapter-Endpunkte).
+- Externe Execution-Control / Approval-Pfad durch ABrain selbst (LabOS gated aktuell über `approve`-Flag im Request; der Workflow drumherum gehört in ABrain bzw. Smolit).
+- Rückkopplung externer Actions über den Adapter auf LabOS-Commands und -Events.
+- UI-Surface für `ABrainExecutionLog` (Historie, Filter nach `trace_id`/`status`).
+- Erweiterung `ACTION_MAP` um `run_reactor_health_assessment`, `create_maintenance_record`, `create_calibration_record`, `run_schedule_now` (Katalog ist bereits vorhanden, nur Mapping fehlt).
 
 Bausteine:
 

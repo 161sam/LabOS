@@ -1,3 +1,22 @@
+"""Scheduler — EXECUTION ONLY.
+
+Boundary Hardening V1: the scheduler triggers and dispatches
+pre-configured targets (rules or commands). It does NOT interpret state,
+prioritize, reorder, or decide *whether* a scheduled action is sensible.
+
+Semantics allowed here:
+- "run target X every Y seconds" (interval)
+- "run target X on cron expression Z"
+- "run target X now" (manual trigger)
+
+Semantics that MUST stay out of the scheduler:
+- conditional branching based on live state
+- reactive re-planning
+- dependency orchestration
+- cross-target reasoning
+
+Those responsibilities belong to ABrain via the adapter surface.
+"""
 from __future__ import annotations
 
 import logging

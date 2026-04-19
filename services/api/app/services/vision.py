@@ -1,3 +1,18 @@
+"""Vision analysis — FEATURE EXTRACTION + CLASSIFICATION ONLY.
+
+Boundary Hardening V1: this module derives image features (color
+statistics, sharpness, brightness, green/brown ratios) and produces a
+`health_label` classification. That is all.
+
+Explicitly NOT permitted:
+- creating tasks, alerts, or commands from a classification,
+- triggering schedules or reactor actions,
+- auto-actions based on confidence thresholds.
+
+Consumers (ABrain, operators, adapter) decide what to do with the
+classification. `analyze_photo()` writes only the `VisionAnalysis` row
+for the given photo — no side effects outside its own domain.
+"""
 from __future__ import annotations
 
 from pathlib import Path

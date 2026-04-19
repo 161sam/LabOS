@@ -1491,6 +1491,269 @@ class ABrainQueryResponse(AppSchema):
     note: str | None = None
 
 
+class ABrainActionRiskLevel(str, Enum):
+    low = 'low'
+    medium = 'medium'
+    high = 'high'
+    critical = 'critical'
+
+
+class ABrainActionDomain(str, Enum):
+    operations = 'operations'
+    reactor = 'reactor'
+    safety = 'safety'
+    maintenance = 'maintenance'
+    vision = 'vision'
+    scheduler = 'scheduler'
+
+
+class ABrainActionDescriptor(AppSchema):
+    name: str
+    description: str
+    domain: ABrainActionDomain
+    risk_level: ABrainActionRiskLevel
+    requires_approval: bool
+    allowed_roles: list[str]
+    arguments: dict[str, str] = Field(default_factory=dict)
+    guarded_by: list[str] = Field(default_factory=list)
+    notes: str | None = None
+
+
+class ABrainActionCatalogRead(AppSchema):
+    contract_version: str
+    generated_at: datetime
+    actions: list[ABrainActionDescriptor]
+
+
+class ABrainAdapterTelemetrySummary(AppSchema):
+    sensor_type: str
+    latest_value: float | None = None
+    unit: str | None = None
+    last_at: datetime | None = None
+    in_range: bool | None = None
+
+
+class ABrainAdapterReactorContext(AppSchema):
+    id: int
+    name: str
+    status: ReactorStatus
+    phase: ReactorPhase | None = None
+    technical_state: ReactorTechnicalState | None = None
+    biological_state: ReactorBiologicalState | None = None
+    health_status: ReactorHealthStatus | None = None
+    health_summary: str | None = None
+    health_assessed_at: datetime | None = None
+    open_task_count: int = 0
+    open_incident_count: int = 0
+    telemetry: list[ABrainAdapterTelemetrySummary] = Field(default_factory=list)
+    latest_vision_label: str | None = None
+    latest_vision_confidence: float | None = None
+
+
+class ABrainAdapterOperationsContext(AppSchema):
+    overdue_tasks: list[ABrainTaskContextItemRead] = Field(default_factory=list)
+    critical_alerts: list[ABrainAlertContextItemRead] = Field(default_factory=list)
+    blocked_command_count: int = 0
+    failed_command_count: int = 0
+    due_calibration_count: int = 0
+    overdue_maintenance_count: int = 0
+    open_safety_incident_count: int = 0
+
+
+class ABrainAdapterResourceContextItem(AppSchema):
+    kind: str
+    id: int
+    name: str
+    detail: str | None = None
+
+
+class ABrainAdapterResourceContext(AppSchema):
+    low_stock: list[ABrainAdapterResourceContextItem] = Field(default_factory=list)
+    out_of_stock: list[ABrainAdapterResourceContextItem] = Field(default_factory=list)
+    assets_attention: list[ABrainAdapterResourceContextItem] = Field(default_factory=list)
+    offline_nodes: list[ABrainAdapterResourceContextItem] = Field(default_factory=list)
+
+
+class ABrainAdapterScheduleContext(AppSchema):
+    active_schedule_count: int = 0
+    recent_failed_run_count: int = 0
+    schedules: list[ABrainAdapterResourceContextItem] = Field(default_factory=list)
+
+
+class ABrainAdapterContextRead(AppSchema):
+    generated_at: datetime
+    contract_version: str
+    mode: str
+    fallback_used: bool
+    summary: ABrainSummaryCountsRead
+    reactors: list[ABrainAdapterReactorContext] = Field(default_factory=list)
+    operations: ABrainAdapterOperationsContext
+    resources: ABrainAdapterResourceContext
+    schedule: ABrainAdapterScheduleContext
+    photos: list[ABrainPhotoContextItemRead] = Field(default_factory=list)
+
+
+class ABrainAdapterRecommendedAction(AppSchema):
+    action: str
+    target: str | None = None
+    reason: str
+    risk_level: ABrainActionRiskLevel
+    requires_approval: bool
+    blocked: bool = False
+    blocked_reason: str | None = None
+
+
+class ABrainAdapterQueryRequest(AppSchema):
+    question: str = Field(min_length=1, max_length=1000)
+    preset: ABrainPreset | None = None
+    include_context_sections: list[ABrainContextSection] | None = None
+    dry_run: bool = True
+
+    @field_validator('question')
+    @classmethod
+    def normalize_required_text(cls, value: str) -> str:
+        return _normalize_required_text(value)
+
+
+class ABrainAdapterResponse(AppSchema):
+    question: str
+    preset: ABrainPreset | None
+    mode: str
+    fallback_used: bool
+    contract_version: str
+    trace_id: str | None = None
+    summary: str
+    highlights: list[str] = Field(default_factory=list)
+    recommended_actions: list[ABrainAdapterRecommendedAction] = Field(default_factory=list)
+    blocked_actions: list[ABrainAdapterRecommendedAction] = Field(default_factory=list)
+    approval_required: bool = False
+    policy_decision: str | None = None
+    used_context_sections: list[ABrainContextSection] = Field(default_factory=list)
+    referenced_entities: list[ABrainReferenceRead] = Field(default_factory=list)
+    notes: list[str] = Field(default_factory=list)
+
+
+class ABrainExecutionStatus(str, Enum):
+    executed = 'executed'
+    pending_approval = 'pending_approval'
+    blocked = 'blocked'
+    rejected = 'rejected'
+    failed = 'failed'
+
+
+class ABrainExecuteRequest(AppSchema):
+    action: str = Field(min_length=1, max_length=120)
+    params: dict[str, Any] = Field(default_factory=dict)
+    trace_id: str | None = Field(default=None, max_length=120)
+    source: str | None = Field(default=None, max_length=60)
+    reason: str | None = Field(default=None, max_length=2000)
+    requested_via: str | None = Field(default=None, max_length=40)
+    approve: bool = False
+
+    @field_validator('action')
+    @classmethod
+    def normalize_action(cls, value: str) -> str:
+        return _normalize_required_text(value)
+
+    @field_validator('reason')
+    @classmethod
+    def normalize_reason(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class ABrainExecutionResult(AppSchema):
+    action: str
+    status: ABrainExecutionStatus
+    blocked_reason: str | None = None
+    requires_approval: bool = False
+    risk_level: ABrainActionRiskLevel | None = None
+    trace_id: str | None = None
+    executed_by: str | None = None
+    source: str | None = None
+    result: dict[str, Any] = Field(default_factory=dict)
+    log_id: int | None = None
+    approval_request_id: int | None = None
+    created_at: datetime
+
+
+class ABrainExecutionLogRead(AppSchema):
+    id: int
+    action: str
+    params: dict[str, Any]
+    status: ABrainExecutionStatus
+    blocked_reason: str | None = None
+    source: str | None = None
+    executed_by: str | None = None
+    trace_id: str | None = None
+    result: dict[str, Any]
+    created_at: datetime
+
+
+class ApprovalRequestStatus(str, Enum):
+    pending = 'pending'
+    approved = 'approved'
+    rejected = 'rejected'
+    executed = 'executed'
+    failed = 'failed'
+    cancelled = 'cancelled'
+
+
+class ApprovalRequestSource(str, Enum):
+    abrain = 'abrain'
+    local_dev_fallback = 'local_dev_fallback'
+    operator = 'operator'
+
+
+class ApprovalRequestVia(str, Enum):
+    adapter = 'adapter'
+    legacy_query = 'legacy_query'
+    future_mcp = 'future_mcp'
+    operator_ui = 'operator_ui'
+
+
+class ApprovalDecisionPayload(AppSchema):
+    decision_note: str | None = Field(default=None, max_length=2000)
+
+    @field_validator('decision_note')
+    @classmethod
+    def normalize_decision_note(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class ApprovalRequestRead(AppSchema):
+    id: int
+    action_name: str
+    action_params: dict[str, Any]
+    requested_by_source: ApprovalRequestSource
+    requested_by_user_id: int | None = None
+    requested_by_username: str | None = None
+    requested_via: ApprovalRequestVia
+    trace_id: str | None = None
+    risk_level: ABrainActionRiskLevel | None = None
+    status: ApprovalRequestStatus
+    reason: str | None = None
+    decision_note: str | None = None
+    approval_required: bool = True
+    approved_by_user_id: int | None = None
+    approved_by_username: str | None = None
+    decided_at: datetime | None = None
+    executed_execution_log_id: int | None = None
+    blocked_reason: str | None = None
+    last_error: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class ApprovalOverviewRead(AppSchema):
+    pending: int = 0
+    approved: int = 0
+    rejected: int = 0
+    executed: int = 0
+    failed: int = 0
+    cancelled: int = 0
+    high_risk_pending: int = 0
+
+
 class RulePayload(AppSchema):
     name: str = Field(min_length=1, max_length=160)
     description: str | None = Field(default=None, max_length=4000)

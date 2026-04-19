@@ -1,7 +1,7 @@
 import httpx
 
 from app.config import settings
-from app.services import abrain as abrain_service
+from app.services import abrain_adapter, abrain_client
 
 PNG_BYTES = (
     b'\x89PNG\r\n\x1a\n'
@@ -80,11 +80,17 @@ def test_post_abrain_query_returns_consistent_response_structure(client):
 
 def test_post_abrain_query_falls_back_when_external_connector_fails(client, monkeypatch):
     monkeypatch.setattr(settings, 'abrain_use_stub', False)
+    monkeypatch.setattr(settings, 'abrain_enabled', True)
+    monkeypatch.setattr(settings, 'abrain_mode', 'external')
+    monkeypatch.setattr(settings, 'abrain_use_local_fallback', True)
 
-    def raise_connect_error(context, payload):
-        raise httpx.ConnectError('ABrain offline')
-
-    monkeypatch.setattr(abrain_service, '_call_external_abrain', raise_connect_error)
+    monkeypatch.setattr(
+        abrain_client,
+        'query',
+        lambda request_payload: abrain_client.ABrainClientResult(
+            success=False, payload=None, mode='external', error='offline'
+        ),
+    )
 
     response = client.post(
         '/api/v1/abrain/query',
@@ -101,8 +107,27 @@ def test_post_abrain_query_falls_back_when_external_connector_fails(client, monk
     assert 'Lokale Assistenzlogik' in payload['note']
 
 
+def test_legacy_query_delegates_through_adapter(client, monkeypatch):
+    calls: list[str] = []
+    original = abrain_adapter.query_adapter
+
+    def spy(session, payload):
+        calls.append(payload.question)
+        return original(session, payload)
+
+    monkeypatch.setattr(abrain_adapter, 'query_adapter', spy)
+    response = client.post(
+        '/api/v1/abrain/query',
+        json={'question': 'Adapter-Proxy-Check', 'preset': 'daily_overview'},
+    )
+    assert response.status_code == 200
+    assert calls == ['Adapter-Proxy-Check'], 'legacy /abrain/query must delegate to abrain_adapter'
+
+
 def test_abrain_status_marks_external_connector_unreachable(client, monkeypatch):
     monkeypatch.setattr(settings, 'abrain_use_stub', False)
+    monkeypatch.setattr(settings, 'abrain_enabled', True)
+    monkeypatch.setattr(settings, 'abrain_mode', 'external')
 
     class BrokenClient:
         def __init__(self, *args, **kwargs):
@@ -117,7 +142,7 @@ def test_abrain_status_marks_external_connector_unreachable(client, monkeypatch)
         def get(self, *args, **kwargs):
             raise httpx.ConnectError('offline')
 
-    monkeypatch.setattr(abrain_service.httpx, 'Client', BrokenClient)
+    monkeypatch.setattr(abrain_client.httpx, 'Client', BrokenClient)
 
     response = client.get('/api/v1/abrain/status')
     assert response.status_code == 200

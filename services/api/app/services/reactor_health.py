@@ -1,3 +1,18 @@
+"""Reactor Health — CLASSIFICATION + SIGNAL EMISSION.
+
+Boundary Hardening V1: `assess_reactor()` produces a *classification*
+(`nominal` / `attention` / `warning` / `incident` / `unknown`) plus a
+list of signals derived from telemetry, vision, and open safety
+incidents. That is the full scope.
+
+The classification is NOT a decision — it is a label describing the
+current domain state. No task is created, no command is issued, no
+schedule is adjusted from this module. Consumers (ABrain, operators)
+decide what to do with the classification and signals.
+
+If a future change feels like "when health is warning, do X" — stop.
+That decision belongs on the other side of the adapter boundary.
+"""
 from __future__ import annotations
 
 from datetime import datetime, timedelta

@@ -1,3 +1,17 @@
+"""Rule engine — LOCAL AUTOMATION / FALLBACK LAYER.
+
+Boundary Hardening V1: this module is *not* the decision layer. In the
+target architecture (Smolit-AI-Assistant → ABrain → LabOS Adapter → LabOS),
+ABrain decides whether a rule-worthy condition warrants a task or alert.
+
+Rules remain in LabOS as a **local automation fallback** for environments
+running without ABrain. Every execution is marked `execution_origin =
+'labos_local'` in its `action_result` so downstream consumers can tell
+a local-fallback side effect apart from an ABrain-driven one.
+
+Do NOT extend this module with planning, prioritization, multi-step
+orchestration, or cross-domain reasoning. Those belong to ABrain.
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -28,6 +42,8 @@ from . import sensors as sensor_service
 from . import tasks as task_service
 
 _ALERT_DUPLICATE_WINDOW_HOURS = 12
+
+EXECUTION_ORIGIN_LOCAL = 'labos_local'
 
 
 @dataclass
@@ -418,12 +434,14 @@ def _create_execution(
     evaluation_summary: dict[str, Any],
     action_result: dict[str, Any],
 ) -> RuleExecutionRead:
+    tagged_result = dict(action_result)
+    tagged_result.setdefault('execution_origin', EXECUTION_ORIGIN_LOCAL)
     execution = RuleExecution(
         rule_id=rule.id,
         status=status_value,
         dry_run=dry_run,
         evaluation_summary=evaluation_summary,
-        action_result=action_result,
+        action_result=tagged_result,
     )
     session.add(execution)
     session.commit()

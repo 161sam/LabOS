@@ -1,7 +1,19 @@
+"""ABrain legacy surface — THIN ADAPTER FACADE.
+
+This module keeps the legacy `/api/v1/abrain/status|context|presets|query`
+endpoints alive while routing their work through the canonical ABrain
+adapter layer (`abrain_adapter.py` / `abrain_client.py` / `abrain_context.py`).
+
+THIS IS NOT THE REAL BRAIN. Status and query paths delegate to the
+adapter. Presets and legacy `/context` still build their LabOS-specific
+shape here, because the frontend legacy UI expects it. No new reasoning
+logic lives in this module — all decisions are made in the adapter (or
+in the external ABrain behind it), and highlights / actions are
+projected back into the legacy `ABrainQueryResponse` shape.
+"""
 from dataclasses import dataclass
 from typing import Any
 
-import httpx
 from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
@@ -26,6 +38,7 @@ from ..schemas import (
     AlertStatus,
     TaskStatus,
 )
+from . import abrain_adapter
 from . import alerts as alert_service
 from . import photos as photo_service
 from . import reactor_health as reactor_health_service
@@ -105,37 +118,27 @@ _PRESETS = {
 
 
 def get_status() -> ABrainStatusRead:
-    if settings.abrain_use_stub:
-        return ABrainStatusRead(
-            connected=False,
-            mode='stub',
-            base_url=settings.abrain_base_url,
-            timeout_seconds=settings.abrain_timeout_seconds,
-            fallback_available=True,
-            note='ABrain läuft im lokalen Stub-Modus auf Basis echter LabOS-Kontextdaten.',
-        )
+    """Legacy status facade — delegates to the adapter.
 
-    try:
-        with httpx.Client(timeout=settings.abrain_timeout_seconds) as client:
-            response = client.get(f"{settings.abrain_base_url.rstrip('/')}/healthz")
-            response.raise_for_status()
-        return ABrainStatusRead(
-            connected=True,
-            mode='external',
-            base_url=settings.abrain_base_url,
-            timeout_seconds=settings.abrain_timeout_seconds,
-            fallback_available=True,
-            note='Externes ABrain ist erreichbar. LabOS kann Anfragen mit strukturiertem Kontext senden.',
-        )
-    except Exception:
-        return ABrainStatusRead(
-            connected=False,
-            mode='external',
-            base_url=settings.abrain_base_url,
-            timeout_seconds=settings.abrain_timeout_seconds,
-            fallback_available=True,
-            note='Externes ABrain ist aktuell nicht erreichbar. LabOS faellt auf die lokale Assistenzlogik zurueck.',
-        )
+    Translates the adapter's `local` mode back to the legacy `stub`
+    label whenever `ABRAIN_USE_STUB` is active, so existing UI clients
+    keep seeing the expected value.
+    """
+    adapter_status = abrain_adapter.get_status()
+    effective_mode = adapter_status.mode
+    if settings.abrain_use_stub and effective_mode == 'local':
+        effective_mode = 'stub'
+    note = adapter_status.note
+    if effective_mode == 'stub':
+        note = 'ABrain läuft im lokalen Stub-Modus auf Basis echter LabOS-Kontextdaten.'
+    return ABrainStatusRead(
+        connected=adapter_status.connected,
+        mode=effective_mode,
+        base_url=adapter_status.base_url,
+        timeout_seconds=adapter_status.timeout_seconds,
+        fallback_available=adapter_status.fallback_available,
+        note=note,
+    )
 
 
 def list_presets() -> list[ABrainPresetRead]:
@@ -213,6 +216,13 @@ def build_lab_context(
 
 
 def query(session: Session, payload: ABrainQueryRequest) -> ABrainQueryResponse:
+    """Legacy query facade — delegates to the adapter orchestrator.
+
+    Resolves the requested preset, asks the adapter to build context +
+    talk to external ABrain (or local fallback), then projects the
+    richer `ABrainAdapterResponse` into the legacy `ABrainQueryResponse`
+    shape that the existing frontend expects.
+    """
     preset_definition = _PRESETS.get(payload.preset) if payload.preset is not None else None
     if payload.preset is not None and preset_definition is None:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail='Unknown ABrain preset')
@@ -220,237 +230,60 @@ def query(session: Session, payload: ABrainQueryRequest) -> ABrainQueryResponse:
     used_sections = payload.include_context_sections or (
         preset_definition.default_sections if preset_definition is not None else _ALL_SECTIONS
     )
-    context = build_lab_context(session, include_sections=used_sections)
 
-    if settings.abrain_use_stub:
-        return _build_local_response(context, payload, fallback_used=False, note='Lokale Assistenzlogik verwendet.')
-
-    try:
-        external_payload = _call_external_abrain(context, payload)
-        return _normalize_external_response(external_payload, payload, used_sections)
-    except Exception:
-        return _build_local_response(
-            context,
-            payload,
-            fallback_used=True,
-            note='Externes ABrain nicht erreichbar. Lokale Assistenzlogik verwendet.',
-        )
-
-
-def _call_external_abrain(context: ABrainContextRead, payload: ABrainQueryRequest) -> dict[str, Any]:
-    request_payload = {
-        'question': payload.question,
-        'preset': payload.preset.value if payload.preset is not None else None,
-        'lab_context': context.model_dump(mode='json'),
-        'include_context_sections': [section.value for section in context.included_sections],
-    }
-    with httpx.Client(timeout=settings.abrain_timeout_seconds) as client:
-        response = client.post(f"{settings.abrain_base_url.rstrip('/')}/query", json=request_payload)
-        response.raise_for_status()
-        return response.json()
-
-
-def _normalize_external_response(
-    payload: dict[str, Any],
-    request: ABrainQueryRequest,
-    used_sections: list[ABrainContextSection],
-) -> ABrainQueryResponse:
-    referenced_entities = [
-        ABrainReferenceRead(
-            entity_type=str(item.get('entity_type', 'unknown')),
-            entity_id=int(item.get('entity_id', 0)),
-            label=str(item.get('label', '')),
-        )
-        for item in payload.get('referenced_entities', [])
-        if item.get('entity_id') is not None
-    ]
-    return ABrainQueryResponse(
-        question=request.question,
-        preset=request.preset,
-        mode='external',
-        fallback_used=False,
-        summary=str(payload.get('summary', 'ABrain hat eine Antwort auf Basis des LabOS-Kontexts erzeugt.')),
-        highlights=[str(item) for item in payload.get('highlights', [])],
-        recommended_actions=[str(item) for item in payload.get('recommended_actions', [])],
-        referenced_entities=referenced_entities,
-        used_context_sections=used_sections,
-        note=str(payload.get('note')) if payload.get('note') is not None else None,
+    from ..schemas import ABrainAdapterQueryRequest
+    adapter_payload = ABrainAdapterQueryRequest(
+        question=payload.question,
+        preset=payload.preset,
+        include_context_sections=used_sections,
+        dry_run=True,
     )
+    adapter_response = abrain_adapter.query_adapter(session, adapter_payload)
 
+    effective_mode = 'stub' if adapter_response.mode == 'local' else adapter_response.mode
 
-def _build_local_response(
-    context: ABrainContextRead,
-    payload: ABrainQueryRequest,
-    fallback_used: bool,
-    note: str | None,
-) -> ABrainQueryResponse:
-    highlights: list[str] = []
-    recommended_actions: list[str] = []
-    references: list[ABrainReferenceRead] = []
+    recommended_texts = _project_actions_to_text(adapter_response.recommended_actions)
+    if not recommended_texts:
+        recommended_texts = ['Regelmaessig Dashboard, Alerts und offene Aufgaben weiter beobachten.']
 
-    if payload.preset == ABrainPreset.overdue_tasks:
-        _append_task_highlights(context, highlights, recommended_actions, references, only_overdue=True)
-    elif payload.preset == ABrainPreset.sensor_attention:
-        _append_sensor_highlights(context, highlights, recommended_actions, references)
-    elif payload.preset == ABrainPreset.reactor_attention:
-        _append_reactor_highlights(context, highlights, recommended_actions, references)
-    elif payload.preset == ABrainPreset.recent_activity:
-        _append_recent_activity(context, highlights, recommended_actions, references)
-    elif payload.preset == ABrainPreset.critical_issues:
-        _append_alert_highlights(context, highlights, recommended_actions, references, critical_only=True)
-        _append_sensor_highlights(context, highlights, recommended_actions, references)
-        _append_task_highlights(context, highlights, recommended_actions, references, only_overdue=True)
-    else:
-        _append_alert_highlights(context, highlights, recommended_actions, references, critical_only=True)
-        _append_task_highlights(context, highlights, recommended_actions, references, only_overdue=False)
-        _append_sensor_highlights(context, highlights, recommended_actions, references)
-        _append_recent_activity(context, highlights, recommended_actions, references)
-
+    highlights = list(adapter_response.highlights)
     if not highlights:
-        highlights.append('Aktuell zeigen die ausgewaehlten Kontextbereiche keine akuten operativen Auffaelligkeiten.')
-    if not recommended_actions:
-        recommended_actions.append('Regelmaessig Dashboard, Alerts und offene Aufgaben weiter beobachten.')
+        highlights = ['Aktuell zeigen die ausgewaehlten Kontextbereiche keine akuten operativen Auffaelligkeiten.']
 
-    summary = _build_summary_text(context, payload.preset)
+    if effective_mode == 'stub':
+        note = (
+            'Externes ABrain nicht erreichbar. Lokale Assistenzlogik verwendet.'
+            if adapter_response.fallback_used
+            else 'Lokale Assistenzlogik verwendet.'
+        )
+    else:
+        note = adapter_response.notes[0] if adapter_response.notes else None
+
     return ABrainQueryResponse(
         question=payload.question,
         preset=payload.preset,
-        mode='stub',
-        fallback_used=fallback_used,
-        summary=summary,
+        mode=effective_mode,
+        fallback_used=adapter_response.fallback_used,
+        summary=adapter_response.summary,
         highlights=highlights[:6],
-        recommended_actions=recommended_actions[:6],
-        referenced_entities=references[:8],
-        used_context_sections=context.included_sections,
+        recommended_actions=recommended_texts[:6],
+        referenced_entities=list(adapter_response.referenced_entities),
+        used_context_sections=used_sections,
         note=note,
     )
 
 
-def _build_summary_text(context: ABrainContextRead, preset: ABrainPreset | None) -> str:
-    summary = context.summary
-    if preset == ABrainPreset.overdue_tasks:
-        return (
-            f"Es gibt {summary.overdue_tasks} ueberfaellige Aufgaben und {summary.open_tasks} offene Aufgaben insgesamt."
-        )
-    if preset == ABrainPreset.sensor_attention:
-        return (
-            f"Es gibt {summary.sensor_attention} Sensoren mit Aufmerksamkeitsbedarf und {summary.critical_alerts} kritische Alerts."
-        )
-    if preset == ABrainPreset.reactor_attention:
-        reactors_with_tasks = len([reactor for reactor in context.reactors or [] if reactor.open_task_count > 0])
-        return (
-            f"{reactors_with_tasks} Reaktoren haben offene Aufgaben, bei {summary.reactors_online} Reaktoren ist der Status aktuell online."
-        )
-    if preset == ABrainPreset.recent_activity:
-        return (
-            f"Zuletzt wurden {summary.recent_photos} Fotos erfasst; parallel bestehen {summary.open_alerts} offene Alerts."
-        )
-    if preset == ABrainPreset.critical_issues:
-        return (
-            f"Aktuell bestehen {summary.critical_alerts} kritische Alerts, {summary.overdue_tasks} ueberfaellige Aufgaben und {summary.sensor_attention} auffaellige Sensorlagen."
-        )
-    return (
-        f"Heute bestehen {summary.open_tasks} offene Aufgaben, {summary.critical_alerts} kritische Alerts, "
-        f"{summary.sensor_attention} auffaellige Sensorlagen und {summary.recent_photos} aktuelle Fotoeintraege."
-    )
-
-
-def _append_task_highlights(
-    context: ABrainContextRead,
-    highlights: list[str],
-    actions: list[str],
-    references: list[ABrainReferenceRead],
-    *,
-    only_overdue: bool,
-) -> None:
-    tasks = context.tasks or []
-    filtered_tasks = [
-        task for task in tasks if (task.due_at is not None and task.due_at < context.generated_at) or not only_overdue
-    ]
-    for task in filtered_tasks[:2]:
-        due_text = task.due_at.strftime('%d.%m.%Y %H:%M') if task.due_at else 'ohne Termin'
-        location = task.charge_name or task.reactor_name or 'ohne Zuordnung'
-        highlights.append(
-            f"Task '{task.title}' ist {task.status} mit Prioritaet {task.priority} ({location}, faellig {due_text})."
-        )
-        actions.append(f"Task '{task.title}' priorisieren und Status im Modul Aufgaben aktualisieren.")
-        references.append(ABrainReferenceRead(entity_type='task', entity_id=task.id, label=task.title))
-
-
-def _append_alert_highlights(
-    context: ABrainContextRead,
-    highlights: list[str],
-    actions: list[str],
-    references: list[ABrainReferenceRead],
-    *,
-    critical_only: bool,
-) -> None:
-    alerts = context.alerts or []
-    filtered_alerts = [
-        alert for alert in alerts if alert.severity in {'high', 'critical'} or not critical_only
-    ]
-    for alert in filtered_alerts[:2]:
-        highlights.append(
-            f"Alert '{alert.title}' ist {alert.status} mit Severity {alert.severity} aus Quelle {alert.source_type}."
-        )
-        actions.append(f"Alert '{alert.title}' pruefen und bei Bedarf quittieren oder aufloesen.")
-        references.append(ABrainReferenceRead(entity_type='alert', entity_id=alert.id, label=alert.title))
-
-
-def _append_sensor_highlights(
-    context: ABrainContextRead,
-    highlights: list[str],
-    actions: list[str],
-    references: list[ABrainReferenceRead],
-) -> None:
-    for sensor in (context.sensors or [])[:2]:
-        reactor_label = sensor.reactor_name or 'ohne Reaktor'
-        highlights.append(
-            f"Sensor '{sensor.name}' ({reactor_label}) braucht Aufmerksamkeit: {sensor.attention_reason}."
-        )
-        actions.append(f"Sensor '{sensor.name}' pruefen und aktuellen Messwert oder Status nachziehen.")
-        references.append(ABrainReferenceRead(entity_type='sensor', entity_id=sensor.id, label=sensor.name))
-
-
-def _append_reactor_highlights(
-    context: ABrainContextRead,
-    highlights: list[str],
-    actions: list[str],
-    references: list[ABrainReferenceRead],
-) -> None:
-    reactors = sorted(
-        context.reactors or [],
-        key=lambda reactor: (0 if reactor.status != 'online' else 1, -reactor.open_task_count, reactor.name),
-    )
-    for reactor in reactors[:2]:
-        if reactor.status != 'online' or reactor.open_task_count > 0:
-            highlights.append(
-                f"Reaktor '{reactor.name}' steht auf Status {reactor.status} und hat {reactor.open_task_count} offene Tasks."
-            )
-            actions.append(f"Reaktor '{reactor.name}' inklusive offener Aufgaben und aktuellem Zustand pruefen.")
-            references.append(ABrainReferenceRead(entity_type='reactor', entity_id=reactor.id, label=reactor.name))
-
-
-def _append_recent_activity(
-    context: ABrainContextRead,
-    highlights: list[str],
-    actions: list[str],
-    references: list[ABrainReferenceRead],
-) -> None:
-    if context.photos:
-        photo = context.photos[0]
-        label = photo.title or f'Foto #{photo.id}'
-        vision_note = (
-            f" Vision-Einschaetzung: {photo.vision_health_label}"
-            if photo.vision_health_label
-            else ''
-        )
-        highlights.append(
-            f"Zuletzt wurde '{label}' als Foto-Dokumentation erfasst "
-            f"({photo.charge_name or photo.reactor_name or 'ohne Zuordnung'}).{vision_note}"
-        )
-        actions.append('Aktuelle Bilddokumentation fuer Verlauf und Nachweis in der Fotoansicht pruefen.')
-        references.append(ABrainReferenceRead(entity_type='photo', entity_id=photo.id, label=label))
+def _project_actions_to_text(
+    actions: list[Any],
+) -> list[str]:
+    texts: list[str] = []
+    for item in actions:
+        if item.blocked:
+            continue
+        approval_hint = ' (Freigabe erforderlich)' if item.requires_approval else ''
+        target_hint = f' → {item.target}' if item.target else ''
+        texts.append(f'{item.action}{target_hint}: {item.reason}{approval_hint}')
+    return texts
 
 
 def _build_task_section(
