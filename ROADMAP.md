@@ -4,7 +4,8 @@
 
 # 🧠 Produktbild
 
-LabOS entwickelt sich zu einem **modularen Operating System für reale, cyber-physische Labore**.
+LabOS entwickelt sich zu einem **modularen Operating System** für EcoSphereLab.  
+
 
 Es verbindet:
 

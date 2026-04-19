@@ -107,6 +107,21 @@ LabOS ist ein modularer Monolith aus:
 
 Die Architecture Boundary zwischen LabOS (Domain/State/Execution) und ABrain (Planning/Governance) ist als Code-Invariante implementiert und testgeprüft. Siehe [docs/architecture.md](docs/architecture.md).
 
+### MCP Server
+
+LabOS exposes a JSON-RPC 2.0 Model Context Protocol server at `POST /api/v1/mcp` — the only official tool surface for ABrain. Tools come from the static `abrain_actions` catalog, execution is routed through `abrain_execution.execute_action` (so Safety Guards, Role Checks, Approval Gate and Trace Layer all still apply), and resources expose the `abrain_context` snapshot read-only.
+
+Methods: `initialize`, `tools/list`, `tools/call`, `resources/list`, `resources/read`. Debug helpers: `GET /api/v1/mcp/tools`, `GET /api/v1/mcp/resources`. Settings: `MCP_ENABLED=true`, `MCP_DEBUG=false`.
+
+Example:
+
+```bash
+curl -sS -X POST http://localhost:8000/api/v1/mcp \
+  -H 'Content-Type: application/json' \
+  -b cookies.txt \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"labos.create_task","arguments":{"title":"via MCP"},"trace_id":"demo-1"}}'
+```
+
 ## Documentation
 
 Die gesamte Projekt-Dokumentation liegt unter [`docs/`](docs/):

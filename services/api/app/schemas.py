@@ -1710,6 +1710,7 @@ class ApprovalRequestVia(str, Enum):
     adapter = 'adapter'
     legacy_query = 'legacy_query'
     future_mcp = 'future_mcp'
+    mcp = 'mcp'
     operator_ui = 'operator_ui'
 
 

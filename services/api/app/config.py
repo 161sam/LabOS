@@ -37,6 +37,8 @@ class Settings(BaseSettings):
     mqtt_publish_commands: bool = True
     scheduler_enabled: bool = True
     scheduler_tick_seconds: float = 5.0
+    mcp_enabled: bool = True
+    mcp_debug: bool = False
 
 
 settings = Settings()
