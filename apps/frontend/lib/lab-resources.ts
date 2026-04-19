@@ -1306,7 +1306,7 @@ export type ApprovalRequestStatus =
 
 export type ApprovalRequestSource = 'abrain' | 'local_dev_fallback' | 'operator';
 
-export type ApprovalRequestVia = 'adapter' | 'legacy_query' | 'future_mcp' | 'mcp' | 'operator_ui';
+export type ApprovalRequestVia = 'adapter' | 'legacy_query' | 'future_mcp' | 'mcp' | 'ros' | 'operator_ui';
 
 export type ApprovalRequest = {
   id: number;

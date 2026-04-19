@@ -39,6 +39,9 @@ class Settings(BaseSettings):
     scheduler_tick_seconds: float = 5.0
     mcp_enabled: bool = True
     mcp_debug: bool = False
+    ros_enabled: bool = False
+    ros_node_name: str = 'labos'
+    ros_namespace: str = '/labos'
 
 
 settings = Settings()

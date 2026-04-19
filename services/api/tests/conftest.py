@@ -12,6 +12,7 @@ if str(API_ROOT) not in sys.path:
 from app import db, seed
 from app.config import settings
 from app.main import app
+from app.ros import ros_bridge
 from app.services import mqtt_bridge, scheduler as scheduler_service
 
 
@@ -31,11 +32,13 @@ def anonymous_client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(settings, 'mqtt_enabled', False)
     monkeypatch.setattr(settings, 'mqtt_publish_commands', False)
     monkeypatch.setattr(settings, 'scheduler_enabled', False)
+    monkeypatch.setattr(settings, 'ros_enabled', False)
 
     with TestClient(app) as test_client:
         yield test_client
 
     scheduler_service.get_scheduler_runner().stop()
+    ros_bridge.get_ros_bridge().stop()
     mqtt_bridge.get_mqtt_bridge().stop()
     app.dependency_overrides.clear()
     test_engine.dispose()

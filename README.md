@@ -107,6 +107,10 @@ LabOS ist ein modularer Monolith aus:
 
 Die Architecture Boundary zwischen LabOS (Domain/State/Execution) und ABrain (Planning/Governance) ist als Code-Invariante implementiert und testgeprüft. Siehe [docs/architecture.md](docs/architecture.md).
 
+### ROS Compatibility Layer
+
+LabOS optionally exposes its reactor/device world to ROS2 through a thin compatibility layer in `services/api/app/ros/`: reactors appear as ROS nodes, telemetry mirrors to `/labos/reactor/{id}/{sensor_type}`, and commands are reachable as services at `/labos/reactor/{id}/{command_type}`. The layer is additive — MQTT stays in place — and acts as **transport only**. Inbound ROS service callbacks dispatch through `abrain_execution.execute_action` (Safety Guards, Role Checks, Approval Gate and Trace Layer all apply); ROS is never authorized to execute commands directly. `rclpy` is an optional runtime dependency; when absent the bridge stays dormant and reports its status. Settings: `ROS_ENABLED=false` (default), `ROS_NODE_NAME=labos`, `ROS_NAMESPACE=/labos`.
+
 ### MCP Server
 
 LabOS exposes a JSON-RPC 2.0 Model Context Protocol server at `POST /api/v1/mcp` — the only official tool surface for ABrain. Tools come from the static `abrain_actions` catalog, execution is routed through `abrain_execution.execute_action` (so Safety Guards, Role Checks, Approval Gate and Trace Layer all still apply), and resources expose the `abrain_context` snapshot read-only.

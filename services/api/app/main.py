@@ -8,6 +8,7 @@ from .db import run_migrations
 from .services import mqtt_bridge as mqtt_bridge_service
 from .services import scheduler as scheduler_service
 from .mcp import router as mcp_router
+from .ros import ros_bridge as ros_bridge_service
 from .routers import abrain, alerts, approvals, assets, auth, calibration, charges, dashboard, inventory, labels, maintenance, photos, reactor_control, reactor_health, reactor_ops, reactors, rules, safety, schedules, sensors, tasks, traces, users, vision, wiki
 from .seed import seed_data
 
@@ -17,9 +18,11 @@ async def lifespan(app: FastAPI):
     run_migrations()
     seed_data()
     mqtt_bridge_service.get_mqtt_bridge().start()
+    ros_bridge_service.get_ros_bridge().start()
     scheduler_service.get_scheduler_runner().start()
     yield
     scheduler_service.get_scheduler_runner().stop()
+    ros_bridge_service.get_ros_bridge().stop()
     mqtt_bridge_service.get_mqtt_bridge().stop()
 
 

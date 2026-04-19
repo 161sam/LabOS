@@ -1711,6 +1711,7 @@ class ApprovalRequestVia(str, Enum):
     legacy_query = 'legacy_query'
     future_mcp = 'future_mcp'
     mcp = 'mcp'
+    ros = 'ros'
     operator_ui = 'operator_ui'
 
 
