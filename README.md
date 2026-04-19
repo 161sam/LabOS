@@ -20,6 +20,8 @@ LabOS ist ein Raspberry-Pi-taugliches Operating System fuer EcoSphereLab. Es ver
 - ABrain Integration V1 mit echtem LabOS-Kontext
 - Regelengine / Automation V1
 - **Calibration / Maintenance / Safety V1** mit Kalibrierstatus, Wartungserfassung, Incident-Tracking und Command-Guards
+- **Command ACK / Retry V1** mit Command-UID, MQTT-ACK-Topics, Zustell-/Timeout-Tracking und manuellem Retry
+- **Scheduler / Automation Runtime V1** mit interval/cron/manual-Schedules, Hintergrund-Runner und Ausfuehrungslog
 - integriertes Wiki auf Markdown-Basis
 - Docker-Compose-Setup für lokale Entwicklung
 
@@ -77,6 +79,90 @@ Diese Schicht schafft die Sicherheits- und Betriebsgrundlage fuer reaktornahe St
 - Vision Node
 - echte Hardware-Kommandos mit Safety-Gate
 - geschlossene Regelkreise
+
+## Command ACK / Retry V1
+
+Diese Schicht macht Zustellung und Bestaetigung von Reactor-Commands nachvollziehbar und erlaubt gezieltes Retry fehlgeschlagener Kommandos.
+
+### Was enthalten ist
+
+**ReactorCommand-Erweiterung**
+- `command_uid` (UUID) als Korrelations-ID fuer MQTT/Node-Antwortkette
+- `published_at`, `acknowledged_at`, `timeout_at` zur Status-Nachverfolgung
+- `retry_count`, `max_retries` (Default 3)
+- `last_error`, `ack_payload` (JSON des Node-Rueckmeldung)
+- Erweiterte Status-Werte: `pending`, `sent`, `acknowledged`, `failed`, `blocked`, `timeout`, `retrying`
+
+**MQTT-Topic-Erweiterung**
+- Publish-Payload traegt jetzt `command_uid` mit
+- Neues ACK-Topic `labos/reactor/{reactor_id}/ack` (JSON-Payload `{command_id, command_uid, status, error?, received_at?}`)
+- Bridge abonniert den ACK-Stream und markiert Commands als `acknowledged` bzw. `failed`
+
+**Retry + Timeout**
+- `POST /api/v1/reactor-commands/{id}/retry` (Operator/Admin) inkrementiert `retry_count`, republiziert ueber die Bridge und startet das Timeout neu
+- `POST /api/v1/reactor-commands/check-timeouts` setzt nicht bestaetigte `sent`/`retrying` Commands mit abgelaufenem `timeout_at` auf `timeout`
+- Standard-ACK-Timeout: 30 s (`COMMAND_ACK_TIMEOUT_SECONDS`)
+
+**Frontend**
+- Command-Tabelle zeigt ACK-Zeitstempel, Retry-Zaehler und Fehlermeldungen
+- Retry-Button fuer fehlgeschlagene/zeitueberschrittene Commands (Rollenfilter)
+
+**Simulator / Beispiel-Node**
+- `scripts/mqtt/simulate_env_node.py` abonniert Control-Topics und publiziert ACKs (optional mit `--ack-error-rate` fuer NACK-Tests)
+- `examples/esp32/env_node_example.ino` extrahiert `command_id`/`command_uid` und sendet ACK zurueck
+
+### Was bewusst noch nicht enthalten ist
+
+- automatischer Retry-Scheduler / Background-Worker
+- QoS 1/2, Retained-ACK-Semantik
+- Kompletter Audit-Trail-Export
+- Multi-Broker oder Broker-Failover
+
+## Scheduler / Automation Runtime V1
+
+Diese Schicht macht zeitbasierte Automation moeglich, ohne einen externen Scheduler (Celery, k8s CronJob usw.) einzufuehren.
+
+### Was enthalten ist
+
+**Schedule-Modell**
+- `schedule_type`: `interval`, `cron` (5-Feld Minute/Stunde/Tag/Monat/Wochentag) oder `manual`
+- `target_type`: `command` (Reactor-Command ueber den Safety-Guard-Pfad) oder `rule` (ruft die Rule-Evaluation)
+- `target_params` (JSON) traegt z.B. `command_type` fuer Command-Schedules oder `dry_run` fuer Rule-Schedules
+- Felder: `last_run_at`, `next_run_at`, `last_status`, `last_error`
+
+**ScheduleExecution-Log**
+- `status` (`success`|`failed`|`skipped`), `trigger` (`scheduler`|`manual`), Start/Finish, Ergebnis-JSON, Fehler
+- Pro Schedule werden die juengsten 100 Ausfuehrungen aufbewahrt
+
+**Runtime**
+- `SchedulerRunner` laeuft als Daemon-Thread im FastAPI-Lifespan
+- Tick alle `scheduler_tick_seconds` (Default 5 s)
+- Faellige Schedules werden sequentiell ausgefuehrt, Fehler werden pro Schedule geloggt und brechen den Tick nicht ab
+- `scheduler_enabled` und `scheduler_tick_seconds` sind ueber `.env` konfigurierbar
+
+**API (Operator fuer Writes, Authenticated fuer Reads)**
+- `GET/POST /api/v1/schedules`
+- `PATCH /api/v1/schedules/{id}` und `PATCH /api/v1/schedules/{id}/enabled`
+- `DELETE /api/v1/schedules/{id}`
+- `GET /api/v1/schedules/{id}/executions`
+- `POST /api/v1/schedules/{id}/run`
+
+**Frontend**
+- Neue Seite `/schedules` mit Formular, Uebersichtstabelle, Enable/Disable, Manuell ausfuehren und Ausfuehrungshistorie
+- Navigation-Link "Scheduler" in AppShell
+
+**Seed-Beispiele (initial deaktiviert)**
+- Lichtzyklus Reaktor A1 (Interval 12 h, light_on)
+- Regel-Check alle 60 s (Rule "Sensor ohne Werte 24h")
+- Telemetrie-Sampling Trigger (Interval 5 min, sample_capture)
+- Wartungscheck taeglich (Cron `0 7 * * *`, Rule dry-run)
+
+### Was bewusst noch nicht enthalten ist
+
+- verteilte Worker / Parallelausfuehrung
+- vollstaendige Cron-Syntax (Nicknames, L/W/#, Sekunden)
+- DAG-/Workflow-Orchestrierung
+- Uebergeordneter Retry-Controller fuer fehlgeschlagene Schedule-Runs
 
 ## Struktur
 

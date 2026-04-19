@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from datetime import timedelta
 import re
 from typing import Protocol
 
@@ -8,6 +9,9 @@ from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
 from ..models import DeviceNode, Reactor, ReactorCommand, ReactorSetpoint, TelemetryValue, _utcnow
+
+
+COMMAND_ACK_TIMEOUT_SECONDS = 30
 from ..schemas import (
     DeviceNodeCreate,
     DeviceNodeRead,
@@ -26,7 +30,14 @@ from ..schemas import (
 
 
 class CommandPublisher(Protocol):
-    def publish_reactor_command(self, *, reactor_id: int, command_id: int, command_type: str) -> bool | None:
+    def publish_reactor_command(
+        self,
+        *,
+        reactor_id: int,
+        command_id: int,
+        command_type: str,
+        command_uid: str | None = None,
+    ) -> bool | None:
         ...
 
 
@@ -233,20 +244,127 @@ def create_reactor_command(
     session.add(command)
     session.commit()
     session.refresh(command)
-    if publisher is not None:
-        publish_result = publisher.publish_reactor_command(
-            reactor_id=reactor_id,
-            command_id=command.id,
-            command_type=command.command_type,
-        )
-        if publish_result is True:
-            command.status = 'sent'
-        elif publish_result is False:
-            command.status = 'failed'
-        session.add(command)
-        session.commit()
-        session.refresh(command)
+    _dispatch_command(session, command, publisher)
     return _serialize_commands(session, [command])[0]
+
+
+def retry_reactor_command(
+    session: Session,
+    command_id: int,
+    *,
+    publisher: CommandPublisher | None = None,
+) -> ReactorCommandRead:
+    command = get_command_or_404(session, command_id)
+    if command.status == 'acknowledged':
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail='Command already acknowledged',
+        )
+    if command.status == 'blocked':
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail='Command is blocked by safety guard',
+        )
+    if command.retry_count >= command.max_retries:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail='Command reached max retries',
+        )
+    command.retry_count += 1
+    command.status = 'retrying'
+    command.last_error = None
+    command.updated_at = _utcnow()
+    session.add(command)
+    session.commit()
+    session.refresh(command)
+    _dispatch_command(session, command, publisher)
+    return _serialize_commands(session, [command])[0]
+
+
+def process_command_ack(
+    session: Session,
+    *,
+    reactor_id: int,
+    command_id: int | None,
+    command_uid: str | None,
+    ack_status: str,
+    error: str | None,
+    received_at=None,
+    raw_payload: dict | None = None,
+) -> ReactorCommand | None:
+    command = None
+    if command_id is not None:
+        command = session.get(ReactorCommand, command_id)
+    if command is None and command_uid is not None:
+        command = session.exec(
+            select(ReactorCommand).where(ReactorCommand.command_uid == command_uid)
+        ).first()
+    if command is None:
+        return None
+    if command.reactor_id != reactor_id:
+        return None
+    command.acknowledged_at = received_at or _utcnow()
+    command.ack_payload = raw_payload
+    if ack_status == 'error':
+        command.status = 'failed'
+        command.last_error = error or 'node reported error'
+    else:
+        command.status = 'acknowledged'
+        command.last_error = None
+    command.updated_at = _utcnow()
+    session.add(command)
+    return command
+
+
+def check_command_timeouts_and_serialize(session: Session) -> list[ReactorCommandRead]:
+    timed_out = check_command_timeouts(session)
+    return _serialize_commands(session, timed_out)
+
+
+def check_command_timeouts(session: Session) -> list[ReactorCommand]:
+    now = _utcnow()
+    statement = select(ReactorCommand).where(
+        ReactorCommand.status.in_(('sent', 'retrying')),
+        ReactorCommand.timeout_at.is_not(None),
+        ReactorCommand.timeout_at < now,
+    )
+    timed_out = list(session.exec(statement).all())
+    for command in timed_out:
+        command.status = 'timeout'
+        command.last_error = command.last_error or 'ACK not received before timeout'
+        command.updated_at = now
+        session.add(command)
+    if timed_out:
+        session.commit()
+    return timed_out
+
+
+def _dispatch_command(
+    session: Session,
+    command: ReactorCommand,
+    publisher: CommandPublisher | None,
+) -> None:
+    if publisher is None:
+        return
+    publish_result = publisher.publish_reactor_command(
+        reactor_id=command.reactor_id,
+        command_id=command.id,
+        command_type=command.command_type,
+        command_uid=command.command_uid,
+    )
+    now = _utcnow()
+    if publish_result is True:
+        command.status = 'sent'
+        command.published_at = now
+        command.timeout_at = now + timedelta(seconds=COMMAND_ACK_TIMEOUT_SECONDS)
+        command.last_error = None
+    elif publish_result is False:
+        command.status = 'failed'
+        command.last_error = 'MQTT publish failed'
+    command.updated_at = now
+    session.add(command)
+    session.commit()
+    session.refresh(command)
 
 
 def count_offline_devices(session: Session) -> int:
@@ -298,6 +416,13 @@ def get_device_or_404(session: Session, device_id: int) -> DeviceNode:
     if device is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Device not found')
     return device
+
+
+def get_command_or_404(session: Session, command_id: int) -> ReactorCommand:
+    command = session.get(ReactorCommand, command_id)
+    if command is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Command not found')
+    return command
 
 
 def get_setpoint_or_404(session: Session, setpoint_id: int) -> ReactorSetpoint:
@@ -475,7 +600,16 @@ def _serialize_commands(session: Session, commands: list[ReactorCommand]) -> lis
             command_type=command.command_type,
             status=command.status,
             blocked_reason=command.blocked_reason,
+            command_uid=command.command_uid,
+            published_at=command.published_at,
+            acknowledged_at=command.acknowledged_at,
+            retry_count=command.retry_count,
+            max_retries=command.max_retries,
+            last_error=command.last_error,
+            timeout_at=command.timeout_at,
+            ack_payload=command.ack_payload,
             created_at=command.created_at,
+            updated_at=command.updated_at,
         )
         for command in commands
     ]

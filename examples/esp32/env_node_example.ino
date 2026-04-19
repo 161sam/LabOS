@@ -28,6 +28,47 @@ String telemetryTopic(const char* sensorType) {
   return "labos/reactor/" + String(REACTOR_ID) + "/telemetry/" + String(sensorType);
 }
 
+String ackTopic() {
+  return "labos/reactor/" + String(REACTOR_ID) + "/ack";
+}
+
+String extractField(const String& payload, const String& key) {
+  int keyIndex = payload.indexOf("\"" + key + "\"");
+  if (keyIndex < 0) {
+    return String();
+  }
+  int colonIndex = payload.indexOf(':', keyIndex);
+  if (colonIndex < 0) {
+    return String();
+  }
+  int start = colonIndex + 1;
+  while (start < (int)payload.length() && (payload[start] == ' ' || payload[start] == '\"')) {
+    start++;
+  }
+  int end = start;
+  while (end < (int)payload.length() && payload[end] != '\"' && payload[end] != ',' && payload[end] != '}') {
+    end++;
+  }
+  return payload.substring(start, end);
+}
+
+void publishAck(const String& commandId, const String& commandUid, bool ok, const String& errorMessage) {
+  String payload = "{\"status\":\"";
+  payload += ok ? "ok" : "error";
+  payload += "\"";
+  if (commandId.length() > 0) {
+    payload += ",\"command_id\":" + commandId;
+  }
+  if (commandUid.length() > 0) {
+    payload += ",\"command_uid\":\"" + commandUid + "\"";
+  }
+  if (!ok && errorMessage.length() > 0) {
+    payload += ",\"error\":\"" + errorMessage + "\"";
+  }
+  payload += "}";
+  mqttClient.publish(ackTopic().c_str(), payload.c_str());
+}
+
 void publishStatus(const char* statusValue) {
   String payload =
     "{\"name\":\"ESP32 Env Node A1\",\"reactor_id\":" + String(REACTOR_ID) +
@@ -62,6 +103,9 @@ void handleControlMessage(char* topic, byte* payload, unsigned int length) {
   Serial.print(": ");
   Serial.println(message);
 
+  String commandId = extractField(message, "command_id");
+  String commandUid = extractField(message, "command_uid");
+
   if (String(topic).endsWith("/light")) {
     if (message.indexOf("\"command\":\"on\"") >= 0) {
       Serial.println("Would switch light ON");
@@ -77,6 +121,8 @@ void handleControlMessage(char* topic, byte* payload, unsigned int length) {
       Serial.println("Would switch pump OFF");
     }
   }
+
+  publishAck(commandId, commandUid, true, String());
 }
 
 void ensureWifi() {

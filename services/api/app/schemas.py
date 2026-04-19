@@ -129,8 +129,16 @@ class ReactorCommandType(str, Enum):
 class ReactorCommandStatus(str, Enum):
     pending = 'pending'
     sent = 'sent'
+    acknowledged = 'acknowledged'
     failed = 'failed'
     blocked = 'blocked'
+    timeout = 'timeout'
+    retrying = 'retrying'
+
+
+class MQTTAckStatus(str, Enum):
+    ok = 'ok'
+    error = 'error'
 
 
 class CalibrationTargetType(str, Enum):
@@ -662,7 +670,24 @@ class ReactorCommandRead(AppSchema):
     command_type: ReactorCommandType
     status: ReactorCommandStatus
     blocked_reason: str | None = None
+    command_uid: str
+    published_at: datetime | None = None
+    acknowledged_at: datetime | None = None
+    retry_count: int = 0
+    max_retries: int = 3
+    last_error: str | None = None
+    timeout_at: datetime | None = None
+    ack_payload: dict | None = None
     created_at: datetime
+    updated_at: datetime
+
+
+class MQTTAckPayload(AppSchema):
+    command_id: int | None = None
+    command_uid: str | None = Field(default=None, min_length=1, max_length=64)
+    status: MQTTAckStatus = MQTTAckStatus.ok
+    error: str | None = Field(default=None, max_length=400)
+    received_at: datetime | None = None
 
 
 class MQTTTelemetryPayload(AppSchema):
@@ -1712,6 +1737,118 @@ def _require_config_keys(config: dict[str, Any], keys: set[str], scope: str) -> 
     missing = sorted(key for key in keys if key not in config)
     if missing:
         raise ValueError(f'{scope} missing required keys: {", ".join(missing)}')
+
+
+class ScheduleType(str, Enum):
+    interval = 'interval'
+    cron = 'cron'
+    manual = 'manual'
+
+
+class ScheduleTargetType(str, Enum):
+    command = 'command'
+    rule = 'rule'
+
+
+class ScheduleExecutionStatus(str, Enum):
+    success = 'success'
+    failed = 'failed'
+    skipped = 'skipped'
+
+
+class SchedulePayload(AppSchema):
+    name: str = Field(min_length=1, max_length=160)
+    description: str | None = Field(default=None, max_length=4000)
+    schedule_type: ScheduleType
+    interval_seconds: int | None = Field(default=None, ge=5, le=7 * 24 * 3600)
+    cron_expr: str | None = Field(default=None, max_length=120)
+    target_type: ScheduleTargetType
+    target_id: int | None = Field(default=None, ge=1)
+    reactor_id: int | None = Field(default=None, ge=1)
+    target_params: dict[str, Any] = Field(default_factory=dict)
+    is_enabled: bool = True
+
+    @field_validator('name')
+    @classmethod
+    def normalize_name(cls, value: str) -> str:
+        return _normalize_required_text(value)
+
+    @field_validator('description')
+    @classmethod
+    def normalize_description(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+    @field_validator('cron_expr')
+    @classmethod
+    def normalize_cron(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+    @model_validator(mode='after')
+    def validate_schedule_payload(self):
+        if self.schedule_type == ScheduleType.interval:
+            if self.interval_seconds is None:
+                raise ValueError('interval schedules require interval_seconds')
+        elif self.schedule_type == ScheduleType.cron:
+            if not self.cron_expr:
+                raise ValueError('cron schedules require cron_expr')
+        if self.target_type == ScheduleTargetType.command:
+            if self.reactor_id is None:
+                raise ValueError('command schedules require reactor_id')
+            command_type = self.target_params.get('command_type') if isinstance(self.target_params, dict) else None
+            if not command_type:
+                raise ValueError('command schedules require target_params.command_type')
+        if self.target_type == ScheduleTargetType.rule:
+            if self.target_id is None:
+                raise ValueError('rule schedules require target_id')
+        return self
+
+
+class ScheduleCreate(SchedulePayload):
+    pass
+
+
+class ScheduleUpdate(SchedulePayload):
+    pass
+
+
+class ScheduleEnabledUpdate(AppSchema):
+    is_enabled: bool
+
+
+class ScheduleRead(AppSchema):
+    id: int
+    name: str
+    description: str | None
+    schedule_type: ScheduleType
+    interval_seconds: int | None
+    cron_expr: str | None
+    target_type: ScheduleTargetType
+    target_id: int | None
+    reactor_id: int | None
+    target_params: dict[str, Any]
+    is_enabled: bool
+    last_run_at: datetime | None
+    next_run_at: datetime | None
+    last_status: ScheduleExecutionStatus | None
+    last_error: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class ScheduleExecutionRead(AppSchema):
+    id: int
+    schedule_id: int
+    status: ScheduleExecutionStatus
+    trigger: str
+    started_at: datetime
+    finished_at: datetime | None
+    result: dict[str, Any]
+    error: str | None
+
+
+class ScheduleRunResponse(AppSchema):
+    schedule: ScheduleRead
+    execution: ScheduleExecutionRead
 
 
 def _validate_rule_configuration(

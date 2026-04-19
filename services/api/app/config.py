@@ -31,6 +31,8 @@ class Settings(BaseSettings):
     mqtt_client_id: str = 'labos-api'
     mqtt_topic_prefix: str = 'labos'
     mqtt_publish_commands: bool = True
+    scheduler_enabled: bool = True
+    scheduler_tick_seconds: float = 5.0
 
 
 settings = Settings()

@@ -122,8 +122,11 @@ export const reactorCommandTypeOptions = [
 export const reactorCommandStatusOptions = [
   { value: 'pending', label: 'Pending' },
   { value: 'sent', label: 'Sent' },
+  { value: 'acknowledged', label: 'Bestätigt' },
   { value: 'failed', label: 'Failed' },
   { value: 'blocked', label: 'Blockiert' },
+  { value: 'timeout', label: 'Timeout' },
+  { value: 'retrying', label: 'Retry läuft' },
 ] as const;
 
 export const calibrationTargetTypeOptions = [
@@ -472,7 +475,16 @@ export type ReactorCommand = {
   command_type: ReactorCommandType;
   status: ReactorCommandStatus;
   blocked_reason: string | null;
+  command_uid: string;
+  published_at: string | null;
+  acknowledged_at: string | null;
+  retry_count: number;
+  max_retries: number;
+  last_error: string | null;
+  timeout_at: string | null;
+  ack_payload: Record<string, unknown> | null;
   created_at: string;
+  updated_at: string;
 };
 
 export type CalibrationRecord = {
@@ -968,6 +980,63 @@ export type RuleExecution = {
 export type RuleEvaluationResponse = {
   rule: Rule;
   execution: RuleExecution;
+};
+
+export const scheduleTypeOptions = [
+  { value: 'interval', label: 'Interval' },
+  { value: 'cron', label: 'Cron' },
+  { value: 'manual', label: 'Manuell' },
+] as const;
+
+export const scheduleTargetTypeOptions = [
+  { value: 'command', label: 'Reactor Command' },
+  { value: 'rule', label: 'Rule' },
+] as const;
+
+export const scheduleExecutionStatusOptions = [
+  { value: 'success', label: 'Success' },
+  { value: 'failed', label: 'Failed' },
+  { value: 'skipped', label: 'Skipped' },
+] as const;
+
+export type ScheduleType = (typeof scheduleTypeOptions)[number]['value'];
+export type ScheduleTargetType = (typeof scheduleTargetTypeOptions)[number]['value'];
+export type ScheduleExecutionStatus = (typeof scheduleExecutionStatusOptions)[number]['value'];
+
+export type Schedule = {
+  id: number;
+  name: string;
+  description: string | null;
+  schedule_type: ScheduleType;
+  interval_seconds: number | null;
+  cron_expr: string | null;
+  target_type: ScheduleTargetType;
+  target_id: number | null;
+  reactor_id: number | null;
+  target_params: Record<string, unknown>;
+  is_enabled: boolean;
+  last_run_at: string | null;
+  next_run_at: string | null;
+  last_status: ScheduleExecutionStatus | null;
+  last_error: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ScheduleExecution = {
+  id: number;
+  schedule_id: number;
+  status: ScheduleExecutionStatus;
+  trigger: string;
+  started_at: string;
+  finished_at: string | null;
+  result: Record<string, unknown>;
+  error: string | null;
+};
+
+export type ScheduleRunResponse = {
+  schedule: Schedule;
+  execution: ScheduleExecution;
 };
 
 export type DashboardSummary = {

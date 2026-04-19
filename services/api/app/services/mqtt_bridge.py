@@ -11,13 +11,21 @@ from sqlmodel import Session
 
 from ..config import settings
 from ..db import engine
-from ..schemas import MQTTBridgeStatusRead, MQTTHeartbeatPayload, MQTTNodeStatusPayload, MQTTTelemetryPayload
+from ..schemas import (
+    MQTTAckPayload,
+    MQTTBridgeStatusRead,
+    MQTTHeartbeatPayload,
+    MQTTNodeStatusPayload,
+    MQTTTelemetryPayload,
+)
 from . import reactor_control as reactor_control_service
 from .mqtt_topics import (
+    build_ack_subscription,
     build_control_topic,
     build_node_subscription,
     build_telemetry_subscription,
     get_control_channel,
+    parse_ack_topic,
     parse_node_topic,
     parse_telemetry_topic,
 )
@@ -104,7 +112,14 @@ class MQTTBridge:
             last_error=self._last_error,
         )
 
-    def publish_reactor_command(self, *, reactor_id: int, command_id: int, command_type: str) -> bool | None:
+    def publish_reactor_command(
+        self,
+        *,
+        reactor_id: int,
+        command_id: int,
+        command_type: str,
+        command_uid: str | None = None,
+    ) -> bool | None:
         if not settings.mqtt_enabled or not settings.mqtt_publish_commands:
             return None
         client = self._client
@@ -117,6 +132,7 @@ class MQTTBridge:
         payload = json.dumps(
             {
                 'command_id': command_id,
+                'command_uid': command_uid,
                 'reactor_id': reactor_id,
                 'command_type': command_type,
                 'channel': channel,
@@ -154,6 +170,11 @@ class MQTTBridge:
         node_match = parse_node_topic(topic, prefix=settings.mqtt_topic_prefix)
         if node_match is not None:
             self._handle_node_message(node_match.node_id, node_match.message_kind, message)
+            return
+
+        ack_match = parse_ack_topic(topic, prefix=settings.mqtt_topic_prefix)
+        if ack_match is not None:
+            self._handle_ack_message(ack_match.reactor_id, message)
             return
 
         logger.debug('Ignoring MQTT topic outside LabOS topic map: %s', topic)
@@ -217,16 +238,49 @@ class MQTTBridge:
             self._set_last_error(f'Failed to persist MQTT node message for {node_id}: {exc}')
             logger.warning('Failed to persist MQTT node message for %s: %s', node_id, exc)
 
+    def _handle_ack_message(self, reactor_id: int, message: dict) -> None:
+        try:
+            payload = MQTTAckPayload.model_validate(message)
+        except ValidationError as exc:
+            self._set_last_error(f'Invalid ACK payload for reactor {reactor_id}: {exc}')
+            logger.warning('Invalid MQTT ACK payload for reactor %s: %s', reactor_id, exc)
+            return
+
+        if payload.command_id is None and payload.command_uid is None:
+            self._set_last_error(f'ACK on reactor {reactor_id} missing command_id and command_uid')
+            logger.warning('ACK missing identifiers for reactor %s', reactor_id)
+            return
+
+        try:
+            with self._session_factory() as session:
+                reactor_control_service.process_command_ack(
+                    session,
+                    reactor_id=reactor_id,
+                    command_id=payload.command_id,
+                    command_uid=payload.command_uid,
+                    ack_status=payload.status.value,
+                    error=payload.error,
+                    received_at=payload.received_at,
+                    raw_payload=message,
+                )
+                session.commit()
+            self._last_message_at = datetime.now(timezone.utc).replace(tzinfo=None)
+        except Exception as exc:
+            self._set_last_error(f'Failed to persist MQTT ACK for reactor {reactor_id}: {exc}')
+            logger.warning('Failed to persist MQTT ACK for reactor %s: %s', reactor_id, exc)
+
     def _on_connect(self, client, userdata, flags, reason_code, properties=None):  # pragma: no cover - runtime integration
         if reason_code == 0:
             telemetry_topic = build_telemetry_subscription(settings.mqtt_topic_prefix)
             node_topic = build_node_subscription(settings.mqtt_topic_prefix)
+            ack_topic = build_ack_subscription(settings.mqtt_topic_prefix)
             client.subscribe(telemetry_topic)
             client.subscribe(node_topic)
+            client.subscribe(ack_topic)
             self._connected = True
             self._last_error = None
             logger.info('MQTT bridge connected to %s:%s', settings.mqtt_broker_host, settings.mqtt_broker_port)
-            logger.info('MQTT bridge subscribed to %s and %s', telemetry_topic, node_topic)
+            logger.info('MQTT bridge subscribed to %s, %s and %s', telemetry_topic, node_topic, ack_topic)
             return
         self._connected = False
         self._set_last_error(f'MQTT connect failed with reason code {reason_code}')

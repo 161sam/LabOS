@@ -15,6 +15,11 @@ class NodeTopicMatch:
     message_kind: str
 
 
+@dataclass(frozen=True)
+class AckTopicMatch:
+    reactor_id: int
+
+
 def normalize_topic_prefix(prefix: str) -> list[str]:
     return [segment for segment in prefix.strip('/').split('/') if segment]
 
@@ -57,12 +62,35 @@ def parse_node_topic(topic: str, *, prefix: str) -> NodeTopicMatch | None:
     return NodeTopicMatch(node_id=node_id, message_kind=message_kind)
 
 
+def parse_ack_topic(topic: str, *, prefix: str) -> AckTopicMatch | None:
+    parts = _split_topic(topic)
+    prefix_parts = normalize_topic_prefix(prefix)
+    if len(parts) != len(prefix_parts) + 3:
+        return None
+    if parts[: len(prefix_parts)] != prefix_parts:
+        return None
+    if parts[len(prefix_parts)] != 'reactor' or parts[len(prefix_parts) + 2] != 'ack':
+        return None
+    reactor_id_part = parts[len(prefix_parts) + 1]
+    if not reactor_id_part.isdigit():
+        return None
+    return AckTopicMatch(reactor_id=int(reactor_id_part))
+
+
 def build_telemetry_subscription(prefix: str) -> str:
     return '/'.join([*normalize_topic_prefix(prefix), 'reactor', '+', 'telemetry', '+'])
 
 
 def build_node_subscription(prefix: str) -> str:
     return '/'.join([*normalize_topic_prefix(prefix), 'node', '+', '+'])
+
+
+def build_ack_subscription(prefix: str) -> str:
+    return '/'.join([*normalize_topic_prefix(prefix), 'reactor', '+', 'ack'])
+
+
+def build_ack_topic(prefix: str, *, reactor_id: int) -> str:
+    return '/'.join([*normalize_topic_prefix(prefix), 'reactor', str(reactor_id), 'ack'])
 
 
 def get_control_channel(command_type: str) -> tuple[str, str]:

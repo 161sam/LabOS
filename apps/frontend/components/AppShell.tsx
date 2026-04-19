@@ -27,6 +27,7 @@ const navItems: Array<{
   { label: 'Alerts', href: '/alerts' },
   { label: 'Safety', href: '/safety' },
   { label: 'Automation', href: '/rules' },
+  { label: 'Scheduler', href: '/schedules' },
   { label: 'Wiki', href: '/wiki' },
   { label: 'ABrain', href: '/abrain' },
   { label: 'Benutzer', href: '/users', roles: ['admin'] },

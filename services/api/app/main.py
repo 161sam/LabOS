@@ -6,7 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .db import run_migrations
 from .services import mqtt_bridge as mqtt_bridge_service
-from .routers import abrain, alerts, assets, auth, calibration, charges, dashboard, inventory, labels, maintenance, photos, reactor_control, reactor_ops, reactors, rules, safety, sensors, tasks, users, wiki
+from .services import scheduler as scheduler_service
+from .routers import abrain, alerts, assets, auth, calibration, charges, dashboard, inventory, labels, maintenance, photos, reactor_control, reactor_ops, reactors, rules, safety, schedules, sensors, tasks, users, wiki
 from .seed import seed_data
 
 
@@ -15,7 +16,9 @@ async def lifespan(app: FastAPI):
     run_migrations()
     seed_data()
     mqtt_bridge_service.get_mqtt_bridge().start()
+    scheduler_service.get_scheduler_runner().start()
     yield
+    scheduler_service.get_scheduler_runner().stop()
     mqtt_bridge_service.get_mqtt_bridge().stop()
 
 
@@ -58,6 +61,7 @@ app.include_router(alerts.router, prefix=api_prefix)
 app.include_router(calibration.router, prefix=api_prefix)
 app.include_router(maintenance.router, prefix=api_prefix)
 app.include_router(safety.router, prefix=api_prefix)
+app.include_router(schedules.router, prefix=api_prefix)
 app.include_router(users.router, prefix=api_prefix)
 app.include_router(wiki.router, prefix=api_prefix)
 app.include_router(abrain.router, prefix=api_prefix)

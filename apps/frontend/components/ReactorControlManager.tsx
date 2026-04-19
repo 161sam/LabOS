@@ -9,6 +9,7 @@ import {
   MQTTBridgeStatus,
   ReactorCommand,
   ReactorCommandType,
+  reactorCommandStatusOptions,
   reactorCommandTypeOptions,
   ReactorControlParameter,
   reactorControlParameterOptions,
@@ -104,6 +105,7 @@ export function ReactorControlManager() {
   const [savingSetpointId, setSavingSetpointId] = useState<number | null>(null);
   const [creatingSetpoint, setCreatingSetpoint] = useState(false);
   const [sendingCommand, setSendingCommand] = useState<ReactorCommandType | null>(null);
+  const [retryingCommandId, setRetryingCommandId] = useState<number | null>(null);
 
   const selectedReactor = useMemo(
     () => reactors.find((item) => item.reactor_id === selectedReactorId) ?? null,
@@ -257,6 +259,26 @@ export function ReactorControlManager() {
       setSetpointError(getErrorMessage(error));
     } finally {
       setSavingSetpointId(null);
+    }
+  }
+
+  async function handleRetryCommand(commandId: number) {
+    if (!selectedReactorId) {
+      return;
+    }
+    setRetryingCommandId(commandId);
+    setNotice(null);
+    setSetpointError(null);
+    try {
+      const command = await apiRequest<ReactorCommand>(`/api/v1/reactor-commands/${commandId}/retry`, {
+        method: 'POST',
+      });
+      setNotice(`Retry ${command.retry_count}/${command.max_retries} für ${command.command_type} ausgelöst.`);
+      await loadReactorControl(selectedReactorId);
+    } catch (error) {
+      setSetpointError(getErrorMessage(error));
+    } finally {
+      setRetryingCommandId(null);
     }
   }
 
@@ -628,16 +650,51 @@ export function ReactorControlManager() {
                         <th>Zeitpunkt</th>
                         <th>Command</th>
                         <th>Status</th>
+                        <th>ACK</th>
+                        <th>Retry</th>
+                        <th>Fehler / Reason</th>
+                        <th>Aktion</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {commands.map((command) => (
-                        <tr key={command.id}>
-                          <td>{formatDateTime(command.created_at)}</td>
-                          <td>{getOptionLabel(reactorCommandTypeOptions, command.command_type)}</td>
-                          <td><span className={`badge badge-${command.status}`}>{command.status}</span></td>
-                        </tr>
-                      ))}
+                      {commands.map((command) => {
+                        const canRetry =
+                          canEdit &&
+                          (command.status === 'failed' || command.status === 'timeout') &&
+                          command.retry_count < command.max_retries;
+                        return (
+                          <tr key={command.id}>
+                            <td>{formatDateTime(command.created_at)}</td>
+                            <td>{getOptionLabel(reactorCommandTypeOptions, command.command_type)}</td>
+                            <td>
+                              <span className={`badge badge-${command.status}`}>
+                                {getOptionLabel(reactorCommandStatusOptions, command.status)}
+                              </span>
+                            </td>
+                            <td>{command.acknowledged_at ? formatDateTime(command.acknowledged_at) : '—'}</td>
+                            <td>
+                              {command.retry_count}/{command.max_retries}
+                            </td>
+                            <td className="muted">
+                              {command.last_error || command.blocked_reason || '—'}
+                            </td>
+                            <td>
+                              {canRetry ? (
+                                <button
+                                  className="button buttonSecondary buttonCompact"
+                                  type="button"
+                                  disabled={retryingCommandId === command.id}
+                                  onClick={() => void handleRetryCommand(command.id)}
+                                >
+                                  {retryingCommandId === command.id ? 'Retry…' : 'Retry'}
+                                </button>
+                              ) : (
+                                <span className="muted">—</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

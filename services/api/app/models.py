@@ -142,11 +142,18 @@ class ReactorSetpoint(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=_utcnow)
 
 
+def _new_command_uid() -> str:
+    import uuid
+    return uuid.uuid4().hex
+
+
 class ReactorCommand(SQLModel, table=True):
     __table_args__ = (
         Index('ix_reactorcommand_reactor_id_created_at', 'reactor_id', 'created_at'),
         Index('ix_reactorcommand_status', 'status'),
         Index('ix_reactorcommand_command_type', 'command_type'),
+        Index('ix_reactorcommand_command_uid', 'command_uid', unique=True),
+        Index('ix_reactorcommand_timeout_at', 'timeout_at'),
     )
 
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -154,7 +161,16 @@ class ReactorCommand(SQLModel, table=True):
     command_type: str
     status: str = 'pending'
     blocked_reason: Optional[str] = None
+    command_uid: str = Field(default_factory=_new_command_uid)
+    published_at: Optional[datetime] = None
+    acknowledged_at: Optional[datetime] = None
+    retry_count: int = 0
+    max_retries: int = 3
+    last_error: Optional[str] = None
+    timeout_at: Optional[datetime] = None
+    ack_payload: Optional[dict] = Field(default=None, sa_column=Column(JSON))
     created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
 
 
 class CalibrationRecord(SQLModel, table=True):
@@ -468,6 +484,51 @@ class RuleExecution(SQLModel, table=True):
     evaluation_summary: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
     action_result: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
     created_at: datetime = Field(default_factory=_utcnow)
+
+
+class Schedule(SQLModel, table=True):
+    __table_args__ = (
+        Index('ix_schedule_is_enabled', 'is_enabled'),
+        Index('ix_schedule_schedule_type', 'schedule_type'),
+        Index('ix_schedule_target_type', 'target_type'),
+        Index('ix_schedule_next_run_at', 'next_run_at'),
+        Index('ix_schedule_reactor_id', 'reactor_id'),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str
+    description: Optional[str] = None
+    schedule_type: str
+    interval_seconds: Optional[int] = None
+    cron_expr: Optional[str] = None
+    target_type: str
+    target_id: Optional[int] = None
+    reactor_id: Optional[int] = Field(default=None, foreign_key='reactor.id')
+    target_params: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
+    is_enabled: bool = True
+    last_run_at: Optional[datetime] = None
+    next_run_at: Optional[datetime] = None
+    last_status: Optional[str] = None
+    last_error: Optional[str] = None
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
+
+
+class ScheduleExecution(SQLModel, table=True):
+    __table_args__ = (
+        Index('ix_scheduleexecution_schedule_id', 'schedule_id'),
+        Index('ix_scheduleexecution_status', 'status'),
+        Index('ix_scheduleexecution_started_at', 'started_at'),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    schedule_id: int = Field(foreign_key='schedule.id', index=True)
+    status: str
+    trigger: str = 'scheduler'
+    started_at: datetime = Field(default_factory=_utcnow)
+    finished_at: Optional[datetime] = None
+    result: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
+    error: Optional[str] = None
 
 
 class WikiPage(SQLModel, table=True):

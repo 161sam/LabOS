@@ -35,6 +35,8 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
         'reactorevent',
         'reactortwin',
         'useraccount',
+        'schedule',
+        'scheduleexecution',
         'wikipage',
     } <= table_names
 
@@ -453,6 +455,6 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
 
     with engine.connect() as connection:
         version = connection.execute(text('SELECT version_num FROM alembic_version')).scalar_one()
-        assert version == '20260418_0012'
+        assert version == '20260419_0015'
 
     engine.dispose()

@@ -55,8 +55,77 @@ LabOS ist nicht nur eine einzelne Labor-App, sondern das zentrale Betriebssystem
 - Reactor Control / Telemetry V1
 - MQTT / ESP32 / Pi Architektur V1
 - **Calibration / Maintenance / Safety V1**
+- **Command ACK / Retry V1**
+- **Scheduler / Automation Runtime V1**
 - Dashboard-Basis
 - Wiki-Basis
+
+---
+
+# Aktueller Status: Scheduler / Automation Runtime V1
+
+Mit diesem Schritt bekommt LabOS eine eigene leichte Automation-Runtime: Reactor-Commands und Rule-Checks koennen zeitbasiert (interval/cron) oder manuell ausgefuehrt werden, ohne externen Scheduler.
+
+## Enthalten
+
+- `Schedule`-Modell mit `schedule_type` (`interval`/`cron`/`manual`), `target_type` (`command`/`rule`), `target_params` (JSON), `reactor_id`, `target_id`, `last_run_at`, `next_run_at`, `last_status`, `last_error`
+- `ScheduleExecution`-Log mit `status`, `trigger`, Start-/Finish-Timestamps, Ergebnis-JSON und Fehlertext
+- `SchedulerRunner` als Daemon-Thread im FastAPI-Lifespan, Tick alle 5 s, per `scheduler_enabled` abschaltbar
+- eigener 5-Feld-Cron-Parser (Minute/Stunde/Tag/Monat/Wochentag, `*`, `*/N`, Ranges, Listen)
+- API: `GET/POST /api/v1/schedules`, `PATCH /api/v1/schedules/{id}`, `PATCH /api/v1/schedules/{id}/enabled`, `DELETE /api/v1/schedules/{id}`, `GET /api/v1/schedules/{id}/executions`, `POST /api/v1/schedules/{id}/run`
+- Writes sind Operator/Admin, Reads authenticated
+- Command-Schedules nutzen den bestehenden Safety-Guard-Pfad aus Command ACK/Retry
+- Frontend `/schedules` mit Formular, Tabelle, Enable/Disable, Manuell-Run und Ausfuehrungshistorie
+- Seed: vier Beispiel-Schedules (Lichtzyklus, Rule-Check 60 s, Sample-Capture 5 min, Wartungscheck cron), initial deaktiviert
+- 13 neue Backend-Tests (Cron-Parser, Payload-Validierung, CRUD, Enabled-Toggle, Manual-Run, Due-Detection, Execute-Failure, Tick, Executions-Endpoint, RBAC, Cron-Validierung, Delete)
+
+## Bewusst noch nicht enthalten
+
+- parallele Worker oder verteilter Scheduler (Celery/k8s CronJob/DAG)
+- Nicknames wie `@hourly`, Sekunden-Granularitaet oder erweiterte Cron-Syntax (`L`, `W`, `#`)
+- ueberschlagender Retry-Controller fuer fehlgeschlagene Schedule-Runs
+- eigene Scheduler-Metriken / Prometheus-Export
+
+## Grundlage fuer
+
+- geschlossene Regelkreise mit Zeitfenstern (Licht an/aus ueber Tag)
+- regelmaessige Sampling-Pipelines (Vision, Telemetrie)
+- wiederkehrende Wartungs- und Kalibrierpruefungen
+- kombinierte Scheduler-/Rule-Engine mit ACK-Feedback
+
+---
+
+# Aktueller Status: Command ACK / Retry V1
+
+Mit diesem Schritt werden MQTT-Commands nicht nur versendet, sondern auch nachverfolgbar bestaetigt, beim Ausbleiben einer Antwort markiert und auf Operator-Anforderung wiederholt.
+
+## Enthalten
+
+- `ReactorCommand.command_uid` als stabile UUID fuer MQTT/Node-Korrelation
+- neue Felder `published_at`, `acknowledged_at`, `timeout_at`, `retry_count`, `max_retries`, `last_error`, `ack_payload`
+- Status-Erweiterung: `acknowledged`, `timeout`, `retrying`
+- Publish-Payload enthaelt `command_uid`; ACK-Topic `labos/reactor/{id}/ack`
+- MQTT-Bridge abonniert ACK-Topic, validiert Payload und setzt Status auf `acknowledged` bzw. `failed`
+- Retry-Endpoint `POST /api/v1/reactor-commands/{id}/retry` (inkrementiert `retry_count`, respektiert `max_retries`, lehnt bereits bestaetigte/blockierte Commands ab)
+- Timeout-Endpoint `POST /api/v1/reactor-commands/check-timeouts` (pragmatischer manueller Check, kein Background-Scheduler)
+- Frontend zeigt ACK-Status, Retry-Zaehler, Fehler und Retry-Button in der Command-Tabelle
+- Simulator (`scripts/mqtt/simulate_env_node.py`) und ESP32-Beispiel senden ACKs zurueck, Simulator mit optionalem `--ack-error-rate`
+- 8 neue Backend-Tests fuer ACK-Topic-Parsing, Bridge-Handler, Timeout-Transition und Retry-Endpoint
+
+## Bewusst noch nicht enthalten
+
+- automatischer Retry-Scheduler / Background-Worker
+- QoS 1/2 oder Retained-ACKs
+- Audit-Trail-Export fuer Commands
+- Multi-Broker / Broker-Failover
+- Hardware-echtes Interlock beim Retry
+
+## Grundlage fuer
+
+- automatischer Scheduler (Licht, Pumpe, Aeration) mit ACK-Feedback
+- Dosing-Workflows mit Bestaetigungskette
+- Event-basierte Alerting-Regeln auf `timeout`/`failed`-Commands
+- Vision-/Sensor-Kommandos mit Node-Rueckmeldung
 
 ---
 
@@ -165,6 +234,8 @@ Das bedeutet:
 5. ReactorOps / Digital Twin V1 ✓
 6. Reactor Control / Telemetry V1 ✓
 7. Calibration / Maintenance / Safety V1 ✓
+8. Command ACK / Retry V1 ✓
+9. Scheduler / Automation Runtime V1 ✓
 
 ---
 

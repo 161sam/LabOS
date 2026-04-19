@@ -20,6 +20,7 @@ from .models import (
     ReactorTwin,
     Rule,
     SafetyIncident,
+    Schedule,
     Sensor,
     SensorValue,
     Task,
@@ -1090,6 +1091,65 @@ def seed_data() -> bool:
                     created_at=now - timedelta(days=7),
                     resolved_at=now - timedelta(days=6),
                 ))
+            seeded_any = True
+
+        reactor_a = session.exec(select(Reactor).where(Reactor.name == 'Reaktor-A1')).first()
+        rule_stale = session.exec(select(Rule).where(Rule.name == 'Sensor ohne Werte 24h -> Alert')).first()
+
+        if session.exec(select(Schedule).where(Schedule.name == 'Lichtzyklus Reaktor A1 an')).first() is None and reactor_a is not None:
+            session.add(Schedule(
+                name='Lichtzyklus Reaktor A1 an',
+                description='Schaltet die Beleuchtung von Reaktor-A1 alle 12h ein (Tag-Phase).',
+                schedule_type='interval',
+                interval_seconds=12 * 3600,
+                target_type='command',
+                reactor_id=reactor_a.id,
+                target_params={'command_type': 'light_on'},
+                is_enabled=False,
+                next_run_at=None,
+            ))
+            seeded_any = True
+
+        if session.exec(select(Schedule).where(Schedule.name == 'Regel-Check alle 60s')).first() is None and rule_stale is not None:
+            session.add(Schedule(
+                name='Regel-Check alle 60s',
+                description='Evaluiert die Regel "Sensor ohne Werte 24h" minuetlich.',
+                schedule_type='interval',
+                interval_seconds=60,
+                target_type='rule',
+                target_id=rule_stale.id,
+                target_params={'dry_run': False},
+                is_enabled=False,
+                next_run_at=None,
+            ))
+            seeded_any = True
+
+        if session.exec(select(Schedule).where(Schedule.name == 'Telemetrie-Sampling Trigger')).first() is None and reactor_a is not None:
+            session.add(Schedule(
+                name='Telemetrie-Sampling Trigger',
+                description='Triggert einen Sample-Capture Command fuer Reaktor-A1 alle 5 Minuten.',
+                schedule_type='interval',
+                interval_seconds=5 * 60,
+                target_type='command',
+                reactor_id=reactor_a.id,
+                target_params={'command_type': 'sample_capture'},
+                is_enabled=False,
+                next_run_at=None,
+            ))
+            seeded_any = True
+
+        if session.exec(select(Schedule).where(Schedule.name == 'Wartungscheck taeglich')).first() is None and rule_stale is not None:
+            session.add(Schedule(
+                name='Wartungscheck taeglich',
+                description='Fuehrt den Regel-Check einmal pro Tag um 07:00 Uhr aus.',
+                schedule_type='cron',
+                cron_expr='0 7 * * *',
+                target_type='rule',
+                target_id=rule_stale.id,
+                target_params={'dry_run': True},
+                is_enabled=False,
+                next_run_at=None,
+            ))
             seeded_any = True
 
         if seeded_any:

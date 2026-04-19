@@ -121,6 +121,27 @@ def list_reactor_commands(reactor_id: int, session: Session = Depends(get_sessio
     return reactor_control_service.list_reactor_commands(session, reactor_id=reactor_id)
 
 
+@router.post('/reactor-commands/{command_id}/retry', response_model=ReactorCommandRead)
+def retry_reactor_command(
+    command_id: int,
+    session: Session = Depends(get_session),
+    current_user=Depends(require_operator_user),
+):
+    return reactor_control_service.retry_reactor_command(
+        session,
+        command_id=command_id,
+        publisher=mqtt_bridge_service.get_mqtt_bridge(),
+    )
+
+
+@router.post('/reactor-commands/check-timeouts', response_model=list[ReactorCommandRead])
+def check_reactor_command_timeouts(
+    session: Session = Depends(get_session),
+    current_user=Depends(require_operator_user),
+):
+    return reactor_control_service.check_command_timeouts_and_serialize(session)
+
+
 @router.get('/reactor-control/mqtt-status', response_model=MQTTBridgeStatusRead)
 def get_mqtt_bridge_status():
     return mqtt_bridge_service.get_mqtt_bridge().status()
