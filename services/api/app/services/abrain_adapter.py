@@ -89,9 +89,34 @@ def query_adapter(
         mode=_current_mode(),
     )
     external_result = _try_external(context, payload)
-    if external_result is not None:
-        return external_result
-    return _build_local_response(context, payload, fallback_used=abrain_client.is_enabled() and not settings.abrain_use_stub)
+    response = external_result if external_result is not None else _build_local_response(
+        context,
+        payload,
+        fallback_used=abrain_client.is_enabled() and not settings.abrain_use_stub,
+    )
+    _record_trace(session, context, payload, response)
+    return response
+
+
+def _record_trace(
+    session: Session,
+    context: ABrainAdapterContextRead,
+    payload: ABrainAdapterQueryRequest,
+    response: ABrainAdapterResponse,
+) -> None:
+    if not response.trace_id:
+        return
+    from . import traces as traces_service  # local import to avoid cycles
+    snapshot = traces_service.build_snapshot_from_adapter(context, response)
+    trace_source = 'abrain' if response.mode == 'external' else 'local'
+    traces_service.ensure_trace(
+        session,
+        trace_id=response.trace_id,
+        source=trace_source,
+        root_query=payload.question,
+        summary=response.summary,
+        context_snapshot=snapshot,
+    )
 
 
 def _try_external(

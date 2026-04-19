@@ -115,6 +115,16 @@ def execute_action(
     source = payload.source or _SOURCE_DEFAULT
     trace_id = payload.trace_id
 
+    if trace_id:
+        from . import traces as traces_service  # local import to avoid cycles
+        traces_service.ensure_trace(
+            session,
+            trace_id=trace_id,
+            source=source,
+            root_query=None,
+            summary=None,
+        )
+
     descriptor = abrain_actions.find_action(action_name)
     if descriptor is None or action_name not in ACTION_MAP:
         return _record(
@@ -253,6 +263,14 @@ def _record(
     session.add(log)
     session.commit()
     session.refresh(log)
+    if trace_id:
+        from . import traces as traces_service  # local import to avoid cycles
+        from ..schemas import TraceContextStatus as _TraceStatus
+        if status == ABrainExecutionStatus.executed:
+            traces_service.mark_status(session, trace_id, _TraceStatus.completed)
+        elif status == ABrainExecutionStatus.failed or status == ABrainExecutionStatus.blocked:
+            traces_service.mark_status(session, trace_id, _TraceStatus.failed)
+        # pending_approval / rejected stay 'open'
     return ABrainExecutionResult(
         action=action,
         status=status,

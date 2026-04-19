@@ -40,6 +40,7 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
         'visionanalysis',
         'reactorhealthassessment',
         'wikipage',
+        'tracecontext',
     } <= table_names
 
     charge_columns = {column['name'] for column in inspector.get_columns('charge')}
@@ -501,7 +502,7 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
 
     with engine.connect() as connection:
         version = connection.execute(text('SELECT version_num FROM alembic_version')).scalar_one()
-        assert version == '20260419_0019'
+        assert version == '20260419_0020'
 
         exec_log_table = inspector.get_columns('abrainexecutionlog')
         exec_log_columns = {column['name'] for column in exec_log_table}
@@ -555,5 +556,23 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
             'ix_approvalrequest_requested_by_source',
             'ix_approvalrequest_created_at',
         } <= approval_indexes
+
+        trace_columns = {column['name'] for column in inspector.get_columns('tracecontext')}
+        assert {
+            'trace_id',
+            'source',
+            'status',
+            'root_query',
+            'summary',
+            'context_snapshot',
+            'created_at',
+            'updated_at',
+        } <= trace_columns
+        trace_indexes = {index['name'] for index in inspector.get_indexes('tracecontext')}
+        assert {
+            'ix_tracecontext_status',
+            'ix_tracecontext_source',
+            'ix_tracecontext_created_at',
+        } <= trace_indexes
 
     engine.dispose()

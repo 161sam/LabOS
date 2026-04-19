@@ -621,6 +621,23 @@ class ApprovalRequest(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=_utcnow)
 
 
+class TraceContext(SQLModel, table=True):
+    __table_args__ = (
+        Index('ix_tracecontext_status', 'status'),
+        Index('ix_tracecontext_source', 'source'),
+        Index('ix_tracecontext_created_at', 'created_at'),
+    )
+
+    trace_id: str = Field(primary_key=True)
+    source: str = Field(default='local')
+    status: str = Field(default='open')
+    root_query: Optional[str] = None
+    summary: Optional[str] = None
+    context_snapshot: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
+
+
 class WikiPage(SQLModel, table=True):
     slug: str = Field(primary_key=True)
     title: str

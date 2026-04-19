@@ -1341,3 +1341,71 @@ export type ApprovalOverview = {
   cancelled: number;
   high_risk_pending: number;
 };
+
+export type TraceContextStatus = 'open' | 'completed' | 'failed';
+
+export type TraceContextSource = 'abrain' | 'local' | 'operator' | 'api';
+
+export type TraceContextSnapshot = {
+  generated_at?: string | null;
+  mode?: string | null;
+  open_tasks?: number;
+  overdue_tasks?: number;
+  critical_alerts?: number;
+  open_alerts?: number;
+  open_safety_incidents?: number;
+  blocked_commands?: number;
+  failed_commands?: number;
+  reactors?: Array<{
+    id: number;
+    name: string;
+    status?: string | null;
+    health_status?: string | null;
+  }>;
+  policy_decision?: string | null;
+  approval_required?: boolean;
+  [key: string]: unknown;
+};
+
+export type TraceContext = {
+  trace_id: string;
+  source: TraceContextSource;
+  status: TraceContextStatus;
+  root_query: string | null;
+  summary: string | null;
+  context_snapshot: TraceContextSnapshot;
+  created_at: string;
+  updated_at: string;
+  execution_count: number;
+  approval_count: number;
+  pending_approval_count: number;
+};
+
+export type TraceTimelineEventKind = 'query' | 'approval' | 'execution';
+
+export type TraceTimelineEvent = {
+  kind: TraceTimelineEventKind;
+  created_at: string;
+  label: string;
+  status: string | null;
+  details: Record<string, unknown>;
+};
+
+export type ABrainExecutionLogEntry = {
+  id: number;
+  action: string;
+  params: Record<string, unknown>;
+  status: string;
+  blocked_reason: string | null;
+  source: string | null;
+  executed_by: string | null;
+  trace_id: string | null;
+  result: Record<string, unknown>;
+  created_at: string;
+};
+
+export type TraceContextDetail = TraceContext & {
+  timeline: TraceTimelineEvent[];
+  executions: ABrainExecutionLogEntry[];
+  approvals: ApprovalRequest[];
+};

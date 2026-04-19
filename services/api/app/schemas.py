@@ -1489,6 +1489,7 @@ class ABrainQueryResponse(AppSchema):
     referenced_entities: list[ABrainReferenceRead]
     used_context_sections: list[ABrainContextSection]
     note: str | None = None
+    trace_id: str | None = None
 
 
 class ABrainActionRiskLevel(str, Enum):
@@ -1752,6 +1753,53 @@ class ApprovalOverviewRead(AppSchema):
     failed: int = 0
     cancelled: int = 0
     high_risk_pending: int = 0
+
+
+class TraceContextStatus(str, Enum):
+    open = 'open'
+    completed = 'completed'
+    failed = 'failed'
+
+
+class TraceContextSource(str, Enum):
+    abrain = 'abrain'
+    local = 'local'
+    operator = 'operator'
+    api = 'api'
+
+
+class TraceContextRead(AppSchema):
+    trace_id: str
+    source: TraceContextSource
+    status: TraceContextStatus
+    root_query: str | None = None
+    summary: str | None = None
+    context_snapshot: dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime
+    updated_at: datetime
+    execution_count: int = 0
+    approval_count: int = 0
+    pending_approval_count: int = 0
+
+
+class TraceTimelineEventKind(str, Enum):
+    query = 'query'
+    approval = 'approval'
+    execution = 'execution'
+
+
+class TraceTimelineEvent(AppSchema):
+    kind: TraceTimelineEventKind
+    created_at: datetime
+    label: str
+    status: str | None = None
+    details: dict[str, Any] = Field(default_factory=dict)
+
+
+class TraceContextDetailRead(TraceContextRead):
+    timeline: list[TraceTimelineEvent] = Field(default_factory=list)
+    executions: list[ABrainExecutionLogRead] = Field(default_factory=list)
+    approvals: list[ApprovalRequestRead] = Field(default_factory=list)
 
 
 class RulePayload(AppSchema):

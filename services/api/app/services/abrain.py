@@ -270,6 +270,7 @@ def query(session: Session, payload: ABrainQueryRequest) -> ABrainQueryResponse:
         referenced_entities=list(adapter_response.referenced_entities),
         used_context_sections=used_sections,
         note=note,
+        trace_id=adapter_response.trace_id or None,
     )
 
 
