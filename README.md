@@ -23,6 +23,7 @@ LabOS ist ein Raspberry-Pi-taugliches Operating System fuer EcoSphereLab. Es ver
 - **Command ACK / Retry V1** mit Command-UID, MQTT-ACK-Topics, Zustell-/Timeout-Tracking und manuellem Retry
 - **Scheduler / Automation Runtime V1** mit interval/cron/manual-Schedules, Hintergrund-Runner und Ausfuehrungslog
 - **Vision Node / AI Integration V1** mit Pillow-basiertem Bild-Analyser, Auto-Analyse beim Foto-Upload und Integration in Photo-UI, ReactorOps und ABrain
+- **Sensor + Vision Fusion / Reactor Health V1** mit deterministischer Fusion aus Telemetrie, Vision und Safety zu einem Reactor-Health-Status pro Reaktor
 - integriertes Wiki auf Markdown-Basis
 - Docker-Compose-Setup für lokale Entwicklung
 
@@ -206,6 +207,48 @@ Diese Schicht macht aus hochgeladenen Fotos direkt verwertbare Kennzahlen fuer C
 - Segmentation oder Objekterkennung
 - GPU-/Jetson-spezifische Beschleunigung
 - mehrstufige Analyse-Pipelines oder Vergleichsmetriken ueber Zeit
+
+## Sensor + Vision Fusion / Reactor Health V1
+
+Diese Schicht fusioniert numerische Telemetrie, Vision-Analysen und offene Safety-Incidents zu einer strukturierten Reactor-Health-Bewertung pro Reaktor. Sie bleibt bewusst regelbasiert und verzichtet auf ML.
+
+### Was enthalten ist
+
+**ReactorHealthAssessment-Modell**
+- Felder: `reactor_id`, `status`, `summary`, `signals` (JSON-Array), `source_telemetry_at`, `source_vision_analysis_id`, `source_incident_count`, `assessed_at`, `created_at`
+- Statuswerte: `nominal`, `attention`, `warning`, `incident`, `unknown`
+- Migration `20260419_0017_sensor_vision_fusion_v1`
+
+**Fusion-Service (`services/api/app/services/reactor_health.py`)**
+- Liest je Reaktor neueste Telemetrie pro Sensor-Typ, letzte erfolgreiche `VisionAnalysis`, offene `SafetyIncident`s und `ReactorTwin`/`ReactorSetpoint`-Zielbereiche
+- Deterministische Regeln (keine Gewichte, keine Statistik)
+- Telemetrie-Signale: fehlend, veraltet (> 6h), unter/ueber Zielbereich, nominal
+- Vision-Signale: Kontaminationsverdacht, zu dunkel/hell, Gruenanteil niedrig, low_sharpness, low_confidence
+- Safety-Signale: kritischer/hoher/allgemeiner offener Incident
+- Statusableitung: `incident > warning > attention > nominal`, `unknown` nur wenn gar keine Daten vorliegen
+
+**API**
+- `GET /api/v1/reactor-health` – neueste Bewertung pro Reaktor
+- `GET /api/v1/reactor-health/{reactor_id}` – aktuelle Bewertung eines Reaktors
+- `GET /api/v1/reactor-health/{reactor_id}/history` – Historie (default 20)
+- `POST /api/v1/reactor-health/{reactor_id}/assess` – neue Bewertung erzeugen (Operator)
+
+**Integrationen**
+- `ReactorTwinRead` liefert `latest_health` mit Summary und Signalen
+- ABrain-Kontext (`reactors`-Section) enthaelt `health_status`, `health_summary`, `health_assessed_at`; Sortierung priorisiert `incident > warning > attention > unknown > nominal`
+- Dashboard zeigt Health-Counts (`reactors_health_nominal/attention/warning/incident/unknown`)
+- Auto-Trigger: nach erfolgreichem Photo-Upload mit Reaktorzuordnung wird automatisch eine Neu-Bewertung ausgefuehrt
+
+**Frontend**
+- `/reactor-ops`: Health-Badge in der Uebersichtstabelle, Detail-Card mit Summary + Signal-Liste, Button "Neu bewerten" fuer Operator/Admin
+- Dashboard: Reactor-Health-KPI-Reihe (Nominal, Auffaellig/Warnung, Incident)
+
+### Was bewusst noch nicht enthalten ist
+
+- ML-Modelle, Gewichtungen, Zeitreihen-Analyse
+- Vorhersage oder Trendanalyse
+- automatische Steuerungs-Eingriffe basierend auf Health-Status
+- Aggregation ueber mehrere Reaktoren / Zonen
 
 ## Struktur
 

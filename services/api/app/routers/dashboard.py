@@ -15,6 +15,7 @@ from ..services import labels as label_service
 from ..services import maintenance as maintenance_service
 from ..services import photos as photo_service
 from ..services import reactor_control as reactor_control_service
+from ..services import reactor_health as reactor_health_service
 from ..services import reactor_ops as reactor_ops_service
 from ..services import rules as rule_service
 from ..services import safety as safety_service
@@ -36,6 +37,7 @@ def dashboard_summary(session: Session = Depends(get_session)):
     reactors_attention = reactor_ops_service.count_reactors_with_attention(session)
     reactors_harvest_ready = reactor_ops_service.count_harvest_ready_reactors(session)
     reactors_incident_or_contamination = reactor_ops_service.count_reactors_with_incident_or_contamination(session)
+    health_counts = reactor_health_service.count_by_status(session)
     offline_devices = reactor_control_service.count_offline_devices(session)
     active_sensors = len(session.exec(select(Sensor).where(Sensor.status == 'active')).all())
     error_sensors = len(session.exec(select(Sensor).where(Sensor.status == 'error')).all())
@@ -72,6 +74,11 @@ def dashboard_summary(session: Session = Depends(get_session)):
         'reactors_attention': reactors_attention,
         'reactors_harvest_ready': reactors_harvest_ready,
         'reactors_incident_or_contamination': reactors_incident_or_contamination,
+        'reactors_health_nominal': health_counts.get('nominal', 0),
+        'reactors_health_attention': health_counts.get('attention', 0),
+        'reactors_health_warning': health_counts.get('warning', 0),
+        'reactors_health_incident': health_counts.get('incident', 0),
+        'reactors_health_unknown': health_counts.get('unknown', 0),
         'offline_devices': offline_devices,
         'active_sensors': active_sensors,
         'error_sensors': error_sensors,

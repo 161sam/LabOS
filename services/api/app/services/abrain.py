@@ -28,6 +28,7 @@ from ..schemas import (
 )
 from . import alerts as alert_service
 from . import photos as photo_service
+from . import reactor_health as reactor_health_service
 from . import sensors as sensor_service
 from . import tasks as task_service
 from . import vision as vision_service
@@ -201,7 +202,12 @@ def build_lab_context(
         alerts=_build_alert_section(included_sections, critical_alerts, open_alerts),
         sensors=_build_sensor_section(included_sections, sensor_attention),
         charges=_build_charge_section(included_sections, active_charges),
-        reactors=_build_reactor_section(included_sections, reactors, reactor_open_task_count),
+        reactors=_build_reactor_section(
+            included_sections,
+            reactors,
+            reactor_open_task_count,
+            reactor_health_service.get_latest_for_reactors(session, [reactor.id for reactor in reactors]),
+        ),
         photos=_build_photo_section(included_sections, recent_photos),
     )
 
@@ -523,16 +529,32 @@ def _build_charge_section(
     ]
 
 
+_HEALTH_PRIORITY = {
+    'incident': 0,
+    'warning': 1,
+    'attention': 2,
+    'unknown': 3,
+    'nominal': 4,
+}
+
+
 def _build_reactor_section(
     included_sections: list[ABrainContextSection],
     reactors: list[Reactor],
     reactor_open_task_count: dict[int, int],
+    health_map: dict[int, Any] | None = None,
 ) -> list[ABrainReactorContextItemRead] | None:
     if ABrainContextSection.reactors not in included_sections:
         return None
+    health_map = health_map or {}
     sorted_reactors = sorted(
         reactors,
-        key=lambda reactor: (0 if reactor.status != 'online' else 1, -reactor_open_task_count.get(reactor.id, 0), reactor.name),
+        key=lambda reactor: (
+            _HEALTH_PRIORITY.get(health_map[reactor.id].status, 4) if reactor.id in health_map else 3,
+            0 if reactor.status != 'online' else 1,
+            -reactor_open_task_count.get(reactor.id, 0),
+            reactor.name,
+        ),
     )
     return [
         ABrainReactorContextItemRead(
@@ -540,6 +562,9 @@ def _build_reactor_section(
             name=reactor.name,
             status=reactor.status,
             open_task_count=reactor_open_task_count.get(reactor.id, 0),
+            health_status=health_map[reactor.id].status if reactor.id in health_map else None,
+            health_summary=health_map[reactor.id].summary if reactor.id in health_map else None,
+            health_assessed_at=health_map[reactor.id].assessed_at if reactor.id in health_map else None,
         )
         for reactor in sorted_reactors[:5]
     ]

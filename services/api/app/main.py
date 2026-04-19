@@ -7,7 +7,7 @@ from .config import settings
 from .db import run_migrations
 from .services import mqtt_bridge as mqtt_bridge_service
 from .services import scheduler as scheduler_service
-from .routers import abrain, alerts, assets, auth, calibration, charges, dashboard, inventory, labels, maintenance, photos, reactor_control, reactor_ops, reactors, rules, safety, schedules, sensors, tasks, users, vision, wiki
+from .routers import abrain, alerts, assets, auth, calibration, charges, dashboard, inventory, labels, maintenance, photos, reactor_control, reactor_health, reactor_ops, reactors, rules, safety, schedules, sensors, tasks, users, vision, wiki
 from .seed import seed_data
 
 
@@ -50,6 +50,7 @@ app.include_router(charges.router, prefix=api_prefix)
 app.include_router(reactors.router, prefix=api_prefix)
 app.include_router(reactor_ops.router, prefix=api_prefix)
 app.include_router(reactor_control.router, prefix=api_prefix)
+app.include_router(reactor_health.router, prefix=api_prefix)
 app.include_router(assets.router, prefix=api_prefix)
 app.include_router(inventory.router, prefix=api_prefix)
 app.include_router(labels.router, prefix=api_prefix)

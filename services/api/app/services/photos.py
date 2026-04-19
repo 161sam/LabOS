@@ -9,6 +9,7 @@ from sqlmodel import Session, select
 from ..config import settings
 from ..models import Asset, Charge, Photo, Reactor, _utcnow
 from ..schemas import PhotoRead, PhotoUpdate, PhotoUploadData
+from . import reactor_health as reactor_health_service
 from . import vision as vision_service
 
 _ALLOWED_MIME_EXTENSIONS = {
@@ -104,6 +105,11 @@ async def create_photo_upload(
         vision_service.analyze_photo(session, photo)
     except Exception:
         session.rollback()
+    if photo.reactor_id is not None:
+        try:
+            reactor_health_service.assess_reactor(session, photo.reactor_id)
+        except Exception:
+            session.rollback()
     return get_photo_read(session, photo.id)
 
 

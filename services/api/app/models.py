@@ -551,6 +551,26 @@ class VisionAnalysis(SQLModel, table=True):
     created_at: datetime = Field(default_factory=_utcnow)
 
 
+class ReactorHealthAssessment(SQLModel, table=True):
+    __table_args__ = (
+        Index('ix_reactorhealthassessment_reactor_id', 'reactor_id'),
+        Index('ix_reactorhealthassessment_status', 'status'),
+        Index('ix_reactorhealthassessment_assessed_at', 'assessed_at'),
+        Index('ix_reactorhealthassessment_created_at', 'created_at'),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    reactor_id: int = Field(foreign_key='reactor.id', index=True)
+    status: str = Field(default='unknown')
+    summary: str = Field(default='')
+    signals: list[dict[str, Any]] = Field(default_factory=list, sa_column=Column(JSON, nullable=False))
+    source_telemetry_at: Optional[datetime] = None
+    source_vision_analysis_id: Optional[int] = Field(default=None, foreign_key='visionanalysis.id')
+    source_incident_count: int = 0
+    assessed_at: datetime = Field(default_factory=_utcnow)
+    created_at: datetime = Field(default_factory=_utcnow)
+
+
 class WikiPage(SQLModel, table=True):
     slug: str = Field(primary_key=True)
     title: str

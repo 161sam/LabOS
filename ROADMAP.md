@@ -58,8 +58,46 @@ LabOS ist nicht nur eine einzelne Labor-App, sondern das zentrale Betriebssystem
 - **Command ACK / Retry V1**
 - **Scheduler / Automation Runtime V1**
 - **Vision Node / AI Integration V1**
+- **Sensor + Vision Fusion / Reactor Health V1**
 - Dashboard-Basis
 - Wiki-Basis
+
+---
+
+# Aktueller Status: Sensor + Vision Fusion / Reactor Health V1
+
+Mit diesem Schritt bekommt LabOS eine deterministische Reactor-Health-Ebene, die Telemetrie, Vision-Auswertung und Safety-Zustand zu einem strukturierten Statuswert pro Reaktor fusioniert.
+
+## Enthalten
+
+- `ReactorHealthAssessment`-Modell (`reactor_id`, `status`, `summary`, `signals` JSON-Array, `source_telemetry_at`, `source_vision_analysis_id`, `source_incident_count`, `assessed_at`, `created_at`) mit Migration `20260419_0017`
+- Statuswerte: `nominal`, `attention`, `warning`, `incident`, `unknown`
+- Fusion-Service `services/api/app/services/reactor_health.py` liest neueste Telemetrie je Sensor-Typ, letzte erfolgreiche `VisionAnalysis`, offene `SafetyIncident`s und `ReactorTwin`/`ReactorSetpoint`-Zielbereiche
+- deterministische Regeln: Telemetrie fehlend/veraltet/out-of-range/nominal, Vision-Kontaminationsverdacht/Helligkeitsprobleme/Gruenanteil/Low-Sharpness/Low-Confidence, Safety critical/high/warning/info
+- Statusableitung `incident > warning > attention > nominal`; `unknown` nur wenn gar keine Daten vorliegen
+- API: `GET /api/v1/reactor-health`, `GET /api/v1/reactor-health/{id}`, `GET /api/v1/reactor-health/{id}/history`, `POST /api/v1/reactor-health/{id}/assess` (Operator)
+- `ReactorTwinRead` liefert `latest_health` mit Summary und Signalen
+- ABrain-Kontext-Section `reactors` enthaelt `health_status`, `health_summary`, `health_assessed_at`; Sortierung priorisiert `incident > warning > attention > unknown > nominal`
+- Dashboard-KPIs: `reactors_health_nominal/attention/warning/incident/unknown`
+- Auto-Trigger nach Photo-Upload mit Reaktor-Bezug (best-effort)
+- `/reactor-ops`-Frontend mit Health-Badge in Tabelle, Detail-Card mit Summary + Signal-Liste und "Neu bewerten"-Button
+- Dashboard zeigt Reactor-Health-KPI-Reihe (Nominal, Auffaellig/Warnung, Incident)
+- Seed: 4 Demo-Bewertungen (nominal A1, attention B1 via Vision, warning C1 via Telemetrie+Vision, incident D1 via Safety)
+- 8 neue Backend-Tests (nominal, attention-by-vision, warning-by-telemetry+vision, incident-by-safety, unknown, list/history, count_by_status, ReactorTwin-Integration)
+
+## Bewusst noch nicht enthalten
+
+- ML-Modelle, Zeitreihen-Analyse, Trend-/Vorhersage
+- automatische Steuerungseingriffe basierend auf Health-Status
+- Aggregation ueber mehrere Reaktoren / Zonen oder Lab-weite Gesundheitsindizes
+- eigener Health-Scheduler (noch ueber Vision-Auto-Trigger und manuelles Reassess)
+
+## Grundlage fuer
+
+- automatische Alerts bei Warning/Incident-Status
+- Scheduler-basierte zyklische Reassess-Runs
+- Health-gestuetzte Safety-Gates fuer Reactor-Commands
+- Health-Trends ueber Zeit in Dashboard und ABrain
 
 ---
 
@@ -271,6 +309,7 @@ Das bedeutet:
 8. Command ACK / Retry V1 ✓
 9. Scheduler / Automation Runtime V1 ✓
 10. Vision Node / AI Integration V1 ✓
+11. Sensor + Vision Fusion / Reactor Health V1 ✓
 
 ---
 

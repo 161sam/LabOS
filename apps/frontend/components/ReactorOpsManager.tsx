@@ -11,6 +11,8 @@ import {
   reactorContaminationStateOptions,
   ReactorEventType,
   reactorEventTypeOptions,
+  ReactorHealthAssessment,
+  reactorHealthStatusLabels,
   ReactorPhase,
   reactorPhaseOptions,
   ReactorTechnicalState,
@@ -162,6 +164,7 @@ export function ReactorOpsManager() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [savingTwin, setSavingTwin] = useState(false);
   const [savingEvent, setSavingEvent] = useState(false);
+  const [reassessing, setReassessing] = useState(false);
   const [pageError, setPageError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [eventError, setEventError] = useState<string | null>(null);
@@ -265,6 +268,26 @@ export function ReactorOpsManager() {
     }
   }
 
+  async function handleReassess() {
+    if (!selectedReactorId) {
+      return;
+    }
+    setReassessing(true);
+    setFormError(null);
+    setNotice(null);
+    try {
+      await apiRequest<ReactorHealthAssessment>(`/api/v1/reactor-health/${selectedReactorId}/assess`, {
+        method: 'POST',
+      });
+      setNotice('Reactor Health neu bewertet.');
+      await loadOverview(selectedReactorId);
+    } catch (error) {
+      setFormError(getErrorMessage(error));
+    } finally {
+      setReassessing(false);
+    }
+  }
+
   async function handleEventSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selectedReactorId) {
@@ -325,6 +348,7 @@ export function ReactorOpsManager() {
                     <th>Phase</th>
                     <th>Tech</th>
                     <th>Bio</th>
+                    <th>Health</th>
                     <th>Tasks</th>
                     <th>Alerts</th>
                   </tr>
@@ -343,6 +367,11 @@ export function ReactorOpsManager() {
                       <td><span className={`badge badge-${item.current_phase}`}>{getOptionLabel(reactorPhaseOptions, item.current_phase)}</span></td>
                       <td><span className={`badge badge-${item.technical_state}`}>{getOptionLabel(reactorTechnicalStateOptions, item.technical_state)}</span></td>
                       <td><span className={`badge badge-${item.biological_state}`}>{getOptionLabel(reactorBiologicalStateOptions, item.biological_state)}</span></td>
+                      <td>
+                        <span className={`badge badge-${item.latest_health?.status ?? 'unknown'}`}>
+                          {item.latest_health ? reactorHealthStatusLabels[item.latest_health.status] : 'Unbekannt'}
+                        </span>
+                      </td>
                       <td>{item.open_task_count}</td>
                       <td>{item.open_alert_count}</td>
                     </tr>
@@ -501,6 +530,49 @@ export function ReactorOpsManager() {
       {detail ? (
         <>
           <div className="grid cols-2">
+            <Card title="Reactor Health">
+              {detail.latest_health ? (
+                <div className="stackBlock">
+                  <div className="detailList">
+                    <div className="detailRow">
+                      <span className="muted">Status</span>
+                      <span className={`badge badge-${detail.latest_health.status}`}>
+                        {reactorHealthStatusLabels[detail.latest_health.status]}
+                      </span>
+                    </div>
+                    <div className="detailRow">
+                      <span className="muted">Bewertet am</span>
+                      <span>{formatDateTime(detail.latest_health.assessed_at)}</span>
+                    </div>
+                    <div className="detailRow">
+                      <span className="muted">Offene Incidents</span>
+                      <span>{detail.latest_health.source_incident_count}</span>
+                    </div>
+                  </div>
+                  <p>{detail.latest_health.summary}</p>
+                  {detail.latest_health.signals.length > 0 ? (
+                    <ul className="stackCompact">
+                      {detail.latest_health.signals.map((signal) => (
+                        <li key={signal.code}>
+                          <span className={`badge badge-${signal.severity}`}>{signal.severity}</span>{' '}
+                          <span className="muted">[{signal.source}]</span> {signal.message}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
+              ) : (
+                <p className="muted">Noch keine Health-Bewertung vorhanden.</p>
+              )}
+              {canEdit ? (
+                <div className="buttonRow">
+                  <button className="button buttonSecondary" type="button" onClick={() => void handleReassess()} disabled={reassessing}>
+                    {reassessing ? 'Bewertet…' : 'Neu bewerten'}
+                  </button>
+                </div>
+              ) : null}
+            </Card>
+
             <Card title="Prozesskontext">
               <div className="detailList">
                 <div className="detailRow">

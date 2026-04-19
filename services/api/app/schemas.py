@@ -1103,6 +1103,42 @@ class VisionAnalysisRead(AppSchema):
     created_at: datetime
 
 
+class ReactorHealthStatus(str, Enum):
+    nominal = 'nominal'
+    attention = 'attention'
+    warning = 'warning'
+    incident = 'incident'
+    unknown = 'unknown'
+
+
+class ReactorHealthSignalSeverity(str, Enum):
+    info = 'info'
+    attention = 'attention'
+    warning = 'warning'
+    incident = 'incident'
+
+
+class ReactorHealthSignalRead(AppSchema):
+    code: str
+    severity: ReactorHealthSignalSeverity
+    source: str
+    message: str
+
+
+class ReactorHealthAssessmentRead(AppSchema):
+    id: int
+    reactor_id: int
+    reactor_name: str | None = None
+    status: ReactorHealthStatus
+    summary: str
+    signals: list[ReactorHealthSignalRead]
+    source_telemetry_at: datetime | None
+    source_vision_analysis_id: int | None
+    source_incident_count: int
+    assessed_at: datetime
+    created_at: datetime
+
+
 class PhotoRead(AppSchema):
     id: int
     filename: str
@@ -1176,6 +1212,7 @@ class ReactorTwinRead(AppSchema):
     photo_count: int = 0
     latest_event: ReactorEventRead | None = None
     latest_vision: VisionAnalysisRead | None = None
+    latest_health: ReactorHealthAssessmentRead | None = None
 
 
 class ReactorTwinDetailRead(ReactorTwinRead):
@@ -1400,6 +1437,9 @@ class ABrainReactorContextItemRead(AppSchema):
     name: str
     status: ReactorStatus
     open_task_count: int
+    health_status: ReactorHealthStatus | None = None
+    health_summary: str | None = None
+    health_assessed_at: datetime | None = None
 
 
 class ABrainPhotoContextItemRead(AppSchema):
@@ -1711,6 +1751,11 @@ class DashboardSummaryRead(AppSchema):
     reactors_attention: int
     reactors_harvest_ready: int
     reactors_incident_or_contamination: int
+    reactors_health_nominal: int = 0
+    reactors_health_attention: int = 0
+    reactors_health_warning: int = 0
+    reactors_health_incident: int = 0
+    reactors_health_unknown: int = 0
     offline_devices: int
     active_sensors: int
     error_sensors: int
