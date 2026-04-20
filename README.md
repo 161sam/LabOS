@@ -169,6 +169,22 @@ curl -sS -X POST http://localhost:8000/api/v1/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"labos.create_task","arguments":{"title":"via MCP"},"trace_id":"demo-1"}}'
 ```
 
+### ABrain V2 Integration Surface
+
+The `/abrain` page in LabOS is the **Decision Surface** for the ABrain V2 LabOS reasoning use cases. LabOS itself does not reason — it calls ABrain and renders the result alongside LabOS-local governance (Approval, Execution, Trace).
+
+Supported reasoning modes (delegated to ABrain V2 / MCP `abrain.reason_labos_<mode>`):
+
+- `reactor_daily_overview`
+- `incident_review`
+- `maintenance_suggestions`
+- `schedule_runtime_review`
+- `cross_domain_overview`
+
+The request/response contract is exposed at `POST /api/v1/abrain/adapter/reason`. The shape V2 fields (`summary`, `highlights`, `prioritized_entities`, `recommended_actions`, `recommended_checks`, `approval_required_actions`, `blocked_or_deferred_actions`, `used_context_sections`, `reasoning_mode`, `trace_id`) are rendered as structured panels instead of raw JSON. Recommendations link directly to `/approvals`, `/executions` and `/traces`, and the "Ausfuehren" / "Approval anfragen" buttons re-use the existing `/api/v1/abrain/execute` pipeline — Safety Guards, Role Checks, Approval Gate and Trace Layer all still apply. If the external ABrain is unreachable, LabOS falls back to the existing local adapter heuristic mapped into the same V2 shape (marked with `fallback_used=true`).
+
+Quick-entry links: Safety → `incident_review`, ReactorOps → `reactor_daily_overview`, Schedules → `schedule_runtime_review`. The legacy ABrain Assistant and Adapter Console remain available collapsed below the Decision Surface.
+
 ## Documentation
 
 Die gesamte Projekt-Dokumentation liegt unter [`docs/`](docs/):

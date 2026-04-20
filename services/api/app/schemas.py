@@ -1634,6 +1634,60 @@ class ABrainAdapterResponse(AppSchema):
     notes: list[str] = Field(default_factory=list)
 
 
+class ABrainReasoningMode(str, Enum):
+    reactor_daily_overview = 'reactor_daily_overview'
+    incident_review = 'incident_review'
+    maintenance_suggestions = 'maintenance_suggestions'
+    schedule_runtime_review = 'schedule_runtime_review'
+    cross_domain_overview = 'cross_domain_overview'
+
+
+class ABrainReasoningPrioritizedEntity(AppSchema):
+    entity_type: str
+    entity_id: int | str | None = None
+    label: str
+    reason: str | None = None
+    severity: str | None = None
+
+
+class ABrainReasoningCheck(AppSchema):
+    check: str
+    target: str | None = None
+    reason: str | None = None
+
+
+class ABrainReasoningRequest(AppSchema):
+    mode: ABrainReasoningMode
+    question: str | None = Field(default=None, max_length=1000)
+    include_context_sections: list[ABrainContextSection] | None = None
+    dry_run: bool = True
+
+    @field_validator('question')
+    @classmethod
+    def normalize_optional_question(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class ABrainReasoningResponse(AppSchema):
+    reasoning_mode: ABrainReasoningMode
+    question: str | None = None
+    mode: str
+    fallback_used: bool
+    contract_version: str
+    trace_id: str | None = None
+    summary: str
+    highlights: list[str] = Field(default_factory=list)
+    prioritized_entities: list[ABrainReasoningPrioritizedEntity] = Field(default_factory=list)
+    recommended_actions: list[ABrainAdapterRecommendedAction] = Field(default_factory=list)
+    recommended_checks: list[ABrainReasoningCheck] = Field(default_factory=list)
+    approval_required_actions: list[ABrainAdapterRecommendedAction] = Field(default_factory=list)
+    blocked_or_deferred_actions: list[ABrainAdapterRecommendedAction] = Field(default_factory=list)
+    used_context_sections: list[ABrainContextSection] = Field(default_factory=list)
+    referenced_entities: list[ABrainReferenceRead] = Field(default_factory=list)
+    policy_decision: str | None = None
+    notes: list[str] = Field(default_factory=list)
+
+
 class ABrainExecutionStatus(str, Enum):
     executed = 'executed'
     pending_approval = 'pending_approval'

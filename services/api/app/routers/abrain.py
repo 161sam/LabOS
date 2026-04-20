@@ -17,6 +17,8 @@ from ..schemas import (
     ABrainPresetRead,
     ABrainQueryRequest,
     ABrainQueryResponse,
+    ABrainReasoningRequest,
+    ABrainReasoningResponse,
     ABrainStatusRead,
     UserRead,
 )
@@ -80,6 +82,18 @@ def abrain_adapter_query(
     session: Session = Depends(get_session),
 ):
     return abrain_adapter.query_adapter(session, payload)
+
+
+@router.post(
+    '/adapter/reason',
+    response_model=ABrainReasoningResponse,
+    dependencies=[Depends(require_admin_user)],
+)
+def abrain_adapter_reason(
+    payload: ABrainReasoningRequest,
+    session: Session = Depends(get_session),
+):
+    return abrain_adapter.query_reasoning(session, payload)
 
 
 @router.post('/execute', response_model=ABrainExecutionResult)

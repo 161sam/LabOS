@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
 
 import { apiRequest } from '../lib/api';
@@ -265,10 +266,15 @@ export function SchedulesManager() {
   return (
     <div className="stackBlock">
       <Card title="Scheduler / Automation Runtime">
-        <p className="muted">
-          Zeitbasierte Automation fuer Reactor-Commands und Rules. Interval, Cron (Minute/Stunde/Tag/Monat/Wochentag)
-          oder manuell.
-        </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+          <p className="muted" style={{ margin: 0 }}>
+            Zeitbasierte Automation fuer Reactor-Commands und Rules. Interval, Cron (Minute/Stunde/Tag/Monat/Wochentag)
+            oder manuell.
+          </p>
+          <Link href="/abrain?mode=schedule_runtime_review" className="button buttonSecondary buttonCompact">
+            ABrain Schedule Review
+          </Link>
+        </div>
         {pageError ? <InlineMessage tone="error">{pageError}</InlineMessage> : null}
         {notice ? <InlineMessage tone="info">{notice}</InlineMessage> : null}
       </Card>

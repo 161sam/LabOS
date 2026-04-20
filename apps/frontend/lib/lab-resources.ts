@@ -1163,6 +1163,99 @@ export type ABrainAdapterResponse = {
   notes: string[];
 };
 
+export const abrainReasoningModeOptions = [
+  {
+    value: 'reactor_daily_overview',
+    label: 'Reaktor Tagesueberblick',
+    description: 'ABrain sichtet Telemetrie, Health und offene Tasks je Reaktor.',
+  },
+  {
+    value: 'incident_review',
+    label: 'Incident Review',
+    description: 'Safety-Incidents, kritische Alerts und Folgeaktionen.',
+  },
+  {
+    value: 'maintenance_suggestions',
+    label: 'Wartungsvorschlaege',
+    description: 'Faellige Kalibrierungen und ueberfaellige Wartungen priorisieren.',
+  },
+  {
+    value: 'schedule_runtime_review',
+    label: 'Scheduler Runtime Review',
+    description: 'Fehlgeschlagene Runs, ueberfaellige Tasks und Automations-Gesundheit.',
+  },
+  {
+    value: 'cross_domain_overview',
+    label: 'Cross-Domain Ueberblick',
+    description: 'Kombinierter Ueberblick ueber alle Labor-Domaenen.',
+  },
+] as const;
+
+export type ABrainReasoningMode = (typeof abrainReasoningModeOptions)[number]['value'];
+
+export type ABrainReasoningPrioritizedEntity = {
+  entity_type: string;
+  entity_id: number | string | null;
+  label: string;
+  reason: string | null;
+  severity: string | null;
+};
+
+export type ABrainReasoningCheck = {
+  check: string;
+  target: string | null;
+  reason: string | null;
+};
+
+export type ABrainReasoningRequest = {
+  mode: ABrainReasoningMode;
+  question?: string | null;
+  include_context_sections?: ABrainContextSection[] | null;
+  dry_run?: boolean;
+};
+
+export type ABrainExecutionStatus =
+  | 'executed'
+  | 'pending_approval'
+  | 'blocked'
+  | 'rejected'
+  | 'failed';
+
+export type ABrainExecutionResult = {
+  action: string;
+  status: ABrainExecutionStatus;
+  blocked_reason: string | null;
+  requires_approval: boolean;
+  risk_level: ABrainActionRiskLevel | null;
+  trace_id: string | null;
+  executed_by: string | null;
+  source: string | null;
+  result: Record<string, unknown>;
+  log_id: number | null;
+  approval_request_id: number | null;
+  created_at: string;
+};
+
+export type ABrainReasoningResponse = {
+  reasoning_mode: ABrainReasoningMode;
+  question: string | null;
+  mode: string;
+  fallback_used: boolean;
+  contract_version: string;
+  trace_id: string | null;
+  summary: string;
+  highlights: string[];
+  prioritized_entities: ABrainReasoningPrioritizedEntity[];
+  recommended_actions: ABrainAdapterRecommendedAction[];
+  recommended_checks: ABrainReasoningCheck[];
+  approval_required_actions: ABrainAdapterRecommendedAction[];
+  blocked_or_deferred_actions: ABrainAdapterRecommendedAction[];
+  used_context_sections: ABrainContextSection[];
+  referenced_entities: ABrainReference[];
+  policy_decision: string | null;
+  notes: string[];
+};
+
 export type Rule = {
   id: number;
   name: string;

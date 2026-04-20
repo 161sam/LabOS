@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
 
 import { apiRequest } from '../lib/api';
@@ -323,11 +324,16 @@ export function ReactorOpsManager() {
 
   return (
     <div className="grid" style={{ gap: 24 }}>
-      <div>
-        <h1>ReactorOps / Digital Twin</h1>
-        <p className="muted">
-          Betriebsansicht fuer biologische und technische Prozesszustaende, Zielbereiche, Ereignisse und die naechste Ausbaustufe Richtung Telemetry, Calibration und Safety.
-        </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
+        <div>
+          <h1>ReactorOps / Digital Twin</h1>
+          <p className="muted">
+            Betriebsansicht fuer biologische und technische Prozesszustaende, Zielbereiche, Ereignisse und die naechste Ausbaustufe Richtung Telemetry, Calibration und Safety.
+          </p>
+        </div>
+        <Link href="/abrain?mode=reactor_daily_overview" className="button buttonSecondary buttonCompact">
+          ABrain Reaktor-Tagesueberblick
+        </Link>
       </div>
 
       {pageError ? <InlineMessage tone="error">{pageError}</InlineMessage> : null}

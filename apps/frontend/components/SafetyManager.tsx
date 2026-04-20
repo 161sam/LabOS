@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
 
 import { apiRequest } from '../lib/api';
@@ -301,7 +302,12 @@ export function SafetyManager() {
 
   return (
     <div style={{ padding: '1.5rem' }}>
-      <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem' }}>Safety &amp; Betrieb</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '1rem', gap: 12, flexWrap: 'wrap' }}>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>Safety &amp; Betrieb</h1>
+        <Link href="/abrain?mode=incident_review" className="button buttonSecondary buttonCompact">
+          ABrain Incident Review
+        </Link>
+      </div>
 
       {pageError && <InlineMessage tone="error">{pageError}</InlineMessage>}
       {notice && <InlineMessage tone="success">{notice}</InlineMessage>}

@@ -132,6 +132,8 @@ mit:
 * Vision + Health
 * MQTT Node-System
 * ABrain Adapter
+* ROS + MQTT Hybrid
+* ABrain V2 Integration Surface (`/abrain/adapter/reason`, Decision Surface UI)
 
 ---
 
@@ -316,6 +318,17 @@ ABrain nutzt LabOS als Tool-System für echte Entscheidungslogik
 ## Ergebnis
 
 👉 echtes “Brain” entsteht — **außerhalb von LabOS**
+
+---
+
+## Begleitend in LabOS: ABrain V2 Integration Surface
+
+* LabOS liefert die Decision Surface unter `/abrain`, **ohne** selbst zu reasonieren.
+* Neue Route `POST /api/v1/abrain/adapter/reason` ist ein **thin proxy** auf die fünf ABrain-V2-Use-Cases (`reactor_daily_overview`, `incident_review`, `maintenance_suggestions`, `schedule_runtime_review`, `cross_domain_overview`).
+* Response Shape V2 (`prioritized_entities`, `recommended_actions`, `recommended_checks`, `approval_required_actions`, `blocked_or_deferred_actions`, …) wird operator-tauglich dargestellt.
+* Approval / Execution / Trace bleiben LabOS-seitig maßgeblich und sind direkt aus jeder Empfehlung heraus aufrufbar (`/api/v1/abrain/execute`, `/approvals`, `/executions`, `/traces`).
+* Quick Entries: Safety → `incident_review`, ReactorOps → `reactor_daily_overview`, Schedules → `schedule_runtime_review`.
+* Lokale Fallback-Logik behält die V2-Shape bei (`fallback_used=true`), so bleibt die UI kohärent, auch wenn ABrain nicht erreichbar ist.
 
 ---
 
