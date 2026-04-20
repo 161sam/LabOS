@@ -24,7 +24,7 @@ Es verbindet:
 ```text
 Smolit-AI-Assistant
         ↓
-      ABrain
+      ABrain    
         ↓
 LabOS MCP Server / Tool Adapter
         ↓
@@ -134,6 +134,8 @@ mit:
 * ABrain Adapter
 * ROS + MQTT Hybrid
 * ABrain V2 Integration Surface (`/abrain/adapter/reason`, Decision Surface UI)
+* RobotOps / Autonomous Module Model V1 (`/api/v1/modules`, `/modules` UI, RobotOps Nav)
+* ITOps / InfraOps V1 (`/api/v1/infra/*`, `/infra` UI, Dashboard-KPIs, Nodes/Services/Storage/Backups)
 
 ---
 
@@ -225,11 +227,13 @@ Alle Systeme werden als **robotische Einheiten** modelliert:
 
 ---
 
-# 🏭 PHASE 3 — ROBOTOPS / AUTONOMOUS MODULE MODEL V1
+# 🏭 PHASE 3 — ROBOTOPS / AUTONOMOUS MODULE MODEL V1 (✅ V1 ausgeliefert)
 
 ## Ziel
 
 Alle physischen Systeme als einheitliche robotische Einheiten modellieren
+
+> **Status V1 (2026-04-20):** Additiv implementiert als `AutonomousModule` + `ModuleCapability`, Migration `20260420_0021`, Service/Router unter `/api/v1/modules`, `/modules` UI mit RobotOps-Nav. Reactor/DeviceNode/Asset bleiben Source of Truth; keine neue Brain-/Execution-Logik — Approval/Safety/Trace unverändert. Mobile-Systeme (Klasse D) sind weiterhin ausserhalb V1-Scope.
 
 ---
 
@@ -363,6 +367,8 @@ ABrain wird aktiv steuernd
 * Services
 * GPU Jobs
 * Netzwerk
+
+> **Status V1 (2026-04-20):** Additiv implementiert als `InfraNode` + `InfraService` + `StorageVolume` + `BackupRecord`, Migration `20260420_0022`, Service/Router unter `/api/v1/infra` mit `nodes|services|storage|backups|overview`. `/infra` UI (ITOps Nav) zeigt Filter, Nodes-Tabelle mit Inline-Status, Detail, Services, Storage, Letzte Backups. Dashboard-KPIs (Nodes gesamt, Offline/Incident, Degraded Services, Backup-Fehler 14d). LabOS bleibt Source of Truth für operativen Kontext — Rohmetriken (Prometheus/Grafana/Loki) bleiben extern, Asset/RobotOps/DeviceNode bleiben unverändert. Keine neue Runtime-/Brain-Logik; Safety/Approval/Trace unverändert. GPU-Job-Queue und Netzwerk-Graphen sind bewusst ausserhalb V1-Scope.
 
 ## KnowledgeOps V2
 

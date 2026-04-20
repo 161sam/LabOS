@@ -19,6 +19,8 @@ const navItems: Array<{
   { label: 'ReactorOps', href: '/reactor-ops' },
   { label: 'ReactorControl', href: '/reactor-control' },
   { label: 'Assets', href: '/assets' },
+  { label: 'RobotOps', href: '/modules' },
+  { label: 'ITOps', href: '/infra' },
   { label: 'Inventory', href: '/inventory' },
   { label: 'Labels', href: '/labels' },
   { label: 'Sensoren', href: '/sensors' },

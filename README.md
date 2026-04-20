@@ -79,7 +79,7 @@ LabOS befindet sich in **aktiver Entwicklung (Pre-1.0)**. Die bisher fertigen Mo
 
 - Öffentliche APIs können sich ändern.
 - Breaking Changes werden über Alembic-Migrationen und Release Notes kommuniziert.
-- Backend-Testsuite: 188 Tests grün (Stand 2026-04-19).
+- Backend-Testsuite: 270 Tests grün (Stand 2026-04-20).
 
 ## Getting Started
 
@@ -168,6 +168,18 @@ curl -sS -X POST http://localhost:8000/api/v1/mcp \
   -b cookies.txt \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"labos.create_task","arguments":{"title":"via MCP"},"trace_id":"demo-1"}}'
 ```
+
+### RobotOps / Autonomous Modules
+
+LabOS modelliert physische Systeme zusätzlich als **autonome Module** — eine einheitliche Abstraktion über Reaktoren, Hydroponik, Sampling-/Dosing-Einheiten, Vision-Nodes und Werkstatt-Geräte. Die Schicht ist **additiv**: Reactor, DeviceNode und Asset bleiben Source of Truth; `AutonomousModule` verlinkt diese und ergänzt Felder wie `module_type`, `status`, `autonomy_level`, `ros_node_name`, `mqtt_node_id` sowie eine typisierte Capability-Liste (`sense_temperature`, `pump_fluid`, `capture_image`, …).
+
+Surface: `GET/POST /api/v1/modules`, `GET /api/v1/modules/{id}`, `PUT /api/v1/modules/{id}`, `PATCH /api/v1/modules/{id}/status`, `PUT /api/v1/modules/{id}/capabilities`, `GET /api/v1/modules/overview`. Schreibzugriffe sind auf Operator/Admin beschränkt. Die Decision-/Execution-Pipelines bleiben unverändert — neue Execution-Logik entsteht in dieser Schicht nicht; Safety/Approval/Trace greifen weiter an den bestehenden Stellen. Das Frontend zeigt die Module unter `/modules` (RobotOps) mit Listen-, Filter-, Detail- und Capability-Ansicht.
+
+### ITOps / InfraOps
+
+LabOS modelliert die operative Infrastruktur — Hosts, SBCs, GPU-Nodes, Service-Prozesse, Storage und Backup-Zustände — als eigene Schicht neben AssetOps, RobotOps und DeviceNodes. Die Schicht ist **additiv und kein Monitoring-Ersatz**: Rohmetriken bleiben extern (Prometheus/Grafana/Loki); LabOS hält den operativen Kontext (welche Nodes existieren, welche Services wo laufen, welches Volume droht voll zu laufen, welche Backups zuletzt fehlgeschlagen sind). Modelle: `InfraNode` (mit Typ/Rolle/Status, optionalen Links zu `Asset` und `AutonomousModule`), `InfraService` (pro Node, eindeutig per `service_name`), `StorageVolume` und `BackupRecord`.
+
+Surface: `GET/POST /api/v1/infra/nodes`, `GET/PUT /api/v1/infra/nodes/{id}`, `PATCH /api/v1/infra/nodes/{id}/status`, `GET /api/v1/infra/nodes/{id}/services`, `GET/POST/PUT /api/v1/infra/services`, `GET/POST/PUT /api/v1/infra/storage`, `GET/POST /api/v1/infra/backups`, `GET /api/v1/infra/overview`. Schreibzugriffe sind Operator/Admin-only. Das Dashboard zeigt KPIs für Nodes, Offline/Incident, Degraded Services und Backup-Fehler der letzten 14 Tage; die Nav-Seite `/infra` (ITOps) rendert Filter, Nodes-Tabelle mit Inline-Status, Detail, Services, Storage und Backups.
 
 ### ABrain V2 Integration Surface
 

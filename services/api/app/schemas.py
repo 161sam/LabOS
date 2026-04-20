@@ -2155,6 +2155,12 @@ class DashboardSummaryRead(AppSchema):
     critical_inventory_items: list[InventoryRead]
     recent_labels: list[LabelRead]
     recent_safety_incidents: list[SafetyIncidentRead]
+    autonomous_modules_total: int = 0
+    autonomous_modules_warning_or_incident: int = 0
+    infra_nodes_total: int = 0
+    infra_nodes_offline_or_incident: int = 0
+    infra_services_degraded: int = 0
+    infra_backup_failures_recent: int = 0
     message: str
 
 
@@ -2311,3 +2317,485 @@ def _validate_rule_configuration(
         _require_config_keys(action_config, {'title_template', 'message_template', 'severity'}, 'action_config')
     elif action_type == RuleActionType.create_task:
         _require_config_keys(action_config, {'title_template', 'priority'}, 'action_config')
+
+
+class ModuleType(str, Enum):
+    reactor = 'reactor'
+    hydroponic = 'hydroponic'
+    sampling = 'sampling'
+    dosing = 'dosing'
+    vision = 'vision'
+    workshop_machine = 'workshop_machine'
+    mobile_robot = 'mobile_robot'
+    utility = 'utility'
+
+
+class ModuleStatus(str, Enum):
+    nominal = 'nominal'
+    attention = 'attention'
+    warning = 'warning'
+    incident = 'incident'
+    offline = 'offline'
+    maintenance = 'maintenance'
+    disabled = 'disabled'
+
+
+class ModuleAutonomyLevel(str, Enum):
+    manual = 'manual'
+    assisted = 'assisted'
+    semi_autonomous = 'semi_autonomous'
+    autonomous = 'autonomous'
+
+
+class ModuleCapabilityType(str, Enum):
+    sense_temperature = 'sense_temperature'
+    sense_ph = 'sense_ph'
+    sense_light = 'sense_light'
+    sense_flow = 'sense_flow'
+    sense_humidity = 'sense_humidity'
+    capture_image = 'capture_image'
+    pump_fluid = 'pump_fluid'
+    dose_fluid = 'dose_fluid'
+    sample_media = 'sample_media'
+    heat = 'heat'
+    cool = 'cool'
+    aerate = 'aerate'
+    illuminate = 'illuminate'
+    navigate = 'navigate'
+    manipulate = 'manipulate'
+    machine_operation = 'machine_operation'
+
+
+class ModuleCapabilityPayload(AppSchema):
+    capability_type: ModuleCapabilityType
+    is_enabled: bool = True
+    notes: str | None = Field(default=None, max_length=2000)
+
+    @field_validator('notes')
+    @classmethod
+    def normalize_notes(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class ModuleCapabilityRead(AppSchema):
+    id: int
+    autonomous_module_id: int
+    capability_type: ModuleCapabilityType
+    is_enabled: bool
+    notes: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class AutonomousModulePayload(AppSchema):
+    module_id: str = Field(min_length=1, max_length=120)
+    name: str = Field(min_length=1, max_length=160)
+    module_type: ModuleType
+    status: ModuleStatus = ModuleStatus.nominal
+    autonomy_level: ModuleAutonomyLevel = ModuleAutonomyLevel.manual
+    reactor_id: int | None = None
+    asset_id: int | None = None
+    device_node_id: int | None = None
+    zone: str | None = Field(default=None, max_length=120)
+    location: str | None = Field(default=None, max_length=160)
+    description: str | None = Field(default=None, max_length=4000)
+    ros_node_name: str | None = Field(default=None, max_length=160)
+    mqtt_node_id: str | None = Field(default=None, max_length=120)
+    wiki_ref: str | None = Field(default=None, max_length=255)
+
+    @field_validator('module_id', 'name')
+    @classmethod
+    def _normalize_required(cls, value: str) -> str:
+        return _normalize_required_text(value)
+
+    @field_validator('zone', 'location', 'description', 'ros_node_name', 'mqtt_node_id', 'wiki_ref')
+    @classmethod
+    def _normalize_optional(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class AutonomousModuleCreate(AutonomousModulePayload):
+    capabilities: list[ModuleCapabilityPayload] = Field(default_factory=list)
+
+
+class AutonomousModuleUpdate(AutonomousModulePayload):
+    pass
+
+
+class AutonomousModuleStatusUpdate(AppSchema):
+    status: ModuleStatus
+
+
+class AutonomousModuleRead(AppSchema):
+    id: int
+    module_id: str
+    name: str
+    module_type: ModuleType
+    status: ModuleStatus
+    autonomy_level: ModuleAutonomyLevel
+    reactor_id: int | None
+    asset_id: int | None
+    device_node_id: int | None
+    zone: str | None
+    location: str | None
+    description: str | None
+    ros_node_name: str | None
+    mqtt_node_id: str | None
+    wiki_ref: str | None
+    created_at: datetime
+    updated_at: datetime
+    capability_count: int = 0
+
+
+class AutonomousModuleReactorRef(AppSchema):
+    id: int
+    name: str
+    status: str
+
+
+class AutonomousModuleAssetRef(AppSchema):
+    id: int
+    name: str
+    asset_type: str
+    status: str
+
+
+class AutonomousModuleDeviceNodeRef(AppSchema):
+    id: int
+    name: str
+    node_id: str | None
+    node_type: str
+    status: str
+
+
+class AutonomousModuleDetailRead(AutonomousModuleRead):
+    capabilities: list[ModuleCapabilityRead] = Field(default_factory=list)
+    reactor: AutonomousModuleReactorRef | None = None
+    asset: AutonomousModuleAssetRef | None = None
+    device_node: AutonomousModuleDeviceNodeRef | None = None
+    open_incident_count: int = 0
+
+
+class AutonomousModuleOverviewRead(AppSchema):
+    total_modules: int
+    nominal_modules: int
+    attention_modules: int
+    warning_modules: int
+    incident_modules: int
+    offline_modules: int
+    maintenance_modules: int
+    disabled_modules: int
+    by_type: dict[str, int] = Field(default_factory=dict)
+    by_autonomy_level: dict[str, int] = Field(default_factory=dict)
+
+
+class InfraNodeType(str, Enum):
+    server = 'server'
+    sbc = 'sbc'
+    workstation = 'workstation'
+    gpu_node = 'gpu_node'
+    network_device = 'network_device'
+    virtual_service_host = 'virtual_service_host'
+
+
+class InfraNodeStatus(str, Enum):
+    nominal = 'nominal'
+    attention = 'attention'
+    warning = 'warning'
+    incident = 'incident'
+    offline = 'offline'
+    maintenance = 'maintenance'
+    disabled = 'disabled'
+
+
+class InfraNodeRole(str, Enum):
+    api = 'api'
+    database = 'database'
+    storage = 'storage'
+    compute = 'compute'
+    ai = 'ai'
+    mqtt = 'mqtt'
+    ros_runtime = 'ros_runtime'
+    gateway = 'gateway'
+    backup = 'backup'
+    general = 'general'
+
+
+class InfraServiceType(str, Enum):
+    api = 'api'
+    database = 'database'
+    mqtt = 'mqtt'
+    ros_bridge = 'ros_bridge'
+    mcp = 'mcp'
+    frontend = 'frontend'
+    storage = 'storage'
+    backup = 'backup'
+    inference = 'inference'
+    monitoring = 'monitoring'
+    gateway = 'gateway'
+
+
+class InfraServiceStatus(str, Enum):
+    nominal = 'nominal'
+    degraded = 'degraded'
+    warning = 'warning'
+    offline = 'offline'
+    disabled = 'disabled'
+
+
+class StorageVolumeStatus(str, Enum):
+    nominal = 'nominal'
+    attention = 'attention'
+    warning = 'warning'
+    offline = 'offline'
+
+
+class BackupStatus(str, Enum):
+    ok = 'ok'
+    running = 'running'
+    failed = 'failed'
+    skipped = 'skipped'
+
+
+class InfraNodePayload(AppSchema):
+    node_id: str = Field(min_length=1, max_length=120)
+    name: str = Field(min_length=1, max_length=160)
+    node_type: InfraNodeType
+    status: InfraNodeStatus = InfraNodeStatus.nominal
+    role: InfraNodeRole = InfraNodeRole.general
+    hostname: str | None = Field(default=None, max_length=160)
+    ip_address: str | None = Field(default=None, max_length=64)
+    zone: str | None = Field(default=None, max_length=120)
+    location: str | None = Field(default=None, max_length=160)
+    os_family: str | None = Field(default=None, max_length=60)
+    architecture: str | None = Field(default=None, max_length=40)
+    has_gpu: bool = False
+    ros_enabled: bool = False
+    mqtt_enabled: bool = False
+    notes: str | None = Field(default=None, max_length=4000)
+    asset_id: int | None = None
+    autonomous_module_id: int | None = None
+    wiki_ref: str | None = Field(default=None, max_length=255)
+
+    @field_validator('node_id', 'name')
+    @classmethod
+    def _normalize_required(cls, value: str) -> str:
+        return _normalize_required_text(value)
+
+    @field_validator(
+        'hostname',
+        'ip_address',
+        'zone',
+        'location',
+        'os_family',
+        'architecture',
+        'notes',
+        'wiki_ref',
+    )
+    @classmethod
+    def _normalize_optional(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class InfraNodeCreate(InfraNodePayload):
+    pass
+
+
+class InfraNodeUpdate(InfraNodePayload):
+    pass
+
+
+class InfraNodeStatusUpdate(AppSchema):
+    status: InfraNodeStatus
+
+
+class InfraNodeRead(AppSchema):
+    id: int
+    node_id: str
+    name: str
+    node_type: InfraNodeType
+    status: InfraNodeStatus
+    role: InfraNodeRole
+    hostname: str | None
+    ip_address: str | None
+    zone: str | None
+    location: str | None
+    os_family: str | None
+    architecture: str | None
+    has_gpu: bool
+    ros_enabled: bool
+    mqtt_enabled: bool
+    notes: str | None
+    asset_id: int | None
+    autonomous_module_id: int | None
+    wiki_ref: str | None
+    created_at: datetime
+    updated_at: datetime
+    service_count: int = 0
+    storage_count: int = 0
+
+
+class InfraServicePayload(AppSchema):
+    infra_node_id: int
+    service_name: str = Field(min_length=1, max_length=120)
+    service_type: InfraServiceType
+    status: InfraServiceStatus = InfraServiceStatus.nominal
+    endpoint: str | None = Field(default=None, max_length=255)
+    port: int | None = Field(default=None, ge=1, le=65535)
+    healthcheck_url: str | None = Field(default=None, max_length=255)
+    version: str | None = Field(default=None, max_length=60)
+    notes: str | None = Field(default=None, max_length=2000)
+
+    @field_validator('service_name')
+    @classmethod
+    def _normalize_required(cls, value: str) -> str:
+        return _normalize_required_text(value)
+
+    @field_validator('endpoint', 'healthcheck_url', 'version', 'notes')
+    @classmethod
+    def _normalize_optional(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class InfraServiceCreate(InfraServicePayload):
+    pass
+
+
+class InfraServiceUpdate(InfraServicePayload):
+    pass
+
+
+class InfraServiceRead(AppSchema):
+    id: int
+    infra_node_id: int
+    service_name: str
+    service_type: InfraServiceType
+    status: InfraServiceStatus
+    endpoint: str | None
+    port: int | None
+    healthcheck_url: str | None
+    version: str | None
+    notes: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class StorageVolumePayload(AppSchema):
+    infra_node_id: int
+    name: str = Field(min_length=1, max_length=160)
+    mount_path: str | None = Field(default=None, max_length=255)
+    volume_type: str = Field(default='local', min_length=1, max_length=40)
+    status: StorageVolumeStatus = StorageVolumeStatus.nominal
+    capacity_gb: float | None = Field(default=None, ge=0)
+    free_gb: float | None = Field(default=None, ge=0)
+    notes: str | None = Field(default=None, max_length=2000)
+
+    @field_validator('name', 'volume_type')
+    @classmethod
+    def _normalize_required(cls, value: str) -> str:
+        return _normalize_required_text(value)
+
+    @field_validator('mount_path', 'notes')
+    @classmethod
+    def _normalize_optional(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class StorageVolumeCreate(StorageVolumePayload):
+    pass
+
+
+class StorageVolumeUpdate(StorageVolumePayload):
+    pass
+
+
+class StorageVolumeRead(AppSchema):
+    id: int
+    infra_node_id: int
+    name: str
+    mount_path: str | None
+    volume_type: str
+    status: StorageVolumeStatus
+    capacity_gb: float | None
+    free_gb: float | None
+    notes: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class BackupRecordPayload(AppSchema):
+    infra_node_id: int | None = None
+    target_type: str | None = Field(default=None, max_length=40)
+    target_id: str | None = Field(default=None, max_length=120)
+    backup_type: str = Field(default='snapshot', min_length=1, max_length=40)
+    status: BackupStatus = BackupStatus.ok
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+    notes: str | None = Field(default=None, max_length=2000)
+
+    @field_validator('backup_type')
+    @classmethod
+    def _normalize_required(cls, value: str) -> str:
+        return _normalize_required_text(value)
+
+    @field_validator('target_type', 'target_id', 'notes')
+    @classmethod
+    def _normalize_optional(cls, value: str | None) -> str | None:
+        return _normalize_optional_text(value)
+
+
+class BackupRecordCreate(BackupRecordPayload):
+    pass
+
+
+class BackupRecordRead(AppSchema):
+    id: int
+    infra_node_id: int | None
+    target_type: str | None
+    target_id: str | None
+    backup_type: str
+    status: BackupStatus
+    started_at: datetime | None
+    finished_at: datetime | None
+    notes: str | None
+    created_at: datetime
+
+
+class InfraNodeAssetRef(AppSchema):
+    id: int
+    name: str
+    asset_type: str
+    status: str
+
+
+class InfraNodeModuleRef(AppSchema):
+    id: int
+    module_id: str
+    name: str
+    module_type: str
+    status: str
+
+
+class InfraNodeDetailRead(InfraNodeRead):
+    services: list[InfraServiceRead] = Field(default_factory=list)
+    storage_volumes: list[StorageVolumeRead] = Field(default_factory=list)
+    recent_backups: list[BackupRecordRead] = Field(default_factory=list)
+    asset: InfraNodeAssetRef | None = None
+    autonomous_module: InfraNodeModuleRef | None = None
+
+
+class InfraOverviewRead(AppSchema):
+    total_nodes: int
+    nominal_nodes: int
+    attention_nodes: int
+    warning_nodes: int
+    incident_nodes: int
+    offline_nodes: int
+    maintenance_nodes: int
+    disabled_nodes: int
+    degraded_services: int
+    total_services: int
+    storage_issues: int
+    recent_backup_failures: int
+    by_type: dict[str, int] = Field(default_factory=dict)
+    by_role: dict[str, int] = Field(default_factory=dict)

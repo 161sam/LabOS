@@ -502,7 +502,7 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
 
     with engine.connect() as connection:
         version = connection.execute(text('SELECT version_num FROM alembic_version')).scalar_one()
-        assert version == '20260419_0020'
+        assert version == '20260420_0022'
 
         exec_log_table = inspector.get_columns('abrainexecutionlog')
         exec_log_columns = {column['name'] for column in exec_log_table}
@@ -574,5 +574,139 @@ def test_alembic_upgrade_applies_baseline_schema(tmp_path):
             'ix_tracecontext_source',
             'ix_tracecontext_created_at',
         } <= trace_indexes
+
+        module_columns = {column['name'] for column in inspector.get_columns('autonomousmodule')}
+        assert {
+            'id',
+            'module_id',
+            'name',
+            'module_type',
+            'status',
+            'autonomy_level',
+            'reactor_id',
+            'asset_id',
+            'device_node_id',
+            'zone',
+            'location',
+            'description',
+            'ros_node_name',
+            'mqtt_node_id',
+            'wiki_ref',
+            'created_at',
+            'updated_at',
+        } <= module_columns
+        module_indexes = {index['name'] for index in inspector.get_indexes('autonomousmodule')}
+        assert {
+            'ix_autonomousmodule_module_id',
+            'ix_autonomousmodule_module_type',
+            'ix_autonomousmodule_status',
+            'ix_autonomousmodule_autonomy_level',
+            'ix_autonomousmodule_reactor_id',
+            'ix_autonomousmodule_asset_id',
+            'ix_autonomousmodule_device_node_id',
+        } <= module_indexes
+
+        capability_columns = {column['name'] for column in inspector.get_columns('modulecapability')}
+        assert {
+            'id',
+            'autonomous_module_id',
+            'capability_type',
+            'is_enabled',
+            'notes',
+            'created_at',
+            'updated_at',
+        } <= capability_columns
+        capability_indexes = {index['name'] for index in inspector.get_indexes('modulecapability')}
+        assert {
+            'ix_modulecapability_module_capability',
+            'ix_modulecapability_capability_type',
+        } <= capability_indexes
+
+        infra_node_columns = {column['name'] for column in inspector.get_columns('infranode')}
+        assert {
+            'id',
+            'node_id',
+            'name',
+            'node_type',
+            'status',
+            'role',
+            'hostname',
+            'ip_address',
+            'zone',
+            'location',
+            'os_family',
+            'architecture',
+            'has_gpu',
+            'ros_enabled',
+            'mqtt_enabled',
+            'notes',
+            'asset_id',
+            'autonomous_module_id',
+            'wiki_ref',
+            'created_at',
+            'updated_at',
+        } <= infra_node_columns
+        infra_node_indexes = {index['name'] for index in inspector.get_indexes('infranode')}
+        assert {
+            'ix_infranode_node_id',
+            'ix_infranode_node_type',
+            'ix_infranode_status',
+            'ix_infranode_role',
+            'ix_infranode_zone',
+            'ix_infranode_asset_id',
+            'ix_infranode_autonomous_module_id',
+        } <= infra_node_indexes
+
+        infra_service_columns = {column['name'] for column in inspector.get_columns('infraservice')}
+        assert {
+            'id',
+            'infra_node_id',
+            'service_name',
+            'service_type',
+            'status',
+            'endpoint',
+            'port',
+            'healthcheck_url',
+            'version',
+            'notes',
+            'created_at',
+            'updated_at',
+        } <= infra_service_columns
+        infra_service_indexes = {index['name'] for index in inspector.get_indexes('infraservice')}
+        assert {
+            'ix_infraservice_infra_node_id',
+            'ix_infraservice_service_type',
+            'ix_infraservice_status',
+            'ix_infraservice_node_service',
+        } <= infra_service_indexes
+
+        storage_columns = {column['name'] for column in inspector.get_columns('storagevolume')}
+        assert {
+            'id',
+            'infra_node_id',
+            'name',
+            'mount_path',
+            'volume_type',
+            'status',
+            'capacity_gb',
+            'free_gb',
+            'notes',
+            'created_at',
+            'updated_at',
+        } <= storage_columns
+
+        backup_columns = {column['name'] for column in inspector.get_columns('backuprecord')}
+        assert {
+            'id',
+            'infra_node_id',
+            'target_type',
+            'target_id',
+            'backup_type',
+            'status',
+            'started_at',
+            'finished_at',
+            'notes',
+            'created_at',
+        } <= backup_columns
 
     engine.dispose()

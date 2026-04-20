@@ -642,3 +642,155 @@ class WikiPage(SQLModel, table=True):
     slug: str = Field(primary_key=True)
     title: str
     summary: Optional[str] = None
+
+
+class AutonomousModule(SQLModel, table=True):
+    __table_args__ = (
+        Index('ix_autonomousmodule_module_id', 'module_id', unique=True),
+        Index('ix_autonomousmodule_module_type', 'module_type'),
+        Index('ix_autonomousmodule_status', 'status'),
+        Index('ix_autonomousmodule_autonomy_level', 'autonomy_level'),
+        Index('ix_autonomousmodule_reactor_id', 'reactor_id'),
+        Index('ix_autonomousmodule_asset_id', 'asset_id'),
+        Index('ix_autonomousmodule_device_node_id', 'device_node_id'),
+        Index('ix_autonomousmodule_zone', 'zone'),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    module_id: str = Field(max_length=120)
+    name: str = Field(index=True, max_length=160)
+    module_type: str = Field(max_length=40)
+    status: str = Field(default='nominal', max_length=30)
+    autonomy_level: str = Field(default='manual', max_length=30)
+    reactor_id: Optional[int] = Field(default=None, foreign_key='reactor.id')
+    asset_id: Optional[int] = Field(default=None, foreign_key='asset.id')
+    device_node_id: Optional[int] = Field(default=None, foreign_key='devicenode.id')
+    zone: Optional[str] = Field(default=None, max_length=120)
+    location: Optional[str] = Field(default=None, max_length=160)
+    description: Optional[str] = None
+    ros_node_name: Optional[str] = Field(default=None, max_length=160)
+    mqtt_node_id: Optional[str] = Field(default=None, max_length=120)
+    wiki_ref: Optional[str] = Field(default=None, max_length=255)
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
+
+
+class ModuleCapability(SQLModel, table=True):
+    __table_args__ = (
+        Index(
+            'ix_modulecapability_module_capability',
+            'autonomous_module_id',
+            'capability_type',
+            unique=True,
+        ),
+        Index('ix_modulecapability_capability_type', 'capability_type'),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    autonomous_module_id: int = Field(foreign_key='autonomousmodule.id', index=True)
+    capability_type: str = Field(max_length=60)
+    is_enabled: bool = Field(default=True)
+    notes: Optional[str] = None
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
+
+
+class InfraNode(SQLModel, table=True):
+    __table_args__ = (
+        Index('ix_infranode_node_id', 'node_id', unique=True),
+        Index('ix_infranode_node_type', 'node_type'),
+        Index('ix_infranode_status', 'status'),
+        Index('ix_infranode_role', 'role'),
+        Index('ix_infranode_zone', 'zone'),
+        Index('ix_infranode_asset_id', 'asset_id'),
+        Index('ix_infranode_autonomous_module_id', 'autonomous_module_id'),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    node_id: str = Field(max_length=120)
+    name: str = Field(index=True, max_length=160)
+    node_type: str = Field(max_length=40)
+    status: str = Field(default='nominal', max_length=30)
+    role: str = Field(default='general', max_length=30)
+    hostname: Optional[str] = Field(default=None, max_length=160)
+    ip_address: Optional[str] = Field(default=None, max_length=64)
+    zone: Optional[str] = Field(default=None, max_length=120)
+    location: Optional[str] = Field(default=None, max_length=160)
+    os_family: Optional[str] = Field(default=None, max_length=60)
+    architecture: Optional[str] = Field(default=None, max_length=40)
+    has_gpu: bool = Field(default=False)
+    ros_enabled: bool = Field(default=False)
+    mqtt_enabled: bool = Field(default=False)
+    notes: Optional[str] = None
+    asset_id: Optional[int] = Field(default=None, foreign_key='asset.id')
+    autonomous_module_id: Optional[int] = Field(default=None, foreign_key='autonomousmodule.id')
+    wiki_ref: Optional[str] = Field(default=None, max_length=255)
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
+
+
+class InfraService(SQLModel, table=True):
+    __table_args__ = (
+        Index('ix_infraservice_infra_node_id', 'infra_node_id'),
+        Index('ix_infraservice_service_type', 'service_type'),
+        Index('ix_infraservice_status', 'status'),
+        Index(
+            'ix_infraservice_node_service',
+            'infra_node_id',
+            'service_name',
+            unique=True,
+        ),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    infra_node_id: int = Field(foreign_key='infranode.id')
+    service_name: str = Field(max_length=120)
+    service_type: str = Field(max_length=40)
+    status: str = Field(default='nominal', max_length=30)
+    endpoint: Optional[str] = Field(default=None, max_length=255)
+    port: Optional[int] = None
+    healthcheck_url: Optional[str] = Field(default=None, max_length=255)
+    version: Optional[str] = Field(default=None, max_length=60)
+    notes: Optional[str] = None
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
+
+
+class StorageVolume(SQLModel, table=True):
+    __table_args__ = (
+        Index('ix_storagevolume_infra_node_id', 'infra_node_id'),
+        Index('ix_storagevolume_status', 'status'),
+        Index('ix_storagevolume_volume_type', 'volume_type'),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    infra_node_id: int = Field(foreign_key='infranode.id')
+    name: str = Field(max_length=160)
+    mount_path: Optional[str] = Field(default=None, max_length=255)
+    volume_type: str = Field(default='local', max_length=40)
+    status: str = Field(default='nominal', max_length=30)
+    capacity_gb: Optional[float] = None
+    free_gb: Optional[float] = None
+    notes: Optional[str] = None
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
+
+
+class BackupRecord(SQLModel, table=True):
+    __table_args__ = (
+        Index('ix_backuprecord_infra_node_id', 'infra_node_id'),
+        Index('ix_backuprecord_status', 'status'),
+        Index('ix_backuprecord_backup_type', 'backup_type'),
+        Index('ix_backuprecord_started_at', 'started_at'),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    infra_node_id: Optional[int] = Field(default=None, foreign_key='infranode.id')
+    target_type: Optional[str] = Field(default=None, max_length=40)
+    target_id: Optional[str] = Field(default=None, max_length=120)
+    backup_type: str = Field(default='snapshot', max_length=40)
+    status: str = Field(default='ok', max_length=30)
+    started_at: Optional[datetime] = None
+    finished_at: Optional[datetime] = None
+    notes: Optional[str] = None
+    created_at: datetime = Field(default_factory=_utcnow)

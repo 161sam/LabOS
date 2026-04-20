@@ -1386,6 +1386,12 @@ export type DashboardSummary = {
   critical_inventory_items: InventoryItem[];
   recent_labels: Label[];
   recent_safety_incidents: SafetyIncident[];
+  autonomous_modules_total: number;
+  autonomous_modules_warning_or_incident: number;
+  infra_nodes_total: number;
+  infra_nodes_offline_or_incident: number;
+  infra_services_degraded: number;
+  infra_backup_failures_recent: number;
   message: string;
 };
 
@@ -1519,4 +1525,297 @@ export type TraceContextDetail = TraceContext & {
   timeline: TraceTimelineEvent[];
   executions: ABrainExecutionLogEntry[];
   approvals: ApprovalRequest[];
+};
+
+export const moduleTypeOptions = [
+  { value: 'reactor', label: 'Reaktor' },
+  { value: 'hydroponic', label: 'Hydroponik' },
+  { value: 'sampling', label: 'Sampling' },
+  { value: 'dosing', label: 'Dosing' },
+  { value: 'vision', label: 'Vision' },
+  { value: 'workshop_machine', label: 'Werkstatt-Maschine' },
+  { value: 'mobile_robot', label: 'Mobiler Roboter' },
+  { value: 'utility', label: 'Utility' },
+] as const;
+
+export const moduleStatusOptions = [
+  { value: 'nominal', label: 'Nominal' },
+  { value: 'attention', label: 'Aufmerksamkeit' },
+  { value: 'warning', label: 'Warnung' },
+  { value: 'incident', label: 'Incident' },
+  { value: 'offline', label: 'Offline' },
+  { value: 'maintenance', label: 'Wartung' },
+  { value: 'disabled', label: 'Deaktiviert' },
+] as const;
+
+export const moduleAutonomyLevelOptions = [
+  { value: 'manual', label: 'Manuell' },
+  { value: 'assisted', label: 'Assistiert' },
+  { value: 'semi_autonomous', label: 'Semi-autonom' },
+  { value: 'autonomous', label: 'Autonom' },
+] as const;
+
+export const moduleCapabilityTypeOptions = [
+  { value: 'sense_temperature', label: 'Temperatur messen' },
+  { value: 'sense_ph', label: 'pH messen' },
+  { value: 'sense_light', label: 'Licht messen' },
+  { value: 'sense_flow', label: 'Flow messen' },
+  { value: 'sense_humidity', label: 'Feuchte messen' },
+  { value: 'capture_image', label: 'Bild aufnehmen' },
+  { value: 'pump_fluid', label: 'Fluid pumpen' },
+  { value: 'dose_fluid', label: 'Fluid dosieren' },
+  { value: 'sample_media', label: 'Probe nehmen' },
+  { value: 'heat', label: 'Heizen' },
+  { value: 'cool', label: 'Kuehlen' },
+  { value: 'aerate', label: 'Belueften' },
+  { value: 'illuminate', label: 'Beleuchten' },
+  { value: 'navigate', label: 'Navigieren' },
+  { value: 'manipulate', label: 'Manipulieren' },
+  { value: 'machine_operation', label: 'Maschinenbetrieb' },
+] as const;
+
+export type ModuleType = (typeof moduleTypeOptions)[number]['value'];
+export type ModuleStatus = (typeof moduleStatusOptions)[number]['value'];
+export type ModuleAutonomyLevel = (typeof moduleAutonomyLevelOptions)[number]['value'];
+export type ModuleCapabilityType = (typeof moduleCapabilityTypeOptions)[number]['value'];
+
+export type ModuleCapability = {
+  id: number;
+  autonomous_module_id: number;
+  capability_type: ModuleCapabilityType;
+  is_enabled: boolean;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AutonomousModule = {
+  id: number;
+  module_id: string;
+  name: string;
+  module_type: ModuleType;
+  status: ModuleStatus;
+  autonomy_level: ModuleAutonomyLevel;
+  reactor_id: number | null;
+  asset_id: number | null;
+  device_node_id: number | null;
+  zone: string | null;
+  location: string | null;
+  description: string | null;
+  ros_node_name: string | null;
+  mqtt_node_id: string | null;
+  wiki_ref: string | null;
+  created_at: string;
+  updated_at: string;
+  capability_count: number;
+};
+
+export type AutonomousModuleReactorRef = {
+  id: number;
+  name: string;
+  status: string;
+};
+
+export type AutonomousModuleAssetRef = {
+  id: number;
+  name: string;
+  asset_type: string;
+  status: string;
+};
+
+export type AutonomousModuleDeviceNodeRef = {
+  id: number;
+  name: string;
+  node_id: string | null;
+  node_type: string;
+  status: string;
+};
+
+export type AutonomousModuleDetail = AutonomousModule & {
+  capabilities: ModuleCapability[];
+  reactor: AutonomousModuleReactorRef | null;
+  asset: AutonomousModuleAssetRef | null;
+  device_node: AutonomousModuleDeviceNodeRef | null;
+  open_incident_count: number;
+};
+
+export type AutonomousModuleOverview = {
+  total_modules: number;
+  nominal_modules: number;
+  attention_modules: number;
+  warning_modules: number;
+  incident_modules: number;
+  offline_modules: number;
+  maintenance_modules: number;
+  disabled_modules: number;
+  by_type: Record<string, number>;
+  by_autonomy_level: Record<string, number>;
+};
+
+export const infraNodeTypeOptions = [
+  { value: 'server', label: 'Server' },
+  { value: 'sbc', label: 'SBC' },
+  { value: 'workstation', label: 'Workstation' },
+  { value: 'gpu_node', label: 'GPU Node' },
+  { value: 'network_device', label: 'Netzwerk' },
+  { value: 'virtual_service_host', label: 'Virtual Host' },
+] as const;
+
+export const infraNodeStatusOptions = [
+  { value: 'nominal', label: 'Nominal' },
+  { value: 'attention', label: 'Aufmerksamkeit' },
+  { value: 'warning', label: 'Warnung' },
+  { value: 'incident', label: 'Incident' },
+  { value: 'offline', label: 'Offline' },
+  { value: 'maintenance', label: 'Wartung' },
+  { value: 'disabled', label: 'Deaktiviert' },
+] as const;
+
+export const infraNodeRoleOptions = [
+  { value: 'api', label: 'API' },
+  { value: 'database', label: 'Database' },
+  { value: 'storage', label: 'Storage' },
+  { value: 'compute', label: 'Compute' },
+  { value: 'ai', label: 'AI' },
+  { value: 'mqtt', label: 'MQTT' },
+  { value: 'ros_runtime', label: 'ROS Runtime' },
+  { value: 'gateway', label: 'Gateway' },
+  { value: 'backup', label: 'Backup' },
+  { value: 'general', label: 'General' },
+] as const;
+
+export const infraServiceTypeOptions = [
+  { value: 'api', label: 'API' },
+  { value: 'database', label: 'Database' },
+  { value: 'mqtt', label: 'MQTT' },
+  { value: 'ros_bridge', label: 'ROS Bridge' },
+  { value: 'mcp', label: 'MCP' },
+  { value: 'frontend', label: 'Frontend' },
+  { value: 'storage', label: 'Storage' },
+  { value: 'backup', label: 'Backup' },
+  { value: 'inference', label: 'Inference' },
+  { value: 'monitoring', label: 'Monitoring' },
+  { value: 'gateway', label: 'Gateway' },
+] as const;
+
+export const infraServiceStatusOptions = [
+  { value: 'nominal', label: 'Nominal' },
+  { value: 'degraded', label: 'Degraded' },
+  { value: 'warning', label: 'Warnung' },
+  { value: 'offline', label: 'Offline' },
+  { value: 'disabled', label: 'Deaktiviert' },
+] as const;
+
+export type InfraNodeType = (typeof infraNodeTypeOptions)[number]['value'];
+export type InfraNodeStatus = (typeof infraNodeStatusOptions)[number]['value'];
+export type InfraNodeRole = (typeof infraNodeRoleOptions)[number]['value'];
+export type InfraServiceType = (typeof infraServiceTypeOptions)[number]['value'];
+export type InfraServiceStatus = (typeof infraServiceStatusOptions)[number]['value'];
+
+export type InfraNode = {
+  id: number;
+  node_id: string;
+  name: string;
+  node_type: InfraNodeType;
+  status: InfraNodeStatus;
+  role: InfraNodeRole;
+  hostname: string | null;
+  ip_address: string | null;
+  zone: string | null;
+  location: string | null;
+  os_family: string | null;
+  architecture: string | null;
+  has_gpu: boolean;
+  ros_enabled: boolean;
+  mqtt_enabled: boolean;
+  notes: string | null;
+  asset_id: number | null;
+  autonomous_module_id: number | null;
+  wiki_ref: string | null;
+  created_at: string;
+  updated_at: string;
+  service_count: number;
+  storage_count: number;
+};
+
+export type InfraService = {
+  id: number;
+  infra_node_id: number;
+  service_name: string;
+  service_type: InfraServiceType;
+  status: InfraServiceStatus;
+  endpoint: string | null;
+  port: number | null;
+  healthcheck_url: string | null;
+  version: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type StorageVolume = {
+  id: number;
+  infra_node_id: number;
+  name: string;
+  mount_path: string | null;
+  volume_type: string;
+  status: 'nominal' | 'attention' | 'warning' | 'offline';
+  capacity_gb: number | null;
+  free_gb: number | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type BackupRecord = {
+  id: number;
+  infra_node_id: number | null;
+  target_type: string | null;
+  target_id: string | null;
+  backup_type: string;
+  status: 'ok' | 'running' | 'failed' | 'skipped';
+  started_at: string | null;
+  finished_at: string | null;
+  notes: string | null;
+  created_at: string;
+};
+
+export type InfraNodeAssetRef = {
+  id: number;
+  name: string;
+  asset_type: string;
+  status: string;
+};
+
+export type InfraNodeModuleRef = {
+  id: number;
+  module_id: string;
+  name: string;
+  module_type: string;
+  status: string;
+};
+
+export type InfraNodeDetail = InfraNode & {
+  services: InfraService[];
+  storage_volumes: StorageVolume[];
+  recent_backups: BackupRecord[];
+  asset: InfraNodeAssetRef | null;
+  autonomous_module: InfraNodeModuleRef | null;
+};
+
+export type InfraOverview = {
+  total_nodes: number;
+  nominal_nodes: number;
+  attention_nodes: number;
+  warning_nodes: number;
+  incident_nodes: number;
+  offline_nodes: number;
+  maintenance_nodes: number;
+  disabled_nodes: number;
+  degraded_services: number;
+  total_services: number;
+  storage_issues: number;
+  recent_backup_failures: number;
+  by_type: Record<string, number>;
+  by_role: Record<string, number>;
 };

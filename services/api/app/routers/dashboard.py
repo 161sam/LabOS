@@ -18,6 +18,8 @@ from ..services import reactor_control as reactor_control_service
 from ..services import reactor_health as reactor_health_service
 from ..services import reactor_ops as reactor_ops_service
 from ..services import rules as rule_service
+from ..services import modules as module_service
+from ..services import infra as infra_service
 from ..services import safety as safety_service
 from ..services import sensors as sensor_service
 
@@ -66,6 +68,8 @@ def dashboard_summary(session: Session = Depends(get_session)):
     open_alerts = len(session.exec(select(Alert).where(Alert.status != 'resolved')).all())
     photo_count = len(session.exec(select(Photo.id)).all())
     asset_overview = asset_service.get_asset_overview(session)
+    module_overview = module_service.get_module_overview(session)
+    infra_overview = infra_service.get_overview(session)
     inventory_overview = inventory_service.get_inventory_overview(session)
     label_overview = label_service.get_label_overview(session)
     return {
@@ -110,5 +114,18 @@ def dashboard_summary(session: Session = Depends(get_session)):
         'critical_inventory_items': inventory_overview.critical_items,
         'recent_labels': label_overview.recent_labels,
         'recent_safety_incidents': safety_service.list_safety_incidents(session, limit=4),
+        'autonomous_modules_total': module_overview.total_modules,
+        'autonomous_modules_warning_or_incident': (
+            module_overview.attention_modules
+            + module_overview.warning_modules
+            + module_overview.incident_modules
+            + module_overview.offline_modules
+        ),
+        'infra_nodes_total': infra_overview.total_nodes,
+        'infra_nodes_offline_or_incident': (
+            infra_overview.offline_nodes + infra_overview.incident_nodes
+        ),
+        'infra_services_degraded': infra_overview.degraded_services,
+        'infra_backup_failures_recent': infra_overview.recent_backup_failures,
         'message': 'LabOS API erreichbar'
     }

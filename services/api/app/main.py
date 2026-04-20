@@ -9,7 +9,7 @@ from .services import mqtt_bridge as mqtt_bridge_service
 from .services import scheduler as scheduler_service
 from .mcp import router as mcp_router
 from .ros import ros_bridge as ros_bridge_service
-from .routers import abrain, alerts, approvals, assets, auth, calibration, charges, dashboard, inventory, labels, maintenance, photos, reactor_control, reactor_health, reactor_ops, reactors, rules, safety, schedules, sensors, tasks, traces, users, vision, wiki
+from .routers import abrain, alerts, approvals, assets, auth, calibration, charges, dashboard, infra, inventory, labels, maintenance, modules, photos, reactor_control, reactor_health, reactor_ops, reactors, rules, safety, schedules, sensors, tasks, traces, users, vision, wiki
 from .seed import seed_data
 
 
@@ -70,6 +70,8 @@ app.include_router(safety.router, prefix=api_prefix)
 app.include_router(schedules.router, prefix=api_prefix)
 app.include_router(users.router, prefix=api_prefix)
 app.include_router(wiki.router, prefix=api_prefix)
+app.include_router(modules.router, prefix=api_prefix)
+app.include_router(infra.router, prefix=api_prefix)
 app.include_router(abrain.router, prefix=api_prefix)
 app.include_router(approvals.router, prefix=api_prefix)
 app.include_router(traces.router, prefix=api_prefix)

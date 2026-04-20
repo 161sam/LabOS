@@ -114,6 +114,34 @@ export function DashboardClient() {
         <Card title="Assets im Fehler"><div className="kpi">{data.assets_in_error}</div></Card>
       </div>
 
+      <div className="grid cols-2">
+        <Card title="RobotOps Module gesamt"><div className="kpi">{data.autonomous_modules_total}</div></Card>
+        <Card title="Module mit Aufmerksamkeit">
+          <div className="kpi" style={{ color: data.autonomous_modules_warning_or_incident > 0 ? '#dd6b20' : undefined }}>
+            {data.autonomous_modules_warning_or_incident}
+          </div>
+        </Card>
+      </div>
+
+      <div className="grid cols-4">
+        <Card title="Infra Nodes gesamt"><div className="kpi">{data.infra_nodes_total}</div></Card>
+        <Card title="Nodes offline/incident">
+          <div className="kpi" style={{ color: data.infra_nodes_offline_or_incident > 0 ? '#c53030' : undefined }}>
+            {data.infra_nodes_offline_or_incident}
+          </div>
+        </Card>
+        <Card title="Degraded Services">
+          <div className="kpi" style={{ color: data.infra_services_degraded > 0 ? '#dd6b20' : undefined }}>
+            {data.infra_services_degraded}
+          </div>
+        </Card>
+        <Card title="Backup-Fehler 14d">
+          <div className="kpi" style={{ color: data.infra_backup_failures_recent > 0 ? '#c53030' : undefined }}>
+            {data.infra_backup_failures_recent}
+          </div>
+        </Card>
+      </div>
+
       <div className="grid cols-3">
         <Card title="Inventory Positionen"><div className="kpi">{data.inventory_items}</div></Card>
         <Card title="Inventory knapp"><div className="kpi">{data.inventory_low_stock}</div></Card>

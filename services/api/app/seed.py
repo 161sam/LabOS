@@ -7,12 +7,17 @@ from .db import engine
 from .models import (
     Asset,
     Alert,
+    AutonomousModule,
+    BackupRecord,
     CalibrationRecord,
     Charge,
     DeviceNode,
+    InfraNode,
+    InfraService,
     InventoryItem,
     Label,
     MaintenanceRecord,
+    ModuleCapability,
     Reactor,
     ReactorCommand,
     ReactorEvent,
@@ -24,6 +29,7 @@ from .models import (
     Schedule,
     Sensor,
     SensorValue,
+    StorageVolume,
     Task,
     TelemetryValue,
     UserAccount,
@@ -1234,6 +1240,375 @@ def seed_data() -> bool:
                     source_incident_count=1,
                     assessed_at=now - timedelta(minutes=1),
                     created_at=now - timedelta(minutes=1),
+                ))
+
+            seeded_any = True
+
+        has_module = session.exec(select(AutonomousModule)).first()
+        if has_module is None:
+            reactor_a = session.exec(select(Reactor).where(Reactor.name == 'Reaktor-A1')).first()
+            reactor_b = session.exec(select(Reactor).where(Reactor.name == 'Reaktor-B1')).first()
+            reactor_c = session.exec(select(Reactor).where(Reactor.name == 'Reaktor-C1')).first()
+            node_a = session.exec(select(DeviceNode).where(DeviceNode.node_id == 'esp32-a1')).first()
+            node_b = session.exec(select(DeviceNode).where(DeviceNode.node_id == 'esp32-b1')).first()
+            node_c = session.exec(select(DeviceNode).where(DeviceNode.node_id == 'esp32-c1')).first()
+            pump_asset_row = session.exec(select(Asset).where(Asset.name == 'Pumpe A')).first()
+
+            module_blueprints: list[tuple[AutonomousModule, list[tuple[str, bool]]]] = []
+
+            if reactor_a is not None:
+                module_blueprints.append((
+                    AutonomousModule(
+                        module_id='reactor-a1',
+                        name='Reaktor A1 Autonomous Module',
+                        module_type='reactor',
+                        status='nominal',
+                        autonomy_level='assisted',
+                        reactor_id=reactor_a.id,
+                        device_node_id=node_a.id if node_a is not None else None,
+                        zone='Bioreactor Room',
+                        location='Rack A',
+                        description='Bioreaktor A1 als robotische Einheit (Sensorik + Steuerung).',
+                        ros_node_name='labos_reactor_a1',
+                        mqtt_node_id='esp32-a1',
+                    ),
+                    [
+                        ('sense_temperature', True),
+                        ('sense_ph', True),
+                        ('sense_light', True),
+                        ('illuminate', True),
+                        ('aerate', True),
+                    ],
+                ))
+
+            if reactor_b is not None:
+                module_blueprints.append((
+                    AutonomousModule(
+                        module_id='reactor-b1',
+                        name='Reaktor B1 Autonomous Module',
+                        module_type='reactor',
+                        status='attention',
+                        autonomy_level='assisted',
+                        reactor_id=reactor_b.id,
+                        device_node_id=node_b.id if node_b is not None else None,
+                        zone='Bioreactor Room',
+                        location='Rack B',
+                        description='Bioreaktor B1 mit Env-Control Node.',
+                        ros_node_name='labos_reactor_b1',
+                        mqtt_node_id='esp32-b1',
+                    ),
+                    [
+                        ('sense_temperature', True),
+                        ('sense_ph', True),
+                        ('heat', True),
+                        ('cool', True),
+                    ],
+                ))
+
+            if reactor_c is not None:
+                module_blueprints.append((
+                    AutonomousModule(
+                        module_id='pump-c1',
+                        name='Dosing Unit C1',
+                        module_type='dosing',
+                        status='offline',
+                        autonomy_level='manual',
+                        reactor_id=reactor_c.id,
+                        device_node_id=node_c.id if node_c is not None else None,
+                        asset_id=pump_asset_row.id if pump_asset_row is not None else None,
+                        zone='Bioreactor Room',
+                        location='Rack C',
+                        description='Pump/Dosing-Einheit fuer Reaktor C1.',
+                        ros_node_name='labos_dosing_c1',
+                        mqtt_node_id='esp32-c1',
+                    ),
+                    [
+                        ('pump_fluid', True),
+                        ('dose_fluid', True),
+                    ],
+                ))
+
+            module_blueprints.append((
+                AutonomousModule(
+                    module_id='hydro-rack-h1',
+                    name='Hydroponik-Rack H1',
+                    module_type='hydroponic',
+                    status='nominal',
+                    autonomy_level='assisted',
+                    zone='Grow Room',
+                    location='Rack H1',
+                    description='Hydroponisches Rack mit Pumpe + Licht.',
+                    ros_node_name='labos_hydro_h1',
+                ),
+                [
+                    ('sense_flow', True),
+                    ('sense_humidity', True),
+                    ('illuminate', True),
+                    ('pump_fluid', True),
+                ],
+            ))
+
+            module_blueprints.append((
+                AutonomousModule(
+                    module_id='vision-v1',
+                    name='Vision Node V1',
+                    module_type='vision',
+                    status='nominal',
+                    autonomy_level='autonomous',
+                    reactor_id=reactor_a.id if reactor_a is not None else None,
+                    zone='Bioreactor Room',
+                    location='Rack A',
+                    description='Vision Node mit Auto-Analyse, meldet an LabOS.',
+                    ros_node_name='labos_vision_v1',
+                ),
+                [
+                    ('capture_image', True),
+                ],
+            ))
+
+            module_blueprints.append((
+                AutonomousModule(
+                    module_id='sampling-s1',
+                    name='Sampling Node S1',
+                    module_type='sampling',
+                    status='maintenance',
+                    autonomy_level='manual',
+                    zone='Bioreactor Room',
+                    location='Sampling Bench',
+                    description='Manuelles Sampling-Modul (vorbereitend fuer spaeter).',
+                ),
+                [
+                    ('sample_media', True),
+                ],
+            ))
+
+            for module, capabilities in module_blueprints:
+                module.created_at = now
+                module.updated_at = now
+                session.add(module)
+                session.flush()
+                for capability_type, is_enabled in capabilities:
+                    session.add(ModuleCapability(
+                        autonomous_module_id=module.id,
+                        capability_type=capability_type,
+                        is_enabled=is_enabled,
+                        created_at=now,
+                        updated_at=now,
+                    ))
+
+            seeded_any = True
+
+        has_infra_node = session.exec(select(InfraNode)).first()
+        if has_infra_node is None:
+            module_reactor_a = session.exec(
+                select(AutonomousModule).where(AutonomousModule.module_id == 'reactor-a1')
+            ).first()
+            pump_asset_row = session.exec(select(Asset).where(Asset.name == 'Pumpe A')).first()
+
+            infra_blueprints: list[tuple[InfraNode, list[tuple[str, str, str, dict]]]] = [
+                (
+                    InfraNode(
+                        node_id='server-1',
+                        name='Server 1',
+                        node_type='server',
+                        status='nominal',
+                        role='api',
+                        hostname='server1.lab.local',
+                        ip_address='192.168.10.11',
+                        zone='Serverraum',
+                        location='Rack 1',
+                        os_family='linux',
+                        architecture='x86_64',
+                        has_gpu=False,
+                        mqtt_enabled=True,
+                        notes='Primaerer Applikations-Host (LabOS API + Postgres + MQTT Broker).',
+                    ),
+                    [
+                        ('labos-api', 'api', 'nominal', {'endpoint': 'http://server1.lab.local:8000', 'port': 8000, 'version': '0.1.0'}),
+                        ('labos-db', 'database', 'nominal', {'port': 5432, 'version': '15'}),
+                        ('mqtt-broker', 'mqtt', 'nominal', {'endpoint': 'mqtt://server1.lab.local:1883', 'port': 1883}),
+                    ],
+                ),
+                (
+                    InfraNode(
+                        node_id='server-2',
+                        name='Server 2',
+                        node_type='server',
+                        status='attention',
+                        role='storage',
+                        hostname='server2.lab.local',
+                        ip_address='192.168.10.12',
+                        zone='Serverraum',
+                        location='Rack 1',
+                        os_family='linux',
+                        architecture='x86_64',
+                        notes='Storage + Nextcloud + Backup-Ziele.',
+                    ),
+                    [
+                        ('nextcloud', 'storage', 'nominal', {'endpoint': 'https://cloud.lab.local', 'port': 443}),
+                        ('backup-daemon', 'backup', 'degraded', {'notes': 'Letztes Snapshot fehlgeschlagen.'}),
+                    ],
+                ),
+                (
+                    InfraNode(
+                        node_id='rtx3060-node',
+                        name='RTX3060 AI Node',
+                        node_type='gpu_node',
+                        status='nominal',
+                        role='ai',
+                        hostname='ai1.lab.local',
+                        ip_address='192.168.10.21',
+                        zone='Serverraum',
+                        os_family='linux',
+                        architecture='x86_64',
+                        has_gpu=True,
+                        notes='GPU-Compute fuer Vision Inference + ABrain Sidecar.',
+                    ),
+                    [
+                        ('abrain-gateway', 'inference', 'nominal', {'endpoint': 'http://ai1.lab.local:9001', 'port': 9001}),
+                        ('vision-inference', 'inference', 'nominal', {'port': 9010}),
+                    ],
+                ),
+                (
+                    InfraNode(
+                        node_id='odroid-n2',
+                        name='Odroid N2+ Hub',
+                        node_type='sbc',
+                        status='nominal',
+                        role='gateway',
+                        hostname='odroid.lab.local',
+                        ip_address='192.168.10.31',
+                        zone='Grow Room',
+                        os_family='linux',
+                        architecture='arm64',
+                        ros_enabled=True,
+                        mqtt_enabled=True,
+                        notes='Edge-Gateway fuer Grow Room (ROS Bridge).',
+                    ),
+                    [
+                        ('ros-bridge', 'ros_bridge', 'nominal', {'port': 9090}),
+                    ],
+                ),
+                (
+                    InfraNode(
+                        node_id='pi-reactor-a1',
+                        name='Raspberry Pi Reactor A1',
+                        node_type='sbc',
+                        status='nominal',
+                        role='compute',
+                        hostname='pi-a1.lab.local',
+                        ip_address='192.168.10.41',
+                        zone='Bioreactor Room',
+                        os_family='linux',
+                        architecture='arm64',
+                        ros_enabled=True,
+                        mqtt_enabled=True,
+                        asset_id=pump_asset_row.id if pump_asset_row is not None else None,
+                        autonomous_module_id=module_reactor_a.id if module_reactor_a is not None else None,
+                        notes='Lokale Steuerung fuer Reaktor A1 (ESP32 Bruecke).',
+                    ),
+                    [
+                        ('mqtt-publisher', 'mqtt', 'nominal', {'port': 1883}),
+                    ],
+                ),
+                (
+                    InfraNode(
+                        node_id='labos-frontend',
+                        name='LabOS Frontend Host',
+                        node_type='virtual_service_host',
+                        status='nominal',
+                        role='api',
+                        hostname='server1.lab.local',
+                        zone='Serverraum',
+                        notes='Next.js Frontend, laeuft auf Server 1.',
+                    ),
+                    [
+                        ('labos-frontend', 'frontend', 'nominal', {'endpoint': 'http://server1.lab.local:3000', 'port': 3000}),
+                    ],
+                ),
+            ]
+
+            infra_node_by_slug: dict[str, InfraNode] = {}
+            for node, services in infra_blueprints:
+                node.created_at = now
+                node.updated_at = now
+                session.add(node)
+                session.flush()
+                infra_node_by_slug[node.node_id] = node
+                for service_name, service_type, svc_status, extras in services:
+                    session.add(InfraService(
+                        infra_node_id=node.id,
+                        service_name=service_name,
+                        service_type=service_type,
+                        status=svc_status,
+                        endpoint=extras.get('endpoint'),
+                        port=extras.get('port'),
+                        healthcheck_url=extras.get('healthcheck_url'),
+                        version=extras.get('version'),
+                        notes=extras.get('notes'),
+                        created_at=now,
+                        updated_at=now,
+                    ))
+
+            server2 = infra_node_by_slug.get('server-2')
+            if server2 is not None:
+                session.add(StorageVolume(
+                    infra_node_id=server2.id,
+                    name='nextcloud-data',
+                    mount_path='/var/nextcloud',
+                    volume_type='local',
+                    status='attention',
+                    capacity_gb=2048.0,
+                    free_gb=210.5,
+                    notes='Free space < 15%',
+                    created_at=now,
+                    updated_at=now,
+                ))
+                session.add(StorageVolume(
+                    infra_node_id=server2.id,
+                    name='backup-pool',
+                    mount_path='/mnt/backup',
+                    volume_type='nas',
+                    status='nominal',
+                    capacity_gb=4096.0,
+                    free_gb=1820.0,
+                    created_at=now,
+                    updated_at=now,
+                ))
+                session.add(BackupRecord(
+                    infra_node_id=server2.id,
+                    target_type='storage_volume',
+                    target_id='nextcloud-data',
+                    backup_type='snapshot',
+                    status='failed',
+                    started_at=now - timedelta(hours=8),
+                    finished_at=now - timedelta(hours=7, minutes=55),
+                    notes='rsync target unreachable',
+                    created_at=now - timedelta(hours=7, minutes=55),
+                ))
+                session.add(BackupRecord(
+                    infra_node_id=server2.id,
+                    target_type='database',
+                    target_id='labos-db',
+                    backup_type='dump',
+                    status='ok',
+                    started_at=now - timedelta(days=1),
+                    finished_at=now - timedelta(days=1) + timedelta(minutes=12),
+                    created_at=now - timedelta(days=1) + timedelta(minutes=12),
+                ))
+
+            server1 = infra_node_by_slug.get('server-1')
+            if server1 is not None:
+                session.add(StorageVolume(
+                    infra_node_id=server1.id,
+                    name='system-root',
+                    mount_path='/',
+                    volume_type='local',
+                    status='nominal',
+                    capacity_gb=512.0,
+                    free_gb=310.0,
+                    created_at=now,
+                    updated_at=now,
                 ))
 
             seeded_any = True
